@@ -1,0 +1,1126 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import {
+  ShoppingCart,
+  Package,
+  CheckCircle,
+  Tag,
+  CreditCard,
+  User,
+  ArrowLeft,
+  Loader2,
+  Trash2,
+  Calendar,
+} from "lucide-react";
+
+const API_URL = "http://localhost:3001";
+
+interface ProductVariant {
+  id: string;
+  options: Record<string, string>;
+  price?: number | null;
+  stockQuantity: number;
+  sku?: string | null;
+  barcode?: string | null;
+}
+
+interface Product {
+  productId: string;
+  name: string;
+  price: number;
+  stockQuantity: number;
+  status: "active" | "draft";
+  images: string[];
+  description?: string;
+  compareAtPrice?: number | null;
+  costPerItem?: number | null;
+  sku?: string | null;
+  barcode?: string | null;
+  category: "Clothing" | "Electronics" | "Home & Kitchen" | "Beauty" | "Food" | "Other";
+  productType?: string | null;
+  vendor?: string | null;
+  weight?: number | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  continueSellingOutOfStock?: boolean;
+  variants?: ProductVariant[];
+}
+
+interface CartItem {
+  product: Product;
+  quantity: number;
+  selectedVariant?: ProductVariant | null;
+}
+
+export default function Storefront() {
+  // Storefront lookup state
+  const [subdomain, setSubdomain] = useState("mystore");
+  const [storeInfo, setStoreInfo] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingStore, setLoadingStore] = useState(true);
+
+  // Cart state
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [couponCode, setCouponCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+
+  // Variant Selection details modal state
+  const [selectedProductDetails, setSelectedProductDetails] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+
+  // Customer auth/view state
+  const [custToken, setCustToken] = useState<string | null>(null);
+  const [custName, setCustName] = useState<string | null>(null);
+  const [isCustLoginView, setIsCustLoginView] = useState(true);
+  const [custEmail, setCustEmail] = useState("");
+  const [custPassword, setCustPassword] = useState("");
+  const [custNameInput, setCustNameInput] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [customerOrders, setCustomerOrders] = useState<any[]>([]);
+
+  // Checkout view state
+  const [view, setView] = useState<"catalog" | "cart" | "checkout" | "success" | "orders">("catalog");
+  const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [city, setCity] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [checkoutError, setCheckoutError] = useState("");
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [completedOrder, setCompletedOrder] = useState<any>(null);
+
+  // Resolve subdomain from window location
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const host = window.location.hostname;
+      const parts = host.split(".");
+      if (parts.length >= 2 && parts[0] !== "localhost" && parts[0] !== "www") {
+        setSubdomain(parts[0]);
+      }
+    }
+  }, []);
+
+  // Fetch store details & products on subdomain load
+  useEffect(() => {
+    loadStoreDetails();
+  }, [subdomain]);
+
+  // Load customer session (via httpOnly cookie check)
+  useEffect(() => {
+    const checkCustomerSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/customer/me`, {
+          credentials: "include",
+          headers: {
+            "x-subdomain": subdomain,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setCustToken(data.accessToken);
+          setCustName(data.name);
+        }
+      } catch (err) {
+        console.error("No customer session found:", err);
+      }
+    };
+    if (subdomain) {
+      checkCustomerSession();
+    }
+  }, [subdomain]);
+
+  const loadStoreDetails = async () => {
+    setLoadingStore(true);
+    setStoreInfo(null);
+    setProducts([]);
+    try {
+      // 1. Fetch Store Details
+      const infoRes = await fetch(`${API_URL}/store/${subdomain}/info`);
+      if (!infoRes.ok) throw new Error("Store not found");
+      const infoData = await infoRes.json();
+      setStoreInfo(infoData);
+
+      // 2. Fetch Active Products
+      const prodRes = await fetch(`${API_URL}/store/${subdomain}/products`);
+      if (prodRes.ok) {
+        setProducts(await prodRes.json());
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingStore(false);
+    }
+  };
+
+  const addToCart = (product: Product, variant: ProductVariant | null = null) => {
+    if (product.variants && product.variants.length > 0 && !variant) {
+      setSelectedProductDetails(product);
+      setSelectedOptions({});
+      setSelectedVariant(null);
+      return;
+    }
+
+    const stock = variant !== null ? variant.stockQuantity : product.stockQuantity;
+    const cartKey = variant ? `${product.productId}-${variant.id}` : product.productId;
+
+    const existingIndex = cart.findIndex((item) => {
+      const itemKey = item.selectedVariant ? `${item.product.productId}-${item.selectedVariant.id}` : item.product.productId;
+      return itemKey === cartKey;
+    });
+
+    if (existingIndex > -1) {
+      if (cart[existingIndex].quantity >= stock) return;
+      const nextCart = [...cart];
+      nextCart[existingIndex].quantity += 1;
+      setCart(nextCart);
+    } else {
+      setCart([...cart, { product, quantity: 1, selectedVariant: variant }]);
+    }
+    
+    setSelectedProductDetails(null);
+  };
+
+  const updateCartQty = (productId: string, delta: number, variantId?: string | null) => {
+    const cartKey = variantId ? `${productId}-${variantId}` : productId;
+    
+    setCart(
+      cart
+        .map((item) => {
+          const itemKey = item.selectedVariant ? `${item.product.productId}-${item.selectedVariant.id}` : item.product.productId;
+          if (itemKey === cartKey) {
+            const nextQty = item.quantity + delta;
+            if (nextQty <= 0) return null;
+            const stock = item.selectedVariant ? item.selectedVariant.stockQuantity : item.product.stockQuantity;
+            if (nextQty > stock) return item;
+            return { ...item, quantity: nextQty };
+          }
+          return item;
+        })
+        .filter(Boolean) as CartItem[]
+    );
+  };
+
+  const validateCoupon = async () => {
+    setCouponError("");
+    setCouponSuccess("");
+    setDiscountAmount(0);
+
+    if (!couponCode) return;
+
+    try {
+      const cartTotal = cart.reduce((acc, item) => {
+        const price = item.selectedVariant?.price !== undefined && item.selectedVariant?.price !== null ? item.selectedVariant.price : item.product.price;
+        return acc + price * item.quantity;
+      }, 0);
+      const res = await fetch(`${API_URL}/store/${subdomain}/discounts/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, cartTotal }),
+      });
+
+      const data = await res.json();
+      if (!data.valid) {
+        setCouponError(data.reason || "Invalid discount code");
+      } else {
+        setDiscountAmount(data.discountAmount);
+        setCouponSuccess(`Coupon "${couponCode.toUpperCase()}" applied successfully!`);
+      }
+    } catch (err) {
+      setCouponError("Failed to validate coupon code.");
+    }
+  };
+
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCheckoutError("");
+    setLoadingCheckout(true);
+
+    const subtotal = cart.reduce((acc, item) => {
+      const price = item.selectedVariant?.price !== undefined && item.selectedVariant?.price !== null ? item.selectedVariant.price : item.product.price;
+      return acc + price * item.quantity;
+    }, 0);
+    const total = Math.max(0, subtotal - discountAmount);
+
+    try {
+      // 1. Create order and fetch payment details
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (custToken) {
+        // Read customer profile if authenticated
+        headers["Authorization"] = `Bearer ${custToken}`;
+      }
+
+      const res = await fetch(`${API_URL}/store/${subdomain}/checkout`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          customerName,
+          customerEmail,
+          shippingAddress: {
+            addressLine1,
+            city,
+            postalCode,
+            state: "Karnataka",
+            country: "India",
+          },
+          lineItems: cart.map((item) => ({
+            productId: item.product.productId,
+            variantId: item.selectedVariant?.id || undefined,
+            quantity: item.quantity,
+          })),
+          discountCode: couponCode || undefined,
+          idempotencyKey: `${customerEmail}-${Date.now()}`,
+        }),
+      });
+
+      const checkoutData = await res.json();
+      if (!res.ok) throw new Error(checkoutData.error || "Checkout failed");
+
+      // 2. Load and trigger Razorpay checkout modal
+      const options = {
+        key: checkoutData.key || "rzp_test_mock",
+        amount: checkoutData.amount * 100,
+        currency: "INR",
+        name: storeInfo.storeName,
+        description: "Order Checkout",
+        order_id: checkoutData.razorpayOrderId,
+        handler: async function (response: any) {
+          // Simulated signature bypass to trigger successful payment webhook locally in development
+          try {
+            await fetch(`${API_URL}/store/${subdomain}/webhooks/razorpay`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-razorpay-signature": "mock-signature-bypass",
+              },
+              body: JSON.stringify({
+                event: "order.paid",
+                payload: {
+                  payment: {
+                    entity: {
+                      id: response.razorpay_payment_id || "pay_mock_123",
+                      order_id: response.razorpay_order_id || checkoutData.razorpayOrderId,
+                    },
+                  },
+                },
+              }),
+            });
+
+            setCompletedOrder({
+              orderId: checkoutData.orderId,
+              amount: checkoutData.amount,
+            });
+            setCart([]);
+            setCouponCode("");
+            setDiscountAmount(0);
+            setView("success");
+          } catch (err) {
+            console.error("Webhook trigger failed", err);
+          }
+        },
+        prefill: {
+          name: customerName,
+          email: customerEmail,
+        },
+        theme: {
+          color: storeInfo.branding?.primaryColor || "#2563EB",
+        },
+      };
+
+      // In local testing, if using mock Razorpay flow, trigger fake handler immediately
+      if (options.order_id.startsWith("order_mock_")) {
+        console.log("Mock Payment active. Simulating payment success handler...");
+        setTimeout(() => {
+          options.handler({
+            razorpay_payment_id: "pay_mock_test",
+            razorpay_order_id: options.order_id,
+          });
+        }, 1500);
+      } else {
+        // Load real Razorpay script
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.async = true;
+        script.onload = () => {
+          const rzp = new (window as any).Razorpay(options);
+          rzp.open();
+        };
+        document.body.appendChild(script);
+      }
+    } catch (err: any) {
+      setCheckoutError(err.message);
+    } finally {
+      setLoadingCheckout(false);
+    }
+  };
+
+  const handleCustomerAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      const url = isCustLoginView ? `${API_URL}/auth/customer/login` : `${API_URL}/auth/customer/signup`;
+      const bodyPayload = isCustLoginView
+        ? { email: custEmail, password: custPassword }
+        : { email: custEmail, password: custPassword, name: custNameInput };
+
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-subdomain": subdomain,
+        },
+        body: JSON.stringify(bodyPayload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Authentication failed");
+
+      localStorage.setItem("basecart_customer_name", data.name);
+      setCustToken(data.accessToken);
+      setCustName(data.name);
+      setShowAuthModal(false);
+      setCustEmail("");
+      setCustPassword("");
+      setCustNameInput("");
+      fetchCustomerOrders(data.accessToken);
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const fetchCustomerOrders = async (tokenStr: string) => {
+    try {
+      const res = await fetch(`${API_URL}/store/${subdomain}/my-orders`, {
+        headers: {
+          Authorization: `Bearer ${tokenStr}`,
+        },
+      });
+      if (res.ok) {
+        setCustomerOrders(await res.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCustomerLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/customer/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "x-subdomain": subdomain,
+        },
+      });
+    } catch (e) {
+      console.error("Logout request failed", e);
+    }
+    localStorage.removeItem("basecart_customer_name");
+    setCustToken(null);
+    setCustName(null);
+    setCustomerOrders([]);
+    setView("catalog");
+  };
+
+  // Trigger loading orders if session is active
+  useEffect(() => {
+    if (custToken) {
+      fetchCustomerOrders(custToken);
+    }
+  }, [custToken]);
+
+  // Pricing calculations
+  const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const total = Math.max(0, subtotal - discountAmount);
+
+  // --- Loading screen ---
+  if (loadingStore) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+        <p className="text-slate-500 font-medium text-sm">Resolving subdomain storefront metadata...</p>
+      </div>
+    );
+  }
+
+  // --- Storefront Not Found ---
+  if (!storeInfo) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+        <div className="max-w-md w-full bg-white border border-slate-200 shadow-card p-8 rounded-card text-center">
+          <h1 className="text-2xl font-bold text-slate-800">Store Not Found</h1>
+          <p className="text-slate-500 text-sm mt-2 mb-6">
+            The store sub-domain <strong>"{subdomain}"</strong> is not registered.
+          </p>
+          <div className="space-y-4">
+            <label className="block text-xs text-left font-bold text-slate-600 uppercase tracking-wider">
+              Enter subdomain to preview storefront
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value)}
+                className="flex-1 px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                placeholder="mystore"
+              />
+              <button
+                onClick={loadStoreDetails}
+                className="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium"
+              >
+                Go
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const primaryColor = storeInfo.branding?.primaryColor || "#2563EB";
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+      {/* Store Header */}
+      <header className="bg-white border-b border-slate-200 h-16 sticky top-0 z-20 px-8 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          {storeInfo.branding?.logoUrl ? (
+            <img src={storeInfo.branding.logoUrl} alt={storeInfo.storeName} className="h-8 object-contain" />
+          ) : (
+            <span className="text-xl font-bold tracking-tight text-slate-900">{storeInfo.storeName}</span>
+          )}
+        </div>
+
+        {/* Local Sandbox Subdomain Switcher */}
+        <div className="hidden lg:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+          <span className="text-xs font-semibold text-slate-500">Subdomain:</span>
+          <input
+            type="text"
+            value={subdomain}
+            onChange={(e) => setSubdomain(e.target.value)}
+            className="bg-transparent border-none text-xs font-bold text-slate-900 focus:outline-none w-20"
+          />
+        </div>
+
+        {/* Customer Actions */}
+        <div className="flex items-center gap-6">
+          {custName ? (
+            <div className="flex items-center gap-4 text-sm font-medium">
+              <button
+                onClick={() => setView(view === "orders" ? "catalog" : "orders")}
+                className="hover:text-blue-600 text-slate-600 flex items-center gap-1.5 transition-colors"
+              >
+                <User className="h-4 w-4" /> Hi, {custName}
+              </button>
+              <button
+                onClick={handleCustomerLogout}
+                className="text-xs text-slate-400 hover:text-red-500 font-semibold"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="text-sm font-medium text-slate-600 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
+            >
+              <User className="h-4 w-4" /> Account
+            </button>
+          )}
+
+          <button
+            onClick={() => setView("cart")}
+            className="relative p-1.5 text-slate-600 hover:text-blue-600 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cart.length > 0 && (
+              <span
+                style={{ backgroundColor: primaryColor }}
+                className="absolute -top-1.5 -right-1.5 text-[10px] text-white font-bold h-4 w-4 rounded-full flex items-center justify-center"
+              >
+                {cart.reduce((acc, item) => acc + item.quantity, 0)}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Main Workspace */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
+        {/* VIEW 1: Catalog */}
+        {view === "catalog" && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight">Our Products</h2>
+              <p className="text-sm text-slate-500">Pick from our premium store items</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {products.length > 0 ? (
+                products.map((prod) => (
+                  <div key={prod.productId} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors">
+                    <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden">
+                      {prod.images && prod.images[0] ? (
+                        <img src={prod.images[0]} alt={prod.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="h-12 w-12 text-slate-300" />
+                      )}
+                    </div>
+                    <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
+                        <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
+                      </div>
+                      <div className="flex items-center justify-between mt-auto">
+                        <div className="flex flex-col">
+                          <span className="text-lg font-extrabold text-slate-900">₹{prod.price}</span>
+                          {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                            <span className="text-xs text-slate-400 line-through">₹{prod.compareAtPrice}</span>
+                          )}
+                        </div>
+                        {prod.stockQuantity <= 0 && (!prod.variants || prod.variants.every(v => v.stockQuantity <= 0)) ? (
+                          <span className="text-xs text-red-500 font-bold">Out of stock</span>
+                        ) : (
+                          <button
+                            onClick={() => addToCart(prod)}
+                            style={{ backgroundColor: primaryColor }}
+                            className="px-3.5 py-1.5 text-white rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                          >
+                            {prod.variants && prod.variants.length > 0 ? "Select Options" : "Add to Cart"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-full py-16 text-center text-slate-400">
+                  <Package className="h-12 w-12 mx-auto mb-3 text-slate-300" />
+                  <p className="font-medium">No products listed on this storefront yet.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: Cart */}
+        {view === "cart" && (
+          <div className="bg-white border border-slate-200 rounded-card shadow-card p-8 max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <button onClick={() => setView("catalog")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-lg font-bold">Your Shopping Cart</h2>
+            </div>
+
+            {cart.length > 0 ? (
+              <div className="space-y-6">
+                {/* Items */}
+                <div className="divide-y divide-slate-100">
+                  {cart.map((item) => {
+                    const price = item.selectedVariant?.price !== undefined && item.selectedVariant?.price !== null ? item.selectedVariant.price : item.product.price;
+                    const itemKey = item.selectedVariant ? `${item.product.productId}-${item.selectedVariant.id}` : item.product.productId;
+                    
+                    return (
+                      <div key={itemKey} className="py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 border rounded bg-slate-50 overflow-hidden flex items-center justify-center">
+                            {item.product.images?.[0] ? (
+                              <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <Package className="h-6 w-6 text-slate-400" />
+                            )}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-slate-900 text-sm">{item.product.name}</h4>
+                            {item.selectedVariant && (
+                              <div className="text-xs text-slate-500 font-medium">
+                                {Object.entries(item.selectedVariant.options).map(([k, v]) => `${k}: ${v}`).join(", ")}
+                              </div>
+                            )}
+                            <span className="text-xs text-slate-500">₹{price} each</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center border border-slate-200 rounded">
+                            <button onClick={() => updateCartQty(item.product.productId, -1, item.selectedVariant?.id)} className="px-2 py-0.5 text-slate-500 hover:bg-slate-50">-</button>
+                            <span className="px-3 py-0.5 text-sm font-semibold text-slate-800">{item.quantity}</span>
+                            <button onClick={() => updateCartQty(item.product.productId, 1, item.selectedVariant?.id)} className="px-2 py-0.5 text-slate-500 hover:bg-slate-50">+</button>
+                          </div>
+                          <button onClick={() => updateCartQty(item.product.productId, -item.quantity, item.selectedVariant?.id)} className="text-slate-400 hover:text-red-500">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Coupons */}
+                <div className="border-t border-slate-100 pt-6">
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                    Promo / Coupon Code
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="px-3 py-1.5 border border-slate-300 rounded text-sm flex-1 text-slate-900 focus:outline-none"
+                      placeholder="SAVE10"
+                    />
+                    <button
+                      onClick={validateCoupon}
+                      className="px-4 py-1.5 border border-slate-300 hover:bg-slate-50 rounded text-sm font-semibold text-slate-700"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {couponError && <p className="text-red-600 text-xs mt-1.5">{couponError}</p>}
+                  {couponSuccess && <p className="text-emerald-700 text-xs mt-1.5">{couponSuccess}</p>}
+                </div>
+
+                {/* Subtotal */}
+                <div className="border-t border-slate-100 pt-6 space-y-2">
+                  <div className="flex justify-between text-sm text-slate-500">
+                    <span>Subtotal</span>
+                    <span>₹{subtotal}</span>
+                  </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-700 font-medium">
+                      <span>Discount Applied</span>
+                      <span>-₹{discountAmount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-base font-extrabold text-slate-900 pt-2 border-t border-slate-100">
+                    <span>Total Amount</span>
+                    <span>₹{total}</span>
+                  </div>
+                </div>
+
+                {/* Checkout button */}
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      if (custToken) {
+                        setCustomerEmail(custEmail || "");
+                        setCustomerName(custName || "");
+                      }
+                      setView("checkout");
+                    }}
+                    style={{ backgroundColor: primaryColor }}
+                    className="w-full py-2.5 text-white rounded font-medium text-sm hover:opacity-90 shadow-sm flex items-center justify-center gap-2"
+                  >
+                    Proceed to Shipping <CreditCard className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-400">
+                Cart is empty. Go back and select some items to purchase.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* VIEW 3: Checkout Form */}
+        {view === "checkout" && (
+          <div className="bg-white border border-slate-200 rounded-card shadow-card p-8 max-w-2xl mx-auto">
+            <div className="flex items-center gap-2 mb-6">
+              <button onClick={() => setView("cart")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-lg font-bold">Shipping & Checkout</h2>
+            </div>
+
+            {checkoutError && (
+              <div className="mb-4 bg-red-50 border border-red-100 text-red-700 p-3 rounded text-xs">
+                {checkoutError}
+              </div>
+            )}
+
+            <form onSubmit={handleCheckout} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                    Customer Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                    placeholder="Kiran"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                    placeholder="kiran@test.com"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                  Delivery Address
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={addressLine1}
+                  onChange={(e) => setAddressLine1(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none mb-2"
+                  placeholder="Address Line 1"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                    placeholder="City"
+                  />
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={postalCode}
+                    onChange={(e) => setPostalCode(e.target.value)}
+                    className="px-3 py-2 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                    placeholder="Pincode (6 digits)"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-6">
+                <div className="flex justify-between items-center text-slate-900 font-bold text-sm mb-4">
+                  <span>Payable Total:</span>
+                  <span>₹{total}</span>
+                </div>
+                <button
+                  type="submit"
+                  disabled={loadingCheckout}
+                  style={{ backgroundColor: primaryColor }}
+                  className="w-full py-2.5 text-white rounded font-medium text-sm hover:opacity-90 shadow-sm flex items-center justify-center gap-2"
+                >
+                  {loadingCheckout ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>Pay with Razorpay</>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* VIEW 4: Success Screen */}
+        {view === "success" && completedOrder && (
+          <div className="bg-white border border-slate-200 rounded-card shadow-card p-10 max-w-md mx-auto text-center font-sans">
+            <CheckCircle className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-slate-900">Order Confirmed!</h2>
+            <p className="text-slate-500 text-sm mt-2">
+              Thank you for shopping with us. Your payment was processed successfully.
+            </p>
+            <div className="bg-slate-50 p-4 rounded border border-slate-100 my-6 text-left text-sm space-y-2">
+              <div>
+                <span className="text-slate-500">Order Reference:</span>
+                <span className="float-right font-mono font-bold text-slate-800">
+                  #{completedOrder.orderId.substring(0, 8).toUpperCase()}
+                </span>
+              </div>
+              <div>
+                <span className="text-slate-500">Amount Charged:</span>
+                <span className="float-right font-bold text-emerald-700">₹{completedOrder.amount}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setView("catalog")}
+              style={{ backgroundColor: primaryColor }}
+              className="w-full py-2 text-white font-medium rounded text-sm"
+            >
+              Continue Shopping
+            </button>
+          </div>
+        )}
+
+        {/* VIEW 5: Customer Order History */}
+        {view === "orders" && (
+          <div className="space-y-6 max-w-3xl mx-auto">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setView("catalog")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+              <h2 className="text-2xl font-bold tracking-tight">Your Order History</h2>
+            </div>
+
+            <div className="space-y-4">
+              {customerOrders.length > 0 ? (
+                customerOrders.map((order: any) => (
+                  <div key={order.orderId} className="bg-white border border-slate-200 rounded-card p-6 shadow-card space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                      <div>
+                        <span className="text-xs text-slate-400 font-bold block uppercase">Order Reference</span>
+                        <span className="font-mono font-bold text-sm text-slate-800">
+                          #{order.orderId.substring(0, 8).toUpperCase()}
+                        </span>
+                      </div>
+                      <span className={`inline-flex px-2 py-0.5 rounded text-xs font-bold ${
+                        order.status === "paid"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          : order.status === "pending"
+                          ? "bg-amber-50 text-amber-700 border border-amber-100"
+                          : "bg-slate-100 text-slate-600"
+                      }`}>
+                        {order.status}
+                      </span>
+                    </div>
+
+                    <div className="text-sm space-y-2">
+                      {order.lineItems?.map((item: any, i: number) => (
+                        <div key={i} className="flex justify-between text-slate-700">
+                          <span>
+                            {item.name} <span className="text-slate-400 text-xs">x {item.quantity}</span>
+                          </span>
+                          <span className="font-medium">₹{item.price * item.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between items-center border-t border-slate-100 pt-3 text-sm font-bold text-slate-900">
+                      <span className="flex items-center gap-1 text-slate-400 font-normal text-xs">
+                        <Calendar className="h-3.5 w-3.5" />
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </span>
+                      <span>Paid Total: ₹{order.total}</span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-card p-12 shadow-card text-center text-slate-400">
+                  No orders found for your customer account.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* CUSTOMER AUTH MODAL */}
+      {showAuthModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white max-w-sm w-full p-6 border border-slate-200 rounded-card shadow-lg relative">
+            <button
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg"
+            >
+              &times;
+            </button>
+            <h3 className="text-lg font-bold mb-4">{isCustLoginView ? "Customer Login" : "Customer Signup"}</h3>
+
+            {authError && (
+              <div className="mb-4 bg-red-50 text-red-700 p-2.5 rounded text-xs border border-red-100">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleCustomerAuth} className="space-y-4">
+              {!isCustLoginView && (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                    Your Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={custNameInput}
+                    onChange={(e) => setCustNameInput(e.target.value)}
+                    className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                    placeholder="John Doe"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                  Email address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={custEmail}
+                  onChange={(e) => setCustEmail(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                  placeholder="name@email.com"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={custPassword}
+                  onChange={(e) => setCustPassword(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                  placeholder="••••••••"
+                />
+              </div>
+              <button
+                type="submit"
+                style={{ backgroundColor: primaryColor }}
+                className="w-full py-2 text-white font-medium rounded text-sm"
+              >
+                {isCustLoginView ? "Sign In" : "Register Account"}
+              </button>
+            </form>
+
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => {
+                  setIsCustLoginView(!isCustLoginView);
+                  setAuthError("");
+                }}
+                className="text-xs text-blue-600 hover:underline font-semibold"
+              >
+                {isCustLoginView ? "Create a store account instead" : "Already have an account? Sign In"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VARIANT DETAILS SELECTION MODAL */}
+      {selectedProductDetails && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white max-w-md w-full p-6 border border-slate-200 rounded-card shadow-lg relative space-y-6">
+            <button
+              onClick={() => setSelectedProductDetails(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg"
+            >
+              &times;
+            </button>
+
+            <div className="flex gap-4">
+              <div className="h-20 w-20 border rounded bg-slate-50 overflow-hidden flex items-center justify-center">
+                {selectedProductDetails.images?.[0] ? (
+                  <img src={selectedProductDetails.images[0]} alt={selectedProductDetails.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Package className="h-8 w-8 text-slate-400" />
+                )}
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-slate-900">{selectedProductDetails.name}</h3>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-xl font-extrabold text-slate-900">
+                    ₹{selectedVariant?.price !== undefined && selectedVariant?.price !== null ? selectedVariant.price : selectedProductDetails.price}
+                  </span>
+                  {selectedProductDetails.compareAtPrice && selectedProductDetails.compareAtPrice > selectedProductDetails.price && (
+                    <span className="text-xs text-slate-400 line-through">₹{selectedProductDetails.compareAtPrice}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {selectedProductDetails.description && (
+              <p className="text-xs text-slate-500 line-clamp-3 bg-slate-50 p-2.5 rounded border border-slate-100">
+                {selectedProductDetails.description}
+              </p>
+            )}
+
+            {/* Option pickers */}
+            <div className="space-y-4">
+              {(() => {
+                const keys = Object.keys(selectedProductDetails.variants?.[0]?.options || {});
+                return keys.map((key) => {
+                  const uniqueValues = Array.from(new Set(selectedProductDetails.variants!.map(v => v.options[key]).filter(Boolean)));
+                  
+                  return (
+                    <div key={key} className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">{key}</label>
+                      <div className="flex flex-wrap gap-2">
+                        {uniqueValues.map((val) => {
+                          const isSelected = selectedOptions[key] === val;
+                          
+                          return (
+                            <button
+                              key={val}
+                              type="button"
+                              onClick={() => {
+                                const nextOptions = { ...selectedOptions, [key]: val };
+                                setSelectedOptions(nextOptions);
+
+                                const match = selectedProductDetails.variants?.find((v) => {
+                                  return keys.every(k => v.options[k] === nextOptions[k]);
+                                });
+                                setSelectedVariant(match || null);
+                              }}
+                              className={`px-3 py-1.5 text-xs font-semibold rounded border transition-all ${
+                                isSelected
+                                  ? "border-blue-600 bg-blue-50 text-blue-700 shadow-sm"
+                                  : "border-slate-200 hover:border-slate-300 text-slate-700 bg-white"
+                              }`}
+                            >
+                              {val}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+
+            {/* Action */}
+            <div className="pt-2">
+              {(() => {
+                const keys = Object.keys(selectedProductDetails.variants?.[0]?.options || {});
+                const allSelected = keys.every(k => selectedOptions[k] !== undefined);
+                const stock = selectedVariant ? selectedVariant.stockQuantity : 0;
+                const isOutOfStock = selectedVariant ? stock <= 0 : true;
+
+                return (
+                  <div className="space-y-2">
+                    {!allSelected ? (
+                      <p className="text-xs text-slate-400 italic">Please select options above to add to cart.</p>
+                    ) : isOutOfStock ? (
+                      <p className="text-xs text-red-500 font-bold">Selected combination is out of stock.</p>
+                    ) : (
+                      <p className="text-xs text-slate-500 font-medium">In Stock: {stock} units available.</p>
+                    )}
+
+                    <button
+                      type="button"
+                      disabled={!allSelected || isOutOfStock}
+                      onClick={() => addToCart(selectedProductDetails, selectedVariant)}
+                      className="w-full py-2.5 text-white font-bold text-sm rounded shadow transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:bg-slate-300"
+                      style={{ backgroundColor: allSelected && !isOutOfStock ? (storeInfo?.branding?.primaryColor || "#2563EB") : "#cbd5e1" }}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,5 @@
+# Next.js build artifacts and dependencies
+node_modules/
+.next/
+out/
+*.log

@@ -1,0 +1,19 @@
+{
+  "name": "basecart-root",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:merchant": "npm run dev --workspace=packages/merchant-dashboard",
+    "dev:storefront": "npm run dev --workspace=packages/storefront",
+    "dev:admin": "npm run dev --workspace=packages/admin-panel",
+    "build:backend": "npm run build --workspace=packages/backend",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "build:admin": "npm run build --workspace=packages/admin-panel",
+    "test:backend": "npm run test --workspace=packages/backend",
+    "localstack:up": "docker compose up -d",
+    "localstack:down": "docker compose down"
+  }
+}

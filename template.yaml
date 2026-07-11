@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Basecart E-commerce SaaS Platform Infrastructure
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: nodejs20.x
+    Architectures:
+      - arm64
+    Policies:
+      - KMSEncryptPolicy:
+          KeyId: !Ref StoreKmsKey
+      - KMSDecryptPolicy:
+          KeyId: !Ref StoreKmsKey
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref BasecartTable
+        S3_BUCKET: !Ref MediaBucket
+        SQS_QUEUE_URL: !Ref JobsQueue
+        JWT_SECRET: "local_jwt_secret_key_for_testing_purposes"
+        KMS_KEY_ID: !Ref StoreKmsKey
+        NODE_ENV: development
+
+Resources:
+  StoreKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: "KMS Key for encrypting Razorpay API secrets"
+      KeyPolicy:
+        Version: "2012-10-17"
+        Id: "basecart-kms-policy"
+        Statement:
+          - Sid: "Enable IAM User Permissions"
+            Effect: "Allow"
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: "Allow Basecart Lambda roles to encrypt/decrypt"
+            Effect: "Allow"
+            Principal:
+              AWS: "*"
+            Action:
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+            Resource: "*"
+
+  BasecartTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: BasecartMain
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+        - AttributeName: GSI3PK
+          AttributeType: S
+        - AttributeName: GSI3SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI3
+          KeySchema:
+            - AttributeName: GSI3PK
+              KeyType: HASH
+            - AttributeName: GSI3SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: basecart-media-bucket
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            AllowedOrigins:
+              - '*'
+            MaxAge: 3000
+
+  JobsDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: BasecartJobsDLQ
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  JobsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: BasecartJobsQueue
+      VisibilityTimeout: 180 # 6x the lambda function timeout
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt JobsDLQ.Arn
+        maxReceiveCount: 5
+
+  BasecartApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./packages/backend
+      Handler: dist/index.handler
+      Events:
+        ProxyRoute:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+
+  BasecartSqsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./packages/backend
+      Handler: dist/sqs.handler
+      Events:
+        MySqsEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt JobsQueue.Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm if API Lambda error rate exceeds 5%"
+      Namespace: "AWS/Lambda"
+      MetricName: "Errors"
+      Dimensions:
+        - Name: "FunctionName"
+          Value: !Ref BasecartApiFunction
+      Statistic: "Sum"
+      ComparisonOperator: "GreaterThanThreshold"
+      Threshold: 1
+      EvaluationPeriods: 1
+      Period: 300
+
+  DlqMessageAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: "Alarm if there are messages in the SQS Jobs DLQ"
+      Namespace: "AWS/SQS"
+      MetricName: "ApproximateNumberOfMessagesVisible"
+      Dimensions:
+        - Name: "QueueName"
+          Value: !GetAtt JobsDLQ.QueueName
+      Statistic: "Sum"
+      ComparisonOperator: "GreaterThanThreshold"
+      Threshold: 0
+      EvaluationPeriods: 1
+      Period: 60
+
+  WaclRateLimit:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: BasecartWebACL
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: BasecartWebACL
+      Rules:
+        - Name: LimitRequestsRule
+          Priority: 1
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: LimitRequestsRule
+          Statement:
+            RateBasedStatement:
+              Limit: 1000 # Max 1000 requests per 5 minutes per IP
+              EvaluationWindowSec: 300
+              AggregateKeyType: IP
+
+  WafAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${ServerlessRestApi}/stages/Prod"
+      WebACLArn: !GetAtt WaclRateLimit.Arn
+
+  StorefrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Origins:
+          - Id: S3MediaOrigin
+            DomainName: !GetAtt MediaBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - Id: ApiGatewayOrigin
+            DomainName: !Sub "${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com"
+            OriginPath: /Prod
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        DefaultCacheBehavior:
+          TargetOriginId: ApiGatewayOrigin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+            - PUT
+            - POST
+            - PATCH
+            - DELETE
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: true
+            Headers:
+              - Authorization
+              - x-subdomain
+            Cookies:
+              Forward: all
+          MinTTL: 0
+          DefaultTTL: 0
+          MaxTTL: 0
+        CacheBehaviors:
+          - PathPattern: "tenants/*"
+            TargetOriginId: S3MediaOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            AllowedMethods:
+              - GET
+              - HEAD
+              - OPTIONS
+            CachedMethods:
+              - GET
+              - HEAD
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            MinTTL: 0
+            DefaultTTL: 86400
+            MaxTTL: 31536000

@@ -1,0 +1,4 @@
+# Backend build artifacts and dependencies
+node_modules/
+dist/
+*.log

@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
+  --color-bg: #FFFFFF;
+  --color-bg-subtle: #F8FAFC;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-primary-subtle: #EFF6FF;
+  --color-text: #0F172A;
+  --color-text-muted: #64748B;
+  --color-border: #E2E8F0;
+  --color-success: #10B981;
+  --color-error: #EF4444;
+  --radius-card: 8px;
+  --radius-button: 6px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.04);
+}
+
+body {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
