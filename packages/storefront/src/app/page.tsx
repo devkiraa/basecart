@@ -80,6 +80,14 @@ export default function Storefront() {
   const [custPassword, setCustPassword] = useState("");
   const [custNameInput, setCustNameInput] = useState("");
   const [authError, setAuthError] = useState("");
+  const [selectedPolicy, setSelectedPolicy] = useState<{ title: string; content: string } | null>(null);
+  // Customer recovery states
+  const [showCustForgotView, setShowCustForgotView] = useState(false);
+  const [custForgotEmail, setCustForgotEmail] = useState("");
+  const [custForgotSent, setCustForgotSent] = useState(false);
+  const [custResetToken, setCustResetToken] = useState("");
+  const [custNewPassword, setCustNewPassword] = useState("");
+  const [custResetSuccess, setCustResetSuccess] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<any[]>([]);
 
@@ -94,6 +102,53 @@ export default function Storefront() {
   const [loadingCheckout, setLoadingCheckout] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
 
+  // Dynamic SEO Client-side Update
+  useEffect(() => {
+    if (storeInfo) {
+      document.title = `${storeInfo.storeName} | Online Shop`;
+
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement("meta");
+        metaDesc.setAttribute("name", "description");
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.setAttribute(
+        "content",
+        `Shop live catalog items on ${storeInfo.storeName}. Secure checkout and fast delivery.`
+      );
+
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement("meta");
+        ogTitle.setAttribute("property", "og:title");
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.setAttribute("content", `${storeInfo.storeName} | Online Shop`);
+
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (!ogDesc) {
+        ogDesc = document.createElement("meta");
+        ogDesc.setAttribute("property", "og:description");
+        document.head.appendChild(ogDesc);
+      }
+      ogDesc.setAttribute(
+        "content",
+        `Explore great collections at ${storeInfo.storeName}.`
+      );
+
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (!ogImage) {
+        ogImage = document.createElement("meta");
+        ogImage.setAttribute("property", "og:image");
+        document.head.appendChild(ogImage);
+      }
+      if (storeInfo.branding?.logoUrl) {
+        ogImage.setAttribute("content", storeInfo.branding.logoUrl);
+      }
+    }
+  }, [storeInfo]);
+
   // Resolve subdomain from window location
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -101,6 +156,15 @@ export default function Storefront() {
       const parts = host.split(".");
       if (parts.length >= 2 && parts[0] !== "localhost" && parts[0] !== "www") {
         setSubdomain(parts[0]);
+      }
+
+      // Check customer reset password token in query params
+      const params = new URLSearchParams(window.location.search);
+      const tokenParam = params.get("token");
+      if (tokenParam) {
+        setCustResetToken(tokenParam);
+        setShowAuthModal(true);
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     }
   }, []);
@@ -392,6 +456,46 @@ export default function Storefront() {
     }
   };
 
+  const handleCustomerForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      const res = await fetch(`${API_URL}/auth/customer/forgot-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-subdomain": subdomain,
+        },
+        body: JSON.stringify({ email: custForgotEmail }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      setCustForgotSent(true);
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
+  const handleCustomerResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError("");
+    try {
+      const res = await fetch(`${API_URL}/auth/customer/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-subdomain": subdomain,
+        },
+        body: JSON.stringify({ token: custResetToken, newPassword: custNewPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Reset failed");
+      setCustResetSuccess(true);
+    } catch (err: any) {
+      setAuthError(err.message);
+    }
+  };
+
   const fetchCustomerOrders = async (tokenStr: string) => {
     try {
       const res = await fetch(`${API_URL}/store/${subdomain}/my-orders`, {
@@ -440,9 +544,40 @@ export default function Storefront() {
   // --- Loading screen ---
   if (loadingStore) {
     return (
-      <div className="min-h-screen bg-white flex flex-col items-center justify-center font-sans">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
-        <p className="text-slate-500 font-medium text-sm">Resolving subdomain storefront metadata...</p>
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+        {/* Header Skeleton */}
+        <header className="bg-white border-b border-slate-200 h-16 px-8 flex items-center justify-between shadow-sm">
+          <div className="h-6 w-32 bg-slate-200 rounded animate-shimmer" />
+          <div className="flex gap-4">
+            <div className="h-6 w-16 bg-slate-200 rounded animate-shimmer" />
+            <div className="h-6 w-8 bg-slate-200 rounded animate-shimmer" />
+          </div>
+        </header>
+
+        {/* Main Skeleton Grid */}
+        <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10 space-y-6">
+          <div className="space-y-2">
+            <div className="h-6 w-48 bg-slate-200 rounded animate-shimmer" />
+            <div className="h-4 w-32 bg-slate-200 rounded animate-shimmer" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {Array.from({ length: 6 }).map((_, idx) => (
+              <div key={idx} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col space-y-4 p-5">
+                <div className="aspect-video w-full bg-slate-200 rounded animate-shimmer" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-5 bg-slate-200 rounded animate-shimmer w-2/3" />
+                  <div className="h-3 bg-slate-200 rounded animate-shimmer w-full" />
+                  <div className="h-3 bg-slate-200 rounded animate-shimmer w-5/6" />
+                </div>
+                <div className="flex justify-between items-center pt-2">
+                  <div className="h-5 bg-slate-200 rounded animate-shimmer w-1/4" />
+                  <div className="h-8 bg-slate-200 rounded animate-shimmer w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </main>
       </div>
     );
   }
@@ -481,38 +616,94 @@ export default function Storefront() {
     );
   }
 
-  const primaryColor = storeInfo.branding?.primaryColor || "#2563EB";
+  const theme = storeInfo?.theme;
+  const templateBase = theme?.templateBase || "Aura";
+  const primaryColor = theme?.colors?.primary || storeInfo?.branding?.primaryColor || "#2563EB";
+  const logoUrl = theme?.logoUrl || storeInfo?.branding?.logoUrl || "";
+
+  const getHeroTitle = () => theme?.pageContent?.home?.heroTitle || "BUILT FOR PERFORMANCE";
+  const getHeroSubtext = () => theme?.pageContent?.home?.heroSubtext || "Premium active gear for those who never compromise.";
+  const getCtaText = () => theme?.pageContent?.home?.ctaText || "SHOP NOW";
+
+  const getCatalogTitle = () => theme?.pageContent?.catalog?.pageTitle || "Our Products";
+  const getCatalogSubtext = () => theme?.pageContent?.catalog?.pageSubtext || "Pick from our premium store items";
+
+  const getCheckoutTitle = () => theme?.pageContent?.checkout?.pageTitle || "Shipping & Checkout";
+  const getCheckoutInstructions = () => theme?.pageContent?.checkout?.instructions || "Enter billing details to complete checkout.";
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
       {/* Store Header */}
-      <header className="bg-white border-b border-slate-200 h-16 sticky top-0 z-20 px-8 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-3">
-          {storeInfo.branding?.logoUrl ? (
-            <img src={storeInfo.branding.logoUrl} alt={storeInfo.storeName} className="h-8 object-contain" />
+      <header 
+        className={`bg-white border-b sticky top-0 z-20 px-8 flex items-center justify-between shadow-sm h-16 ${
+          templateBase === "Origin" 
+            ? "border-double border-b-4 border-slate-300 font-serif" 
+            : "border-slate-200"
+        }`}
+        style={{ borderTop: `4px solid ${primaryColor}` }}
+      >
+        {/* Left Side: Logo/Name */}
+        <div className="flex items-center gap-3 select-none cursor-pointer" onClick={() => setView("catalog")}>
+          {logoUrl ? (
+            <img src={logoUrl} alt={storeInfo.storeName} className="h-8 max-w-[150px] object-contain" />
           ) : (
-            <span className="text-xl font-bold tracking-tight text-slate-900">{storeInfo.storeName}</span>
+            <span className={`text-xl font-bold tracking-tight text-slate-900 uppercase ${
+              templateBase === "Pulse" ? "tracking-widest font-black" : templateBase === "Origin" ? "font-serif font-bold italic" : ""
+            }`}>
+              {storeInfo.storeName}
+            </span>
           )}
         </div>
 
-        {/* Local Sandbox Subdomain Switcher */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
-          <span className="text-xs font-semibold text-slate-500">Subdomain:</span>
-          <input
-            type="text"
-            value={subdomain}
-            onChange={(e) => setSubdomain(e.target.value)}
-            className="bg-transparent border-none text-xs font-bold text-slate-900 focus:outline-none w-20"
-          />
-        </div>
+        {/* Center: Navigation / Search based on template */}
+        {templateBase === "Pulse" ? (
+          <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1 w-64">
+            <span className="text-xs text-slate-400">🔍</span>
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              className="bg-transparent border-none text-xs w-full focus:outline-none text-slate-600"
+            />
+          </div>
+        ) : templateBase === "Origin" ? (
+          <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-wider text-slate-600">
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Home</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Catalog</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors">About</span>
+          </div>
+        ) : templateBase === "Stride" ? (
+          <div className="hidden md:flex items-center gap-6 text-sm font-extrabold uppercase tracking-wide text-slate-600">
+            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Home</span>
+            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Collections</span>
+            <span className="cursor-pointer hover:text-slate-950 transition-colors">Shop</span>
+          </div>
+        ) : (
+          /* Aura default center nav */
+          <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Home</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Shop</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("cart")}>Cart</span>
+          </div>
+        )}
 
-        {/* Customer Actions */}
+        {/* Right Side: Local Subdomain Swapper + Customer Actions */}
         <div className="flex items-center gap-6">
+          {/* Local Sandbox Subdomain Switcher */}
+          <div className="hidden lg:flex items-center gap-1 bg-slate-55 border border-slate-200 rounded-full px-2.5 py-1">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Subdomain:</span>
+            <input
+              type="text"
+              value={subdomain}
+              onChange={(e) => setSubdomain(e.target.value)}
+              className="bg-transparent border-none text-[10px] font-bold text-slate-800 focus:outline-none w-16"
+            />
+          </div>
+
           {custName ? (
             <div className="flex items-center gap-4 text-sm font-medium">
               <button
                 onClick={() => setView(view === "orders" ? "catalog" : "orders")}
-                className="hover:text-blue-600 text-slate-600 flex items-center gap-1.5 transition-colors"
+                className="hover:text-slate-900 text-slate-600 flex items-center gap-1.5 transition-colors"
               >
                 <User className="h-4 w-4" /> Hi, {custName}
               </button>
@@ -526,7 +717,7 @@ export default function Storefront() {
           ) : (
             <button
               onClick={() => setShowAuthModal(true)}
-              className="text-sm font-medium text-slate-600 hover:text-blue-600 flex items-center gap-1.5 transition-colors"
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1.5 transition-colors"
             >
               <User className="h-4 w-4" /> Account
             </button>
@@ -534,7 +725,7 @@ export default function Storefront() {
 
           <button
             onClick={() => setView("cart")}
-            className="relative p-1.5 text-slate-600 hover:text-blue-600 transition-colors"
+            className="relative p-1.5 text-slate-600 hover:text-slate-900 transition-colors"
           >
             <ShoppingCart className="h-5 w-5" />
             {cart.length > 0 && (
@@ -554,9 +745,101 @@ export default function Storefront() {
         {/* VIEW 1: Catalog */}
         {view === "catalog" && (
           <div className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight">Our Products</h2>
-              <p className="text-sm text-slate-500">Pick from our premium store items</p>
+            {/* Template Base Hero Banner Layout */}
+            {templateBase === "Pulse" ? (
+              <div className="bg-slate-950 text-white rounded-2xl p-8 md:p-16 text-center relative overflow-hidden mb-8 border border-slate-800/40 shadow-xl select-none">
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-transparent to-pink-500/10 opacity-60"></div>
+                <div className="relative z-10 max-w-2xl mx-auto space-y-4">
+                  <span className="text-xs tracking-widest font-black uppercase" style={{ color: primaryColor }}>New Season Arrival</span>
+                  <h1 className="text-3xl md:text-6xl font-black uppercase tracking-tighter leading-none">
+                    {getHeroTitle()}
+                  </h1>
+                  <p className="text-slate-400 text-sm md:text-base max-w-lg mx-auto">
+                    {getHeroSubtext()}
+                  </p>
+                  <button
+                    onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                    style={{ backgroundColor: primaryColor }}
+                    className="px-8 py-3.5 text-white text-xs font-black rounded-full shadow-lg hover:scale-105 transition-transform uppercase tracking-widest"
+                  >
+                    {getCtaText()}
+                  </button>
+                </div>
+              </div>
+            ) : templateBase === "Stride" ? (
+              <div className="bg-white border border-slate-200 rounded-2xl p-8 md:p-12 mb-8 flex flex-col md:flex-row items-center justify-between gap-8 shadow-sm select-none">
+                <div className="space-y-4 text-left max-w-md">
+                  <h1 className="text-3xl md:text-5xl font-black text-slate-950 uppercase tracking-tight leading-none">
+                    {getHeroTitle()}
+                  </h1>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    {getHeroSubtext()}
+                  </p>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {["Premium Training", "Active Comfort", "Indoor & Gym", "High-Performance Gear"].map((pill) => (
+                      <span key={pill} className="text-xs font-bold px-3 py-1 border border-slate-200 rounded-full text-slate-600 bg-slate-50">
+                        {pill}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                    style={{ backgroundColor: primaryColor }}
+                    className="px-6 py-3 text-white text-xs font-extrabold rounded shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider"
+                  >
+                    {getCtaText()}
+                  </button>
+                </div>
+                <div className="w-full md:w-72 aspect-video bg-gradient-to-br from-slate-100 to-slate-200/50 rounded-xl border border-slate-200 flex items-center justify-center text-slate-350 text-xs font-black uppercase tracking-wider shadow-inner select-none">
+                  [ Performance Gear Preview ]
+                </div>
+              </div>
+            ) : templateBase === "Origin" ? (
+              <div className="bg-white border-2 border-double border-slate-300 rounded-2xl p-8 md:p-14 mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center shadow-sm select-none">
+                <div className="space-y-4 text-left font-serif">
+                  <h1 className="text-3xl md:text-4xl font-bold text-slate-900 leading-tight">
+                    {getHeroTitle()}
+                  </h1>
+                  <p className="text-slate-500 text-sm font-sans leading-relaxed">
+                    {getHeroSubtext()}
+                  </p>
+                  <button
+                    onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                    style={{ backgroundColor: primaryColor }}
+                    className="px-6 py-2.5 text-white text-xs font-bold rounded font-sans shadow-sm hover:opacity-90 transition-opacity uppercase tracking-wider"
+                  >
+                    {getCtaText()}
+                  </button>
+                </div>
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex flex-col justify-center gap-2 select-none h-full font-sans">
+                  <div className="text-xs font-serif font-bold text-slate-400 uppercase tracking-widest text-center mb-1">Featured Product</div>
+                  <div className="h-24 bg-slate-100 rounded border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                    LIMITED EDITION PREMIUM GOODS
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Aura Layout
+              <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl p-8 md:p-12 text-center border border-slate-105 mb-8 select-none">
+                <h1 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight mb-4">
+                  {getHeroTitle()}
+                </h1>
+                <p className="text-slate-600 text-sm md:text-base max-w-xl mx-auto mb-6 leading-relaxed font-medium">
+                  {getHeroSubtext()}
+                </p>
+                <button
+                  onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                  style={{ backgroundColor: primaryColor }}
+                  className="px-6 py-3 text-white text-sm font-extrabold rounded-lg shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider"
+                >
+                  {getCtaText()}
+                </button>
+              </div>
+            )}
+
+            <div id="products-grid" className="scroll-mt-20">
+              <h2 className="text-2xl font-bold tracking-tight">{getCatalogTitle()}</h2>
+              <p className="text-sm text-slate-500">{getCatalogSubtext()}</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -598,9 +881,10 @@ export default function Storefront() {
                   </div>
                 ))
               ) : (
-                <div className="col-span-full py-16 text-center text-slate-400">
-                  <Package className="h-12 w-12 mx-auto mb-3 text-slate-300" />
-                  <p className="font-medium">No products listed on this storefront yet.</p>
+                <div className="col-span-full py-16 text-center bg-white border border-slate-200 rounded-card shadow-sm p-8 flex flex-col items-center justify-center space-y-3">
+                  <Package className="h-12 w-12 text-slate-300" />
+                  <h3 className="font-bold text-slate-800 text-base">Catalog is empty</h3>
+                  <p className="text-sm text-slate-400 max-w-sm">This merchant hasn't published any items to their online store yet. Check back soon!</p>
                 </div>
               )}
             </div>
@@ -735,7 +1019,10 @@ export default function Storefront() {
               <button onClick={() => setView("cart")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <h2 className="text-lg font-bold">Shipping & Checkout</h2>
+              <div>
+                <h2 className="text-lg font-bold">{getCheckoutTitle()}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">{getCheckoutInstructions()}</p>
+              </div>
             </div>
 
             {checkoutError && (
@@ -912,26 +1199,216 @@ export default function Storefront() {
                   </div>
                 ))
               ) : (
-                <div className="bg-white border border-slate-200 rounded-card p-12 shadow-card text-center text-slate-400">
-                  No orders found for your customer account.
+                <div className="bg-white border border-slate-200 rounded-card p-12 shadow-card text-center flex flex-col items-center justify-center space-y-3">
+                  <ShoppingCart className="h-10 w-10 text-slate-300" />
+                  <h3 className="font-bold text-slate-800 text-base">No orders found</h3>
+                  <p className="text-sm text-slate-400 max-w-sm">You haven't placed any orders with this storefront yet.</p>
+                  <button
+                    onClick={() => setView("catalog")}
+                    style={{ backgroundColor: primaryColor }}
+                    className="px-4 py-2 text-white text-xs font-semibold rounded shadow hover:opacity-90 transition-opacity"
+                  >
+                    Start Shopping
+                  </button>
                 </div>
               )}
             </div>
           </div>
         )}
+        {/* Storefront Footer Policies */}
+        <footer className="mt-12 border-t border-slate-200 bg-white py-8 px-6 text-center select-none shrink-0 w-full">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+            <div>
+              &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+            </div>
+            <div className="flex gap-4 font-medium text-slate-600">
+              {storeInfo.termsOfService && (
+                <button
+                  onClick={() => setSelectedPolicy({ title: "Terms of Service", content: storeInfo.termsOfService })}
+                  className="hover:underline"
+                >
+                  Terms of Service
+                </button>
+              )}
+              {storeInfo.privacyPolicy && (
+                <button
+                  onClick={() => setSelectedPolicy({ title: "Privacy Policy", content: storeInfo.privacyPolicy })}
+                  className="hover:underline"
+                >
+                  Privacy Policy
+                </button>
+              )}
+              {storeInfo.refundPolicy && (
+                <button
+                  onClick={() => setSelectedPolicy({ title: "Refund Policy", content: storeInfo.refundPolicy })}
+                  className="hover:underline"
+                >
+                  Refund Policy
+                </button>
+              )}
+            </div>
+          </div>
+        </footer>
       </main>
+
+      {/* CUSTOMER POLICY MODAL */}
+      {selectedPolicy && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-white max-w-xl w-full p-6 border border-slate-200 rounded-card shadow-lg relative flex flex-col max-h-[80vh]">
+            <button
+              onClick={() => setSelectedPolicy(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg"
+            >
+              &times;
+            </button>
+            <h3 className="text-lg font-bold mb-4 font-sans text-slate-900 border-b border-slate-100 pb-2">
+              {selectedPolicy.title}
+            </h3>
+            <div className="overflow-y-auto text-sm text-slate-600 leading-relaxed font-sans pr-2 whitespace-pre-wrap">
+              {selectedPolicy.content}
+            </div>
+            <div className="mt-6 flex justify-end border-t border-slate-100 pt-3">
+              <button
+                onClick={() => setSelectedPolicy(null)}
+                style={{ backgroundColor: primaryColor }}
+                className="px-4 py-1.5 text-white text-xs font-semibold rounded shadow hover:opacity-90 animate-fade-in"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CUSTOMER AUTH MODAL */}
       {showAuthModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
           <div className="bg-white max-w-sm w-full p-6 border border-slate-200 rounded-card shadow-lg relative">
             <button
-              onClick={() => setShowAuthModal(false)}
+              onClick={() => {
+                setShowAuthModal(false);
+                setShowCustForgotView(false);
+                setCustResetToken("");
+                setCustResetSuccess(false);
+                setCustForgotSent(false);
+                setAuthError("");
+              }}
               className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg"
             >
               &times;
             </button>
-            <h3 className="text-lg font-bold mb-4">{isCustLoginView ? "Customer Login" : "Customer Signup"}</h3>
+
+            {custResetToken ? (
+              <>
+                <h3 className="text-lg font-bold mb-4 font-sans text-slate-900">Reset Password</h3>
+                {authError && (
+                  <div className="mb-4 bg-red-50 text-red-700 p-2.5 rounded text-xs border border-red-100">
+                    {authError}
+                  </div>
+                )}
+                {custResetSuccess ? (
+                  <div className="space-y-4 text-center">
+                    <div className="bg-emerald-50 text-emerald-700 p-3 rounded text-xs border border-emerald-100">
+                      ✓ Your password has been reset successfully.
+                    </div>
+                    <button
+                      onClick={() => {
+                        setCustResetToken("");
+                        setCustResetSuccess(false);
+                        setShowCustForgotView(false);
+                        setIsCustLoginView(true);
+                      }}
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full py-2 text-white font-medium rounded text-sm"
+                    >
+                      Login Now
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCustomerResetPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        value={custNewPassword}
+                        onChange={(e) => setCustNewPassword(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                        placeholder="Min 6 characters"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full py-2 text-white font-medium rounded text-sm"
+                    >
+                      Update Password
+                    </button>
+                  </form>
+                )}
+              </>
+            ) : showCustForgotView ? (
+              <>
+                <h3 className="text-lg font-bold mb-4 font-sans text-slate-900">Recover Account</h3>
+                {authError && (
+                  <div className="mb-4 bg-red-50 text-red-700 p-2.5 rounded text-xs border border-red-100">
+                    {authError}
+                  </div>
+                )}
+                {custForgotSent ? (
+                  <div className="space-y-4 text-center">
+                    <div className="bg-emerald-50 text-emerald-700 p-3 rounded text-xs border border-emerald-100">
+                      ✓ If registered, a password reset link has been sent to your email.
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowCustForgotView(false);
+                        setCustForgotSent(false);
+                        setCustForgotEmail("");
+                      }}
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full py-2 text-white font-medium rounded text-sm"
+                    >
+                      Back to Login
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCustomerForgotPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={custForgotEmail}
+                        onChange={(e) => setCustForgotEmail(e.target.value)}
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded text-sm text-slate-900 focus:outline-none"
+                        placeholder="name@email.com"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      style={{ backgroundColor: primaryColor }}
+                      className="w-full py-2 text-white font-medium rounded text-sm"
+                    >
+                      Send Reset Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustForgotView(false)}
+                      className="w-full text-center text-xs text-slate-500 hover:text-slate-700 font-semibold"
+                    >
+                      Back to Login
+                    </button>
+                  </form>
+                )}
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-bold mb-4 font-sans text-slate-900">{isCustLoginView ? "Customer Login" : "Customer Signup"}</h3>
 
             {authError && (
               <div className="mb-4 bg-red-50 text-red-700 p-2.5 rounded text-xs border border-red-100">
@@ -981,6 +1458,20 @@ export default function Storefront() {
                   placeholder="••••••••"
                 />
               </div>
+              {isCustLoginView && (
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustForgotView(true);
+                      setAuthError("");
+                    }}
+                    className="text-xs text-blue-600 hover:underline font-semibold"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
               <button
                 type="submit"
                 style={{ backgroundColor: primaryColor }}

@@ -10,6 +10,8 @@ import {
   LogOut,
   Loader2,
   ShieldCheck,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 const API_URL = "http://localhost:3001";
@@ -25,16 +27,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
       try {
         const res = await fetch(`${API_URL}/admin/auth/me`, {
-          headers: {
-            // Support credentials via cookies, which Next.js forwards automatically
-            "Content-Type": "application/json",
-          },
-          // Send cookies
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
 
@@ -71,7 +70,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-2" />
         <p className="text-slate-500 text-sm">Verifying administrator session...</p>
       </div>
     );
@@ -88,59 +87,112 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between fixed h-full">
-        <div>
-          {/* Header branding */}
-          <div className="h-16 border-b border-slate-200 px-6 flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-blue-600" />
-            <span className="font-bold text-slate-800 text-lg">Basecart Admin</span>
+      <aside
+        style={{ width: collapsed ? 72 : 256 }}
+        className="bg-white border-r border-slate-200/80 flex flex-col fixed h-full transition-[width] duration-300 ease-in-out z-30"
+      >
+        {/* Header branding */}
+        <div className="h-14 border-b border-slate-100 px-4 flex items-center gap-3 shrink-0">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+            <ShieldCheck className="w-[18px] h-[18px] text-white" />
           </div>
+          {!collapsed && (
+            <span className="font-bold text-slate-800 text-[15px] whitespace-nowrap">
+              Basecart Admin
+            </span>
+          )}
+        </div>
 
-          {/* Navigation Links */}
-          <nav className="p-4 space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    isActive
-                      ? "bg-blue-50 text-blue-600"
-                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+        {/* Navigation Links */}
+        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                title={collapsed ? item.name : undefined}
+                className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
+                  collapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2.5"
+                } ${
+                  isActive
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                }`}
+              >
+                <Icon
+                  className={`w-[18px] h-[18px] shrink-0 ${
+                    isActive ? "text-indigo-600" : "text-slate-400"
                   }`}
-                >
-                  <Icon className={`w-5 h-5 ${isActive ? "text-blue-600" : "text-slate-400 group-hover:text-slate-600"}`} />
-                  {item.name}
-                </Link>
-              );
-            })}
-          </nav>
+                />
+                {!collapsed && <span>{item.name}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* Collapse toggle */}
+        <div className="px-3 py-2 border-t border-slate-100">
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className={`flex items-center gap-3 w-full rounded-lg text-[13px] font-medium text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-colors ${
+              collapsed ? "px-3 py-2 justify-center" : "px-3 py-2"
+            }`}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-[18px] h-[18px] shrink-0" />
+            ) : (
+              <>
+                <PanelLeftClose className="w-[18px] h-[18px] shrink-0" />
+                <span>Collapse</span>
+              </>
+            )}
+          </button>
         </div>
 
         {/* Footer Admin Info */}
-        <div className="p-4 border-t border-slate-200 bg-slate-50/50">
-          <div className="flex items-center justify-between">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Super Admin</p>
-              <p className="text-sm font-medium text-slate-700 truncate" title={admin.email}>
-                {admin.email}
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
-              title="Log out"
+        <div className="px-3 py-3 border-t border-slate-100 shrink-0">
+          <div className={`flex items-center ${collapsed ? "justify-center" : "gap-3"}`}>
+            <div
+              className="w-8 h-8 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0"
+              title={admin.email}
             >
-              <LogOut className="w-4 h-4" />
-            </button>
+              <span className="text-xs font-bold text-indigo-600">
+                {admin.email.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider leading-none mb-0.5">
+                  Admin
+                </p>
+                <p className="text-xs font-medium text-slate-700 truncate">
+                  {admin.email}
+                </p>
+              </div>
+            )}
+            {!collapsed && (
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors shrink-0"
+                title="Log out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="pl-64 flex-1 flex flex-col min-h-screen">
+      <main
+        style={{ paddingLeft: collapsed ? 72 : 256 }}
+        className="flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out"
+      >
         <div className="p-8 flex-1">{children}</div>
       </main>
     </div>

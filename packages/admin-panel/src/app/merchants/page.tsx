@@ -176,102 +176,114 @@ export default function MerchantsListPage() {
         </div>
 
         {/* Table View */}
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 bg-white border border-slate-200 rounded-xl shadow-sm">
-            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-            <p className="text-slate-500 text-sm">Querying active tenant accounts...</p>
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                    <th className="px-6 py-4">Store details</th>
-                    <th className="px-6 py-4">Subdomain</th>
-                    <th className="px-6 py-4">Subscription Plan</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4">Created Date</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
+        {/* Table View */}
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <th className="px-6 py-4">Store details</th>
+                  <th className="px-6 py-4">Subdomain</th>
+                  <th className="px-6 py-4">Subscription Plan</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Created Date</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+                {loading ? (
+                  Array.from({ length: 5 }).map((_, idx) => (
+                    <tr key={idx}>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-slate-200 rounded w-28 animate-shimmer mb-1" />
+                        <div className="h-3 bg-slate-200 rounded w-36 animate-shimmer" />
+                      </td>
+                      <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20 animate-shimmer" /></td>
+                      <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                      <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                      <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24 animate-shimmer" /></td>
+                      <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto animate-shimmer" /></td>
+                    </tr>
+                  ))
+                ) : filteredMerchants.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
+                      <div className="flex flex-col items-center justify-center space-y-2 py-8">
+                        <Search className="h-8 w-8 text-slate-300" />
+                        <span className="font-semibold text-slate-700 text-sm">No matching stores</span>
+                        <span className="text-xs text-slate-400">Try adjusting your filters or search keywords.</span>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
-                  {filteredMerchants.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-6 py-12 text-center text-slate-400 font-medium">
-                        No stores found matching active criteria.
+                ) : (
+                  filteredMerchants.map((m) => (
+                    <tr
+                      key={m.tenantId}
+                      onClick={() => router.push(`/merchants/${m.tenantId}`)}
+                      className="hover:bg-slate-50/60 cursor-pointer transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
+                            <Building2 className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <div className="font-semibold text-slate-900">{m.storeName}</div>
+                            <div className="text-xs text-slate-400">ID: {m.tenantId.substring(0, 8)}...</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono text-xs">{m.subdomain}.localhost</td>
+                      <td className="px-6 py-4">
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                          m.plan === "pro"
+                            ? "bg-purple-50 text-purple-700 border border-purple-100"
+                            : m.plan === "growth"
+                            ? "bg-blue-50 text-blue-700 border border-blue-100"
+                            : "bg-slate-100 text-slate-600 border border-slate-200/55"
+                        }`}>
+                          {m.plan}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                          m.status === "active"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                            : "bg-red-50 text-red-700 border border-red-100"
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-emerald-500" : "bg-red-500"}`} />
+                          {m.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {new Date(m.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        {m.status === "active" ? (
+                          <button
+                            onClick={(e) => triggerStatusChange(m, "suspended", e)}
+                            className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <Lock className="w-3.5 h-3.5" />
+                            Suspend
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => triggerStatusChange(m, "active", e)}
+                            className="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
+                          >
+                            <Unlock className="w-3.5 h-3.5" />
+                            Activate
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  ) : (
-                    filteredMerchants.map((m) => (
-                      <tr
-                        key={m.tenantId}
-                        onClick={() => router.push(`/merchants/${m.tenantId}`)}
-                        className="hover:bg-slate-50/60 cursor-pointer transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500">
-                              <Building2 className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <div className="font-semibold text-slate-900">{m.storeName}</div>
-                              <div className="text-xs text-slate-400">ID: {m.tenantId.substring(0, 8)}...</div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs">{m.subdomain}.localhost</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                            m.plan === "pro"
-                              ? "bg-purple-50 text-purple-700 border border-purple-100"
-                              : m.plan === "growth"
-                              ? "bg-blue-50 text-blue-700 border border-blue-100"
-                              : "bg-slate-100 text-slate-600 border border-slate-200/55"
-                          }`}>
-                            {m.plan}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                            m.status === "active"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                              : "bg-red-50 text-red-700 border border-red-100"
-                          }`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${m.status === "active" ? "bg-emerald-500" : "bg-red-500"}`} />
-                            {m.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
-                          {new Date(m.createdAt).toLocaleDateString()}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {m.status === "active" ? (
-                            <button
-                              onClick={(e) => triggerStatusChange(m, "suspended", e)}
-                              className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
-                            >
-                              <Lock className="w-3.5 h-3.5" />
-                              Suspend
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => triggerStatusChange(m, "active", e)}
-                              className="px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-600 hover:bg-emerald-50 text-xs font-semibold transition-colors inline-flex items-center gap-1.5"
-                            >
-                              <Unlock className="w-3.5 h-3.5" />
-                              Activate
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
 
         {/* Confirmation Modal */}
         {confirmModal.show && confirmModal.merchant && (

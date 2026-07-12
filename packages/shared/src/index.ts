@@ -47,6 +47,9 @@ export const StoreSettingsSchema = z.object({
         .optional(),
     })
     .optional(),
+  termsOfService: z.string().optional(),
+  privacyPolicy: z.string().optional(),
+  refundPolicy: z.string().optional(),
 }).strict();
 
 export type StoreSettingsInput = z.infer<typeof StoreSettingsSchema>;
@@ -101,6 +104,7 @@ export type DiscountCodeInput = z.infer<typeof DiscountCodeSchema>;
 export const CartItemSchema = z.object({
   productId: z.string(),
   quantity: z.number().int().positive(),
+  variantId: z.string().optional().nullable(),
 });
 
 export const CartValidateSchema = z.object({

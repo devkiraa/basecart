@@ -63,6 +63,7 @@ describe("Basecart Integration Tests", () => {
   let tokenA = "";
   let tenantIdA = "";
   let subdomainA = "mystore-a";
+  let adminToken = "";
 
   let tokenB = "";
   let tenantIdB = "";
@@ -114,6 +115,26 @@ describe("Basecart Integration Tests", () => {
     const bodyB = JSON.parse(resB.body);
     tokenB = bodyB.accessToken;
     tenantIdB = bodyB.tenantId;
+
+    // Mark test merchant accounts as verified to prevent settings config locks in existing tests
+    await Promise.all([
+      ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TENANT#${tenantIdA}`, SK: `USER#merchant.a@test.com` },
+          UpdateExpression: "SET emailVerified = :ev",
+          ExpressionAttributeValues: { ":ev": true }
+        })
+      ),
+      ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TENANT#${tenantIdB}`, SK: `USER#merchant.b@test.com` },
+          UpdateExpression: "SET emailVerified = :ev",
+          ExpressionAttributeValues: { ":ev": true }
+        })
+      )
+    ]);
   });
 
   describe("1. Tenant Isolation", () => {
@@ -571,7 +592,6 @@ describe("Basecart Integration Tests", () => {
   });
 
   describe("6. Super-Admin Console & Store Suspension", () => {
-    let adminToken: string;
 
     it("should allow registering a new super-admin and logging in", async () => {
       // 1. Signup admin
@@ -1231,6 +1251,340 @@ describe("Basecart Integration Tests", () => {
         }
       });
       expect(resUpdate.statusCode).toBe(400);
+    });
+  });
+
+  describe("10. Themes Integration Tests", () => {
+    let draftThemeId = "";
+
+    it("should allow a merchant to fetch their default theme", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/store/themes",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const themes = JSON.parse(res.body);
+      expect(themes.length).toBeGreaterThan(0);
+      
+      const published = themes.find((t: any) => t.status === "published");
+      expect(published).toBeDefined();
+      expect(published.themeId).toBe("default");
+    });
+
+    it("should allow a merchant to create a new draft theme", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/store/themes",
+        headers: { Authorization: `Bearer ${tokenA}` },
+        payload: {
+          name: "Pulse Draft Theme",
+          templateBase: "Pulse",
+          colors: { primary: "#EF4444", accent: "#F59E0B" },
+          logoUrl: "https://example.com/logo.png",
+        },
+      });
+      expect(res.statusCode).toBe(201);
+      const theme = JSON.parse(res.body);
+      expect(theme.themeId).toBeDefined();
+      expect(theme.status).toBe("draft");
+      expect(theme.templateBase).toBe("Pulse");
+      expect(theme.colors.primary).toBe("#EF4444");
+      
+      draftThemeId = theme.themeId;
+    });
+
+    it("should allow updating a draft theme", async () => {
+      const res = await app.inject({
+        method: "PATCH",
+        url: `/store/themes/${draftThemeId}`,
+        headers: { Authorization: `Bearer ${tokenA}` },
+        payload: {
+          name: "Updated Pulse Theme",
+          colors: { primary: "#3B82F6", accent: "#10B981" },
+        },
+      });
+      expect(res.statusCode).toBe(200);
+      const theme = JSON.parse(res.body);
+      expect(theme.name).toBe("Updated Pulse Theme");
+      expect(theme.colors.primary).toBe("#3B82F6");
+      expect(theme.colors.accent).toBe("#10B981");
+    });
+
+    it("should prevent deleting the currently active published theme", async () => {
+      const res = await app.inject({
+        method: "DELETE",
+        url: "/store/themes/default",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(JSON.parse(res.body).error).toContain("Cannot delete the currently published theme");
+    });
+
+    it("should allow publishing a draft theme, demoting the previous active theme, and incrementing the version", async () => {
+      // 1. Publish the draft theme
+      const resPublish = await app.inject({
+        method: "POST",
+        url: `/store/themes/${draftThemeId}/publish`,
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(resPublish.statusCode).toBe(200);
+      const publishedTheme = JSON.parse(resPublish.body);
+      expect(publishedTheme.status).toBe("published");
+      expect(publishedTheme.version).toBe(2); // Initial draft was version 1, incremented to 2 on publish
+
+      // 2. Fetch all themes and verify active statuses
+      const resList = await app.inject({
+        method: "GET",
+        url: "/store/themes",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      const themes = JSON.parse(resList.body);
+      const oldDefault = themes.find((t: any) => t.themeId === "default");
+      const newActive = themes.find((t: any) => t.themeId === draftThemeId);
+
+      expect(oldDefault.status).toBe("draft");
+      expect(newActive.status).toBe("published");
+
+      // 3. Confirm that the store metadata branding was updated
+      const resMetadata = await app.inject({
+        method: "GET",
+        url: "/store/settings",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      const settings = JSON.parse(resMetadata.body);
+      expect(settings.branding.primaryColor).toBe("#3B82F6");
+      expect(settings.branding.logoUrl).toBe("https://example.com/logo.png");
+    });
+
+    it("should allow deleting a draft theme", async () => {
+      // The original default theme is now a draft, so we should be able to delete it
+      const resDelete = await app.inject({
+        method: "DELETE",
+        url: "/store/themes/default",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(resDelete.statusCode).toBe(200);
+
+      // Verify it is no longer listed
+      const resList = await app.inject({
+        method: "GET",
+        url: "/store/themes",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      const themes = JSON.parse(resList.body);
+      const deletedThemeExists = themes.some((t: any) => t.themeId === "default");
+      expect(deletedThemeExists).toBe(false);
+    });
+  });
+
+  describe("11. Auth Recovery & Email Verification", () => {
+    it("should return generic success for forgot-password regardless of email existence", async () => {
+      const resNonExistent = await app.inject({
+        method: "POST",
+        url: "/auth/merchant/forgot-password",
+        payload: { email: "nonexistent-merchant-email-recovery@basecart.io" },
+      });
+      expect(resNonExistent.statusCode).toBe(200);
+      expect(JSON.parse(resNonExistent.body).message).toContain("password reset link has been sent");
+
+      const resExisting = await app.inject({
+        method: "POST",
+        url: "/auth/merchant/forgot-password",
+        payload: { email: "merchant.a@test.com" },
+      });
+      expect(resExisting.statusCode).toBe(200);
+      expect(JSON.parse(resExisting.body).message).toContain("password reset link has been sent");
+    });
+
+    it("should fail when reset token is expired or reused", async () => {
+      const token = crypto.randomUUID();
+      const expiredTime = new Date(Date.now() - 1000).toISOString();
+
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `RESET_TOKEN#${token}`,
+            SK: "METADATA",
+            email: "merchant.a@test.com",
+            tenantId: tenantIdA,
+            type: "merchant",
+            expiresAt: expiredTime,
+            ttl: Math.floor(Date.now() / 1000) - 10,
+          },
+        })
+      );
+
+      const resResetExpired = await app.inject({
+        method: "POST",
+        url: "/auth/merchant/reset-password",
+        payload: { token, newPassword: "newsecretpassword123" },
+      });
+      expect(resResetExpired.statusCode).toBe(400);
+      expect(JSON.parse(resResetExpired.body).error).toContain("expired");
+
+      const activeToken = crypto.randomUUID();
+      const futureTime = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `RESET_TOKEN#${activeToken}`,
+            SK: "METADATA",
+            email: "merchant.a@test.com",
+            tenantId: tenantIdA,
+            type: "merchant",
+            expiresAt: futureTime,
+            ttl: Math.floor(Date.now() / 1000) + 600,
+          },
+        })
+      );
+
+      const resResetSuccess = await app.inject({
+        method: "POST",
+        url: "/auth/merchant/reset-password",
+        payload: { token: activeToken, newPassword: "newsecretpassword123" },
+      });
+      expect(resResetSuccess.statusCode).toBe(200);
+
+      const resResetReused = await app.inject({
+        method: "POST",
+        url: "/auth/merchant/reset-password",
+        payload: { token: activeToken, newPassword: "anotherpassword999" },
+      });
+      expect(resResetReused.statusCode).toBe(400);
+      expect(JSON.parse(resResetReused.body).error).toContain("Invalid or expired");
+    });
+
+    it("should prevent Razorpay credential setup until merchant email is verified", async () => {
+      await ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: { PK: `TENANT#${tenantIdA}`, SK: "USER#merchant.a@test.com" },
+          UpdateExpression: "SET emailVerified = :ev",
+          ExpressionAttributeValues: { ":ev": false },
+        })
+      );
+
+      const resConfigUnverified = await app.inject({
+        method: "PATCH",
+        url: "/store/settings",
+        headers: { Authorization: `Bearer ${tokenA}` },
+        payload: {
+          storeName: "My Verified Store Test",
+          razorpayKey: "rzp_test_unverified",
+          razorpaySecret: "rzp_secret_unverified",
+        },
+      });
+      expect(resConfigUnverified.statusCode).toBe(400);
+      expect(JSON.parse(resConfigUnverified.body).error).toContain("verification required");
+
+      const verifyToken = crypto.randomUUID();
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `VERIFY_TOKEN#${verifyToken}`,
+            SK: "METADATA",
+            email: "merchant.a@test.com",
+            tenantId: tenantIdA,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+            ttl: Math.floor(Date.now() / 1000) + 600,
+          },
+        })
+      );
+
+      const resVerify = await app.inject({
+        method: "GET",
+        url: `/auth/merchant/verify-email?token=${verifyToken}`,
+      });
+      expect(resVerify.statusCode).toBe(302);
+
+      const resConfigVerified = await app.inject({
+        method: "PATCH",
+        url: "/store/settings",
+        headers: { Authorization: `Bearer ${tokenA}` },
+        payload: {
+          storeName: "My Verified Store Test",
+          razorpayKey: "rzp_test_verified",
+          razorpaySecret: "rzp_secret_verified",
+        },
+      });
+      expect(resConfigVerified.statusCode).toBe(200);
+    });
+  });
+
+  describe("12. Add-On Billing & Admin Plan Control", () => {
+    it("should initialize statements history and generate billing statements for new add-ons", async () => {
+      const resGetBilling = await app.inject({
+        method: "GET",
+        url: "/store/billing",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(resGetBilling.statusCode).toBe(200);
+      const billingData = JSON.parse(resGetBilling.body);
+      expect(billingData.statements.length).toBeGreaterThanOrEqual(2);
+
+      const resPatch = await app.inject({
+        method: "PATCH",
+        url: "/store/settings",
+        headers: { Authorization: `Bearer ${tokenA}` },
+        payload: {
+          storeName: "Billing Track Store",
+          addOns: ["shiprocket"],
+        },
+      });
+      expect(resPatch.statusCode).toBe(200);
+
+      const resGetUpdatedBilling = await app.inject({
+        method: "GET",
+        url: "/store/billing",
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      const updatedBilling = JSON.parse(resGetUpdatedBilling.body);
+      expect(updatedBilling.statements.length).toBeGreaterThan(2);
+
+      const latestInvoice = updatedBilling.statements.find((s: any) => s.addOns.includes("shiprocket"));
+      expect(latestInvoice).toBeDefined();
+      expect(latestInvoice.amount).toBe(1499);
+
+      const resDownloadPdf = await app.inject({
+        method: "GET",
+        url: `/store/billing/statement/${latestInvoice.invoiceId}`,
+        headers: { Authorization: `Bearer ${tokenA}` },
+      });
+      expect(resDownloadPdf.statusCode).toBe(200);
+      expect(resDownloadPdf.headers["content-type"]).toBe("application/pdf");
+    });
+
+    it("should return detailed billing info in admin view and allow plan tier adjustments", async () => {
+      const resAdminDetail = await app.inject({
+        method: "GET",
+        url: `/admin/merchants/${tenantIdA}/details`,
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      expect(resAdminDetail.statusCode).toBe(200);
+      const detailData = JSON.parse(resAdminDetail.body);
+      expect(detailData.store.plan).toBe("growth");
+      expect(detailData.statements.length).toBeGreaterThan(0);
+
+      const resAdminPlan = await app.inject({
+        method: "PATCH",
+        url: `/admin/merchants/${tenantIdA}/plan`,
+        headers: { Authorization: `Bearer ${adminToken}` },
+        payload: { plan: "pro" },
+      });
+      expect(resAdminPlan.statusCode).toBe(200);
+
+      const resAdminDetailUpdated = await app.inject({
+        method: "GET",
+        url: `/admin/merchants/${tenantIdA}/details`,
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const detailDataUpdated = JSON.parse(resAdminDetailUpdated.body);
+      expect(detailDataUpdated.store.plan).toBe("pro");
     });
   });
 });

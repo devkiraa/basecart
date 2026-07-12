@@ -4,8 +4,12 @@ import {
   QueryCommand,
   GetCommand,
   TransactWriteCommand,
+  PutCommand,
+  UpdateCommand,
+  DeleteCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { ddbDocClient } from "../lib/aws";
+import { SendEmailCommand } from "@aws-sdk/client-ses";
+import { ddbDocClient, sesClient } from "../lib/aws";
 import { authService } from "../services/auth";
 import { resolveStorefrontTenant, authenticateMerchant, authenticateCustomer } from "../middleware/auth";
 import {
@@ -16,6 +20,26 @@ import {
 } from "@basecart/shared";
 
 const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
+
+async function sendEmailSafely(to: string, subject: string, htmlContent: string) {
+  try {
+    await sesClient.send(
+      new SendEmailCommand({
+        Source: "noreply@basecart.io",
+        Destination: { ToAddresses: [to] },
+        Message: {
+          Subject: { Data: subject },
+          Body: {
+            Html: { Data: htmlContent }
+          }
+        }
+      })
+    );
+    console.log(`✅ Email sent successfully to ${to}`);
+  } catch (error) {
+    console.error(`❌ Failed to send email to ${to}:`, error);
+  }
+}
 
 export async function authRoutes(fastify: FastifyInstance) {
   // --- Merchant Auth Endpoints ---
@@ -124,11 +148,47 @@ export async function authRoutes(fastify: FastifyInstance) {
                   hashedPassword,
                   role: "owner",
                   createdAt,
+                  emailVerified: false,
                 },
               },
             },
           ],
         })
+      );
+
+      // Generate verification token and email
+      const verificationToken = crypto.randomUUID();
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
+      const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+      
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `VERIFY_TOKEN#${verificationToken}`,
+            SK: "METADATA",
+            email: lowerEmail,
+            tenantId,
+            expiresAt: verificationExpiry,
+            ttl: verificationTtl,
+          }
+        })
+      );
+      
+      const verifyLink = `http://localhost:3001/auth/merchant/verify-email?token=${verificationToken}`;
+      await sendEmailSafely(
+        lowerEmail,
+        "Verify Your Basecart Store Account",
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #2563EB;">Welcome to Basecart!</h2>
+            <p>Thank you for signing up for ${storeName}. Please click the button below to verify your email address and unlock complete account access:</p>
+            <div style="margin: 24px 0;">
+              <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
+            </div>
+            <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+          </div>
+        `
       );
 
       // 6. Generate access and refresh tokens
@@ -253,6 +313,7 @@ export async function authRoutes(fastify: FastifyInstance) {
         tenantId,
         email: lowerEmail,
         role: userItem.role,
+        emailVerified: userItem.emailVerified !== false,
         ...tokens,
       });
     }
@@ -580,10 +641,22 @@ export async function authRoutes(fastify: FastifyInstance) {
         type: "merchant",
       });
 
+      const userRes = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${req.user!.tenantId}`,
+            SK: `USER#${req.user!.email}`,
+          },
+        })
+      );
+      const emailVerified = userRes.Item?.emailVerified !== false;
+
       return reply.send({
         tenantId: req.user!.tenantId,
         email: req.user!.email,
         role: req.user!.role,
+        emailVerified,
         accessToken: tokens.accessToken,
       });
     }
@@ -649,6 +722,457 @@ export async function authRoutes(fastify: FastifyInstance) {
       reply.clearCookie("basecart_customer_token", { path: "/" });
       reply.clearCookie("basecart_customer_refresh_token", { path: "/" });
       return reply.send({ message: "Logged out successfully" });
+    }
+  );
+
+  /**
+   * Merchant Forgot Password
+   */
+  fastify.post(
+    "/auth/merchant/forgot-password",
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { email } = req.body as any;
+      if (!email) {
+        return reply.status(400).send({ error: "Email is required" });
+      }
+      const lowerEmail = email.toLowerCase();
+
+      const userQuery = await ddbDocClient.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          IndexName: "GSI2",
+          KeyConditionExpression: "GSI2PK = :gsi2pk AND GSI2SK = :gsi2sk",
+          ExpressionAttributeValues: {
+            ":gsi2pk": `USER#${lowerEmail}`,
+            ":gsi2sk": "METADATA",
+          },
+        })
+      );
+
+      if (userQuery.Items && userQuery.Items.length > 0) {
+        const userItem = userQuery.Items[0];
+        const tenantId = userItem.PK.replace("TENANT#", "");
+
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+        const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
+
+        await ddbDocClient.send(
+          new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+              PK: `RESET_TOKEN#${token}`,
+              SK: "METADATA",
+              email: lowerEmail,
+              tenantId,
+              type: "merchant",
+              expiresAt,
+              ttl,
+            },
+          })
+        );
+
+        const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+        await sendEmailSafely(
+          lowerEmail,
+          "Reset Your Basecart Password",
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <h2>Reset Your Password</h2>
+              <p>You requested a password reset for your Basecart store account. Click the link below to set a new password:</p>
+              <div style="margin: 24px 0;">
+                <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+              </div>
+              <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes. If you did not request this, you can safely ignore this email.</p>
+            </div>
+          `
+        );
+      }
+
+      return reply.send({ message: "If the email is registered, a password reset link has been sent." });
+    }
+  );
+
+  /**
+   * Merchant Reset Password
+   */
+  fastify.post(
+    "/auth/merchant/reset-password",
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { token, newPassword } = req.body as any;
+      if (!token || !newPassword || newPassword.length < 6) {
+        return reply.status(400).send({ error: "Token and password (min 6 chars) are required" });
+      }
+
+      const tokenRes = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `RESET_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      const tokenItem = tokenRes.Item;
+      if (!tokenItem || tokenItem.type !== "merchant") {
+        return reply.status(400).send({ error: "Invalid or expired reset token" });
+      }
+
+      if (new Date(tokenItem.expiresAt) < new Date()) {
+        return reply.status(400).send({ error: "Reset token has expired" });
+      }
+
+      const hashedPassword = await authService.hashPassword(newPassword);
+      await ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tokenItem.tenantId}`,
+            SK: `USER#${tokenItem.email}`,
+          },
+          UpdateExpression: "SET hashedPassword = :hp",
+          ExpressionAttributeValues: {
+            ":hp": hashedPassword,
+          },
+        })
+      );
+
+      // Invalidate active sessions
+      const tokensRes = await ddbDocClient.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+          ExpressionAttributeValues: {
+            ":pk": `TENANT#${tokenItem.tenantId}`,
+            ":sk": "REFRESH_TOKEN#",
+          },
+        })
+      );
+      const tokensToRevoke = (tokensRes.Items || []).filter(item => item.email === tokenItem.email);
+      for (const item of tokensToRevoke) {
+        await ddbDocClient.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: item.PK, SK: item.SK },
+          })
+        );
+      }
+
+      // Invalidate token
+      await ddbDocClient.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `RESET_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      return reply.send({ message: "Password has been successfully reset" });
+    }
+  );
+
+  /**
+   * Customer Forgot Password
+   */
+  fastify.post(
+    "/auth/customer/forgot-password",
+    {
+      preHandler: [resolveStorefrontTenant],
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const tenantId = req.tenantId!;
+      const { email } = req.body as any;
+      if (!email) {
+        return reply.status(400).send({ error: "Email is required" });
+      }
+      const lowerEmail = email.toLowerCase();
+
+      const lookupResult = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tenantId}`,
+            SK: `CUSTOMER_EMAIL#${lowerEmail}`,
+          },
+        })
+      );
+
+      if (lookupResult.Item) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+        const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
+
+        await ddbDocClient.send(
+          new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+              PK: `RESET_TOKEN#${token}`,
+              SK: "METADATA",
+              email: lowerEmail,
+              tenantId,
+              type: "customer",
+              customerId: lookupResult.Item.customerId,
+              expiresAt,
+              ttl,
+            },
+          })
+        );
+
+        const tenantRes = await ddbDocClient.send(
+          new GetCommand({
+            TableName: TABLE_NAME,
+            Key: {
+              PK: `TENANT#${tenantId}`,
+              SK: "METADATA",
+            },
+          })
+        );
+        const subdomain = tenantRes.Item?.subdomain || "demo";
+        const resetLink = `http://${subdomain}.localhost:3002/reset-password?token=${token}`;
+
+        await sendEmailSafely(
+          lowerEmail,
+          "Reset Your Storefront Password",
+          `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+              <h2>Reset Your Storefront Password</h2>
+              <p>You requested a password reset for your account. Click the link below to set a new password:</p>
+              <div style="margin: 24px 0;">
+                <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
+              </div>
+              <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes.</p>
+            </div>
+          `
+        );
+      }
+
+      return reply.send({ message: "If the email is registered, a password reset link has been sent." });
+    }
+  );
+
+  /**
+   * Customer Reset Password
+   */
+  fastify.post(
+    "/auth/customer/reset-password",
+    { preHandler: [resolveStorefrontTenant] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const tenantId = req.tenantId!;
+      const { token, newPassword } = req.body as any;
+      if (!token || !newPassword || newPassword.length < 6) {
+        return reply.status(400).send({ error: "Token and password (min 6 chars) are required" });
+      }
+
+      const tokenRes = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `RESET_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      const tokenItem = tokenRes.Item;
+      if (!tokenItem || tokenItem.type !== "customer" || tokenItem.tenantId !== tenantId) {
+        return reply.status(400).send({ error: "Invalid or expired reset token" });
+      }
+
+      if (new Date(tokenItem.expiresAt) < new Date()) {
+        return reply.status(400).send({ error: "Reset token has expired" });
+      }
+
+      const hashedPassword = await authService.hashPassword(newPassword);
+      await ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tenantId}`,
+            SK: `CUSTOMER#${tokenItem.customerId}`,
+          },
+          UpdateExpression: "SET hashedPassword = :hp",
+          ExpressionAttributeValues: {
+            ":hp": hashedPassword,
+          },
+        })
+      );
+
+      // Invalidate customer sessions
+      const tokensRes = await ddbDocClient.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+          ExpressionAttributeValues: {
+            ":pk": `TENANT#${tenantId}`,
+            ":sk": "REFRESH_TOKEN#",
+          },
+        })
+      );
+      const tokensToRevoke = (tokensRes.Items || []).filter(item => item.email === tokenItem.email);
+      for (const item of tokensToRevoke) {
+        await ddbDocClient.send(
+          new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: { PK: item.PK, SK: item.SK },
+          })
+        );
+      }
+
+      // Clean up token
+      await ddbDocClient.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `RESET_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      return reply.send({ message: "Password has been successfully reset" });
+    }
+  );
+
+  /**
+   * Resend Verification Email (Merchant-only)
+   */
+  fastify.post(
+    "/auth/merchant/resend-verification",
+    { preHandler: [authenticateMerchant] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const email = req.user!.email;
+      const tenantId = req.user!.tenantId;
+
+      const userRes = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tenantId}`,
+            SK: `USER#${email}`,
+          },
+        })
+      );
+      if (!userRes.Item) {
+        return reply.status(404).send({ error: "User not found" });
+      }
+
+      if (userRes.Item.emailVerified === true) {
+        return reply.status(400).send({ error: "Email is already verified" });
+      }
+
+      const verificationToken = crypto.randomUUID();
+      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: `VERIFY_TOKEN#${verificationToken}`,
+            SK: "METADATA",
+            email,
+            tenantId,
+            expiresAt: verificationExpiry,
+            ttl: verificationTtl,
+          }
+        })
+      );
+
+      const verifyLink = `http://localhost:3001/auth/merchant/verify-email?token=${verificationToken}`;
+      await sendEmailSafely(
+        email,
+        "Verify Your Basecart Store Account",
+        `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #2563EB;">Verify Your Basecart Email</h2>
+            <p>Please click the button below to verify your email address:</p>
+            <div style="margin: 24px 0;">
+              <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
+            </div>
+            <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+          </div>
+        `
+      );
+
+      return reply.send({ message: "Verification email resent successfully" });
+    }
+  );
+
+  /**
+   * Verify Email
+   */
+  fastify.get(
+    "/auth/merchant/verify-email",
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const token = (req.query as any).token;
+      if (!token) {
+        return reply.status(400).send({ error: "Token is required" });
+      }
+
+      const tokenRes = await ddbDocClient.send(
+        new GetCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `VERIFY_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      const tokenItem = tokenRes.Item;
+      if (!tokenItem) {
+        return reply.status(400).send({ error: "Invalid or expired token" });
+      }
+
+      if (new Date(tokenItem.expiresAt) < new Date()) {
+        return reply.status(400).send({ error: "Token has expired" });
+      }
+
+      // Mark user as verified
+      await ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tokenItem.tenantId}`,
+            SK: `USER#${tokenItem.email}`,
+          },
+          UpdateExpression: "SET emailVerified = :val",
+          ExpressionAttributeValues: {
+            ":val": true,
+          },
+        })
+      );
+
+      // Clean up token
+      await ddbDocClient.send(
+        new DeleteCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `VERIFY_TOKEN#${token}`,
+            SK: "METADATA",
+          },
+        })
+      );
+
+      // Redirect back to merchant dashboard
+      return reply.redirect("http://localhost:3000/?verified=true");
     }
   );
 }

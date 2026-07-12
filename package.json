@@ -5,6 +5,7 @@
     "packages/*"
   ],
   "scripts": {
+    "dev": "concurrently -n \"backend,merchant,storefront,admin\" -c \"magenta,blue,green,yellow\" \"npm run dev:backend\" \"npm run dev:merchant\" \"npm run dev:storefront\" \"npm run dev:admin\"",
     "dev:backend": "npm run dev --workspace=packages/backend",
     "dev:merchant": "npm run dev --workspace=packages/merchant-dashboard",
     "dev:storefront": "npm run dev --workspace=packages/storefront",
@@ -15,5 +16,8 @@
     "test:backend": "npm run test --workspace=packages/backend",
     "localstack:up": "docker compose up -d",
     "localstack:down": "docker compose down"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.3"
   }
 }

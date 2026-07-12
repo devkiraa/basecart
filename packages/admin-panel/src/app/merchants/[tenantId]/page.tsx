@@ -83,6 +83,21 @@ export default function MerchantDetailPage() {
     }
   };
 
+  const handlePlanChange = async (newPlan: "starter" | "growth" | "pro") => {
+    try {
+      const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/plan`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: newPlan }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Plan update failed");
+      await loadDetails();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -172,9 +187,17 @@ export default function MerchantDetailPage() {
           </div>
 
           <div className="flex gap-4">
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-3 text-center">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Plan Tier</p>
-              <p className="text-base font-bold text-slate-800 uppercase mt-0.5">{store.plan}</p>
+            <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-2.5 text-center flex flex-col justify-center min-w-[130px]">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Plan Tier</label>
+              <select
+                value={store.plan}
+                onChange={(e) => handlePlanChange(e.target.value as any)}
+                className="bg-transparent text-sm font-bold text-slate-800 uppercase focus:outline-none cursor-pointer border-b border-dashed border-slate-300 text-center"
+              >
+                <option value="starter">Starter</option>
+                <option value="growth">Growth</option>
+                <option value="pro">Pro</option>
+              </select>
             </div>
             <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-3 text-center">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sales</p>
@@ -311,6 +334,67 @@ export default function MerchantDetailPage() {
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+
+            {/* Merchant Invoices & Statements */}
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden mt-8 animate-fade-in">
+              <div className="p-6 border-b border-slate-200">
+                <h2 className="text-base font-bold text-slate-800">Paid Invoices & Billing Statements</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
+                  <thead className="bg-slate-50 font-semibold text-slate-500 text-xs uppercase tracking-wider">
+                    <tr>
+                      <th className="px-6 py-4">Billing Period</th>
+                      <th className="px-6 py-4">Invoice ID</th>
+                      <th className="px-6 py-4">Paid Date</th>
+                      <th className="px-6 py-4">Amount</th>
+                      <th className="px-6 py-4">Active Plan / Add-ons</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {details.statements && details.statements.length > 0 ? (
+                      details.statements.map((stmt: any) => (
+                        <tr key={stmt.invoiceId} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4 font-semibold text-slate-800">{stmt.billingPeriod}</td>
+                          <td className="px-6 py-4 font-mono text-xs text-slate-500">{stmt.invoiceId}</td>
+                          <td className="px-6 py-4 text-slate-500">{stmt.date}</td>
+                          <td className="px-6 py-4 font-bold text-slate-900 font-mono">₹{stmt.amount}</td>
+                          <td className="px-6 py-4">
+                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold border border-slate-200 mr-2 uppercase tracking-wide">
+                              {stmt.plan}
+                            </span>
+                            {stmt.addOns && stmt.addOns.length > 0 && (
+                              stmt.addOns.map((a: string) => (
+                                <span key={a} className="text-[9px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold border border-blue-100 mr-1 uppercase tracking-wide">
+                                  {a}
+                                </span>
+                              ))
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <a
+                              href={`${API_URL}/store/billing/statement/${stmt.invoiceId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-700 font-semibold inline-flex items-center gap-1"
+                            >
+                              Download PDF
+                            </a>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-8 text-center text-slate-400">
+                          No billing history statements tracked for this store.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

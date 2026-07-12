@@ -306,15 +306,33 @@ export async function adminRoutes(fastify: FastifyInstance) {
         })
       );
 
+      // 3. Query billing statements
+      const billingRes = await ddbDocClient.send(
+        new QueryCommand({
+          TableName: TABLE_NAME,
+          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+          ExpressionAttributeValues: {
+            ":pk": `TENANT#${tenantId}`,
+            ":sk": "BILLING_INVOICE#",
+          },
+        })
+      );
+
       return reply.send({
         store: {
           storeName: storeRes.Item.storeName,
           subdomain: storeRes.Item.subdomain,
           plan: storeRes.Item.plan || "starter",
           status: storeRes.Item.status || "active",
+          gstin: storeRes.Item.gstin || "",
+          registeredBusinessName: storeRes.Item.registeredBusinessName || "",
+          registeredBusinessAddress: storeRes.Item.registeredBusinessAddress || "",
+          registeredState: storeRes.Item.registeredState || "",
+          addOns: storeRes.Item.addOns || [],
         },
         products: productsRes.Items || [],
         orders: ordersRes.Items || [],
+        statements: billingRes.Items || [],
       });
     }
   );
@@ -373,6 +391,62 @@ export async function adminRoutes(fastify: FastifyInstance) {
       );
 
       return reply.send({ message: `Merchant status updated to ${status} successfully` });
+    }
+  );
+
+  /**
+   * Update merchant subscription plan (Admin-only)
+   */
+  fastify.patch(
+    "/admin/merchants/:tenantId/plan",
+    { preHandler: [authenticateAdmin] },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { tenantId } = req.params as any;
+      const { plan } = req.body as any;
+
+      if (plan !== "starter" && plan !== "growth" && plan !== "pro") {
+        return reply.status(400).send({ error: "Invalid plan. Must be starter, growth, or pro." });
+      }
+
+      await ddbDocClient.send(
+        new UpdateCommand({
+          TableName: TABLE_NAME,
+          Key: {
+            PK: `TENANT#${tenantId}`,
+            SK: "METADATA",
+          },
+          UpdateExpression: "SET #plan = :plan",
+          ExpressionAttributeNames: {
+            "#plan": "plan",
+          },
+          ExpressionAttributeValues: {
+            ":plan": plan,
+          },
+        })
+      );
+
+      // Write Admin Audit Log
+      const logId = crypto.randomUUID();
+      const timestamp = new Date().toISOString();
+      const adminEmail = req.user?.email || "unknown-admin";
+
+      await ddbDocClient.send(
+        new PutCommand({
+          TableName: TABLE_NAME,
+          Item: {
+            PK: "ADMIN_AUDIT",
+            SK: `LOG#${timestamp}#${logId}`,
+            logId,
+            adminEmail,
+            action: "change_plan",
+            targetTenantId: tenantId,
+            plan,
+            createdAt: timestamp,
+          },
+        })
+      );
+
+      return reply.send({ message: `Merchant plan successfully updated to ${plan}` });
     }
   );
 

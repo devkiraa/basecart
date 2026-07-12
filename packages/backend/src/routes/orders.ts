@@ -34,7 +34,7 @@ interface FastifyRequestWithRawBody extends FastifyRequest {
  */
 export async function computeCartTotal(
   tenantId: string,
-  lineItems: Array<{ productId: string; quantity: number }>,
+  lineItems: Array<{ productId: string; quantity: number; variantId?: string | null }>,
   discountCode?: string
 ): Promise<{
   valid: boolean;

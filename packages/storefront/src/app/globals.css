@@ -6,17 +6,17 @@
   --font-sans: 'Plus Jakarta Sans', sans-serif;
   --color-bg: #FFFFFF;
   --color-bg-subtle: #F8FAFC;
-  --color-primary: #2563EB;
-  --color-primary-hover: #1D4ED8;
-  --color-primary-subtle: #EFF6FF;
+  --color-primary: #4F46E5;
+  --color-primary-hover: #4338CA;
+  --color-primary-subtle: #EEF2FF;
   --color-text: #0F172A;
   --color-text-muted: #64748B;
-  --color-border: #E2E8F0;
+  --color-border: #F1F5F9;
   --color-success: #10B981;
   --color-error: #EF4444;
-  --radius-card: 8px;
-  --radius-button: 6px;
-  --shadow-card: 0 1px 2px rgba(0,0,0,0.04);
+  --radius-card: 16px;
+  --radius-button: 10px;
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.03), 0 2px 4px -2px rgb(0 0 0 / 0.03);
 }
 
 body {
@@ -27,4 +27,65 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card Zoom/Hover Effects */
+.storefront-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.storefront-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+  border-color: #cbd5e1;
+}
+
+.zoom-img-container img {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.zoom-img-container:hover img {
+  transform: scale(1.05);
+}
+
+/* Side Cart Slide-In Drawer Animation */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
