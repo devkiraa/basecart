@@ -76,4 +76,27 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   expiresAt INTEGER NOT NULL,
   createdAt TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  ticketId TEXT PRIMARY KEY,
+  tenantId TEXT NOT NULL,
+  storeName TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  priority TEXT NOT NULL DEFAULT 'medium',
+  createdAt TEXT NOT NULL
+);
+
+-- B-Tree Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
+CREATE INDEX IF NOT EXISTS idx_merchant_users_tenant ON merchant_users (tenantId);
+CREATE INDEX IF NOT EXISTS idx_verification_tokens_email ON verification_tokens (email);
+CREATE INDEX IF NOT EXISTS idx_reset_tokens_email ON reset_tokens (email);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_email ON admin_audit_logs (adminEmail);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_tenant ON admin_audit_logs (targetTenantId);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_tenant ON support_tickets (tenantId);
+CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets (status);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (userId);
+CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens (expiresAt);
 `;

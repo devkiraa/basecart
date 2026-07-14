@@ -119,4 +119,13 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
   response TEXT,
   createdAt TEXT NOT NULL
 );
+
+-- B-Tree Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_products_status ON products (status);
+CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders (customerId);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders (status);
+CREATE INDEX IF NOT EXISTS idx_orders_razorpay_order ON orders (razorpayOrderId);
+CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (orderId);
+CREATE INDEX IF NOT EXISTS idx_billing_invoices_status ON billing_invoices (status);
 `;
