@@ -150,17 +150,21 @@ export default function Storefront() {
     }
   }, [storeInfo]);
 
-  // Resolve subdomain from window location
+  // Resolve subdomain from window location or query parameters
   useEffect(() => {
     if (typeof window !== "undefined") {
       const host = window.location.hostname;
       const parts = host.split(".");
-      if (parts.length >= 2 && parts[0] !== "localhost" && parts[0] !== "www") {
+      const params = new URLSearchParams(window.location.search);
+      const querySubdomain = params.get("subdomain") || params.get("store");
+
+      if (querySubdomain) {
+        setSubdomain(querySubdomain);
+      } else if (parts.length >= 2 && parts[0] !== "localhost" && parts[0] !== "www") {
         setSubdomain(parts[0]);
       }
 
       // Check customer reset password token in query params
-      const params = new URLSearchParams(window.location.search);
       const tokenParam = params.get("token");
       if (tokenParam) {
         setCustResetToken(tokenParam);
