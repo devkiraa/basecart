@@ -44,3 +44,12 @@ Icon\r
 *.njsproj
 *.sln
 *.sw?
+
+# Wrangler local runtime cache
+.wrangler/
+
+# Database dumps / backups
+*.sql
+*.backup
+*.dump
+
