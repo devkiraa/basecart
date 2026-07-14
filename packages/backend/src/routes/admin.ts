@@ -7,7 +7,6 @@ import { authenticateMerchant } from "../middleware/auth";
 const app = new Hono();
 
 function getAdminCookieOptions(c: any, maxAge: number) {
-  const domain = (c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined;
   const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
   return {
     path: "/",
@@ -15,15 +14,12 @@ function getAdminCookieOptions(c: any, maxAge: number) {
     secure: isProdOrStaging,
     sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
-    domain,
   };
 }
 
 function getAdminDeleteOptions(c: any) {
-  const domain = (c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined;
   return {
     path: "/",
-    domain,
   };
 }
 
