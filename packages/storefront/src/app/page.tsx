@@ -14,7 +14,7 @@ import {
   Calendar,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface ProductVariant {
   id: string;
@@ -1492,9 +1492,11 @@ export default function Storefront() {
                 {isCustLoginView ? "Create a store account instead" : "Already have an account? Sign In"}
               </button>
             </div>
-          </div>
+          </>
+          )}
         </div>
-      )}
+      </div>
+    )}
 
       {/* VARIANT DETAILS SELECTION MODAL */}
       {selectedProductDetails && (

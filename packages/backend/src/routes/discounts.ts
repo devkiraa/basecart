@@ -1,15 +1,9 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import {
-  PutCommand,
-  GetCommand,
-  QueryCommand,
-  DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
-import { ddbDocClient } from "../lib/aws";
+import { Hono } from "hono";
+import { getControlDb, getTenantDb } from "../lib/db";
 import { authenticateMerchant, resolveStorefrontTenant } from "../middleware/auth";
 import { DiscountCodeSchema } from "@basecart/shared";
 
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
+const app = new Hono();
 
 /**
  * Validates a discount code against current rules and computes the discount amount.
@@ -17,7 +11,8 @@ const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
 export async function validateDiscountCode(
   tenantId: string,
   code: string,
-  cartTotal: number
+  cartTotal: number,
+  env: any
 ): Promise<{
   valid: boolean;
   reason?: string;
@@ -26,17 +21,12 @@ export async function validateDiscountCode(
   type?: "percentage" | "flat";
   value?: number;
 }> {
-  const result = await ddbDocClient.send(
-    new GetCommand({
-      TableName: TABLE_NAME,
-      Key: {
-        PK: `TENANT#${tenantId}`,
-        SK: `DISCOUNT#${code.toUpperCase()}`,
-      },
-    })
-  );
+  const tenantDb = await getTenantDb(tenantId, env);
+  const discount = await tenantDb
+    .prepare("SELECT * FROM discount_codes WHERE code = ?")
+    .bind(code.toUpperCase())
+    .first<any>();
 
-  const discount = result.Item;
   if (!discount || !discount.active) {
     return { valid: false, reason: "Discount code is invalid or inactive" };
   }
@@ -85,237 +75,188 @@ export async function validateDiscountCode(
   };
 }
 
-export async function discountRoutes(fastify: FastifyInstance) {
-  // --- Merchant Admin Endpoints ---
+// -------------------------------------------------------------
+// 1. Merchant Admin Endpoints (Writes go straight to DO)
+// -------------------------------------------------------------
 
-  /**
-   * Create Discount Code
-   */
-  fastify.post(
-    "/discounts",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
+/**
+ * Create Discount Code
+ */
+app.post("/discounts", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
 
-      // 1. Fetch store plan details
-      const tenantRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const plan = tenantRes.Item?.plan || "starter";
-      if (plan === "starter") {
-        return reply.status(403).send({
-          error: "Feature locked: Discount codes require the Growth or Pro tier. Please upgrade.",
-        });
-      }
+  // 1. Enforce store plan tier details
+  const store = await controlDb
+    .prepare("SELECT plan FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ plan: string }>();
 
-      const parseResult = DiscountCodeSchema.safeParse(req.body);
+  const plan = store?.plan || "starter";
+  if (plan === "starter") {
+    return c.json({
+      error: "Feature locked: Discount codes require the Growth or Pro tier. Please upgrade.",
+    }, 403);
+  }
 
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = DiscountCodeSchema.safeParse(body);
 
-      const discountData = parseResult.data;
-      const codeUpper = discountData.code.toUpperCase();
-      const createdAt = new Date().toISOString();
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
 
-      // Check if code already exists
-      const existing = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `DISCOUNT#${codeUpper}`,
-          },
-        })
-      );
+  const discountData = parseResult.data;
+  const codeUpper = discountData.code.toUpperCase();
+  const tenantDb = await getTenantDb(tenantId, c.env);
 
-      if (existing.Item) {
-        return reply
-          .status(400)
-          .send({ error: "Discount code already exists for this store" });
-      }
+  // 2. Check if code already exists
+  const existing = await tenantDb
+    .prepare("SELECT code FROM discount_codes WHERE code = ?")
+    .bind(codeUpper)
+    .first();
 
-      const item = {
-        PK: `TENANT#${tenantId}`,
-        SK: `DISCOUNT#${codeUpper}`,
-        code: codeUpper,
-        type: discountData.type,
-        value: discountData.value,
-        minOrderAmount: discountData.minOrderAmount,
-        usageLimit: discountData.usageLimit,
-        expiry: discountData.expiry,
-        active: discountData.active,
-        usageCount: 0,
-        createdAt,
-      };
+  if (existing) {
+    return c.json({ error: "Discount code already exists for this store" }, 400);
+  }
 
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: item,
-        })
-      );
+  const createdAt = new Date().toISOString();
 
-      return reply.status(201).send(item);
-    }
+  await tenantDb
+    .prepare(
+      "INSERT INTO discount_codes (code, type, value, minOrderAmount, usageLimit, expiry, active, usageCount) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(
+      codeUpper,
+      discountData.type,
+      discountData.value,
+      discountData.minOrderAmount || 0,
+      discountData.usageLimit !== undefined ? discountData.usageLimit : null,
+      discountData.expiry || null,
+      discountData.active ? 1 : 0,
+      0
+    )
+    .run();
+
+  const saved = await tenantDb
+    .prepare("SELECT * FROM discount_codes WHERE code = ?")
+    .bind(codeUpper)
+    .first();
+
+  return c.json(saved, 201);
+});
+
+/**
+ * List Discount Codes
+ */
+app.get("/discounts", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const result = await tenantDb.prepare("SELECT * FROM discount_codes").all();
+  return c.json(result.results || []);
+});
+
+/**
+ * Update Discount Code
+ */
+app.patch("/discounts/:code", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const code = c.req.param("code").toUpperCase();
+
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = DiscountCodeSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const discountData = parseResult.data;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // Verify it exists
+  const existing = await tenantDb
+    .prepare("SELECT code FROM discount_codes WHERE code = ?")
+    .bind(code)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: "Discount code not found" }, 404);
+  }
+
+  await tenantDb
+    .prepare(
+      "UPDATE discount_codes SET type = ?, value = ?, minOrderAmount = ?, usageLimit = ?, expiry = ?, active = ? WHERE code = ?"
+    )
+    .bind(
+      discountData.type,
+      discountData.value,
+      discountData.minOrderAmount || 0,
+      discountData.usageLimit !== undefined ? discountData.usageLimit : null,
+      discountData.expiry || null,
+      discountData.active ? 1 : 0,
+      code
+    )
+    .run();
+
+  return c.json({ message: "Discount code updated successfully" });
+});
+
+/**
+ * Delete Discount Code
+ */
+app.delete("/discounts/:code", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const code = c.req.param("code").toUpperCase();
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const existing = await tenantDb
+    .prepare("SELECT code FROM discount_codes WHERE code = ?")
+    .bind(code)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: "Discount code not found" }, 404);
+  }
+
+  await tenantDb
+    .prepare("DELETE FROM discount_codes WHERE code = ?")
+    .bind(code)
+    .run();
+
+  return c.json({ message: "Discount code deleted successfully" });
+});
+
+// -------------------------------------------------------------
+// 2. Storefront Public Endpoints (Reads: Marked Future-Cacheable)
+// -------------------------------------------------------------
+
+/**
+ * Validate Discount Code (Storefront public)
+ * FUTURE-CACHEABLE: Read-only check, safe to cache by code/cartTotal key.
+ */
+app.post("/store/:subdomain/discounts/validate", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const { code, cartTotal } = body;
+
+  if (!code || cartTotal === undefined) {
+    return c.json({ error: "code and cartTotal are required" }, 400);
+  }
+
+  const validation = await validateDiscountCode(
+    tenantId,
+    code,
+    Number(cartTotal),
+    c.env
   );
 
-  /**
-   * List Discount Codes
-   */
-  fastify.get(
-    "/discounts",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
+  return c.json(validation);
+});
 
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tenantId}`,
-            ":sk": "DISCOUNT#",
-          },
-        })
-      );
-
-      return reply.send(result.Items || []);
-    }
-  );
-
-  /**
-   * Update Discount Code
-   */
-  fastify.patch(
-    "/discounts/:code",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const code = (req.params as any).code.toUpperCase();
-
-      const parseResult = DiscountCodeSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const discountData = parseResult.data;
-
-      // Verify it exists
-      const existing = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `DISCOUNT#${code}`,
-          },
-        })
-      );
-
-      if (!existing.Item) {
-        return reply.status(404).send({ error: "Discount code not found" });
-      }
-
-      const updatedItem = {
-        ...existing.Item,
-        type: discountData.type,
-        value: discountData.value,
-        minOrderAmount: discountData.minOrderAmount,
-        usageLimit: discountData.usageLimit,
-        expiry: discountData.expiry,
-        active: discountData.active,
-      };
-
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: updatedItem,
-        })
-      );
-
-      return reply.send({ message: "Discount code updated successfully" });
-    }
-  );
-
-  /**
-   * Delete Discount Code
-   */
-  fastify.delete(
-    "/discounts/:code",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const code = (req.params as any).code.toUpperCase();
-
-      const result = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `DISCOUNT#${code}`,
-          },
-        })
-      );
-
-      if (!result.Item) {
-        return reply.status(404).send({ error: "Discount code not found" });
-      }
-
-      await ddbDocClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `DISCOUNT#${code}`,
-          },
-        })
-      );
-
-      return reply.send({ message: "Discount code deleted successfully" });
-    }
-  );
-
-  // --- Storefront Public Endpoints ---
-
-  /**
-   * Validate Discount Code (Storefront public)
-   */
-  fastify.post(
-    "/store/:subdomain/discounts/validate",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const { code, cartTotal } = req.body as any;
-
-      if (!code || cartTotal === undefined) {
-        return reply
-          .status(400)
-          .send({ error: "code and cartTotal are required" });
-      }
-
-      const validation = await validateDiscountCode(
-        tenantId,
-        code,
-        Number(cartTotal)
-      );
-
-      if (!validation.valid) {
-        return reply.status(200).send(validation);
-      }
-
-      return reply.send(validation);
-    }
-  );
-}
+export default app;

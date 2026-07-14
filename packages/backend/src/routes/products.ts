@@ -1,21 +1,12 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import crypto from "crypto";
-import {
-  PutCommand,
-  GetCommand,
-  QueryCommand,
-  DeleteCommand,
-  UpdateCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { Hono } from "hono";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { ddbDocClient, s3Client } from "../lib/aws";
+import { getControlDb, getTenantDb } from "../lib/db";
+import { getStorageClient, getBucketName } from "../lib/storage";
 import { authenticateMerchant, resolveStorefrontTenant } from "../middleware/auth";
 import { ProductSchema } from "@basecart/shared";
 
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
-const S3_BUCKET = process.env.S3_BUCKET || "basecart-media-bucket";
-
+const app = new Hono();
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 /**
@@ -34,29 +25,21 @@ function validateMagicBytes(headerHex: string, mimeType: string): boolean {
     return hex.startsWith("47494638");
   }
   if (mimeType === "image/webp") {
-    // RIFF (52494646) and WEBP (57454250)
     return hex.startsWith("52494646") && hex.substring(16, 24) === "57454250";
   }
   return false;
 }
 
+/**
+ * Validates SKU uniqueness across all products and variants in the tenant database
+ */
 async function validateSkuUniqueness(
-  tenantId: string,
   currentProductId: string | null,
-  payload: any
+  payload: any,
+  db: any
 ): Promise<string | null> {
-  const result = await ddbDocClient.send(
-    new QueryCommand({
-      TableName: TABLE_NAME,
-      KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-      ExpressionAttributeValues: {
-        ":pk": `TENANT#${tenantId}`,
-        ":sk": "PRODUCT#",
-      },
-    })
-  );
-
-  const existingProducts = result.Items || [];
+  const result = await db.prepare("SELECT productId, sku, variants FROM products").all();
+  const existingProducts = result.results || [];
   const usedSkus = new Set<string>();
 
   for (const prod of existingProducts) {
@@ -68,8 +51,15 @@ async function validateSkuUniqueness(
       usedSkus.add(prod.sku.trim().toLowerCase());
     }
 
-    if (Array.isArray(prod.variants)) {
-      for (const variant of prod.variants) {
+    let variants: any[] = [];
+    if (prod.variants) {
+      try {
+        variants = typeof prod.variants === "string" ? JSON.parse(prod.variants) : prod.variants;
+      } catch (e) {}
+    }
+
+    if (Array.isArray(variants)) {
+      for (const variant of variants) {
         if (variant.sku && variant.sku.trim() !== "") {
           usedSkus.add(variant.sku.trim().toLowerCase());
         }
@@ -77,7 +67,6 @@ async function validateSkuUniqueness(
     }
   }
 
-  // Check the payload itself
   const payloadSkus = new Set<string>();
 
   if (payload.sku && payload.sku.trim() !== "") {
@@ -106,390 +95,353 @@ async function validateSkuUniqueness(
   return null;
 }
 
-export async function productRoutes(fastify: FastifyInstance) {
-  // --- Merchant Admin Endpoints ---
-
-  /**
-   * Create Product
-   */
-  fastify.post(
-    "/products",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const parseResult = ProductSchema.safeParse(req.body);
-
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const productData = parseResult.data;
-
-      // Validate SKU uniqueness per tenant
-      const skuError = await validateSkuUniqueness(tenantId, null, productData);
-      if (skuError) {
-        return reply.status(400).send({ error: skuError });
-      }
-
-      // 1. Fetch store plan details
-      const tenantRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const plan = tenantRes.Item?.plan || "starter";
-
-      // 2. Count existing products
-      const countRes = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tenantId}`,
-            ":sk": "PRODUCT#",
-          },
-          Select: "COUNT",
-        })
-      );
-      const count = countRes.Count || 0;
-
-      // 3. Enforce plan limit
-      if (plan === "starter" && count >= 50) {
-        return reply.status(403).send({
-          error: "Plan limit reached: Starter tier allows a maximum of 50 products. Please upgrade your plan.",
-        });
-      }
-      if (plan === "growth" && count >= 500) {
-        return reply.status(403).send({
-          error: "Plan limit reached: Growth tier allows a maximum of 500 products. Please upgrade your plan.",
-        });
-      }
-
-      const productId = crypto.randomUUID();
-      const createdAt = new Date().toISOString();
-
-      const item = {
-        PK: `TENANT#${tenantId}`,
-        SK: `PRODUCT#${productId}`,
-        GSI1PK: `TENANT#${tenantId}`,
-        GSI1SK: `PRODUCT#${productData.status}#${createdAt}`,
-        productId,
-        ...productData,
-        createdAt,
-      };
-
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: item,
-        })
-      );
-
-      return reply.status(201).send(item);
+/**
+ * Format database product row to payload array types
+ */
+function formatProduct(prod: any) {
+  if (!prod) return prod;
+  const copy = { ...prod };
+  if (copy.images && typeof copy.images === "string") {
+    try {
+      copy.images = JSON.parse(copy.images);
+    } catch (e) {
+      copy.images = [];
     }
-  );
-
-  /**
-   * List Products (Merchant-only)
-   */
-  fastify.get(
-    "/products",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tenantId}`,
-            ":sk": "PRODUCT#",
-          },
-        })
-      );
-
-      return reply.send(result.Items || []);
+  }
+  if (copy.variants && typeof copy.variants === "string") {
+    try {
+      copy.variants = JSON.parse(copy.variants);
+    } catch (e) {
+      copy.variants = [];
     }
-  );
-
-  /**
-   * Get Product (Merchant-only)
-   */
-  fastify.get(
-    "/products/:id",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const productId = (req.params as any).id;
-
-      const result = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-          },
-        })
-      );
-
-      if (!result.Item) {
-        return reply.status(404).send({ error: "Product not found" });
-      }
-
-      return reply.send(result.Item);
-    }
-  );
-
-  /**
-   * Update Product
-   */
-  fastify.patch(
-    "/products/:id",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const productId = (req.params as any).id;
-
-      const parseResult = ProductSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const productData = parseResult.data;
-
-      // Verify the product exists first
-      const current = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-          },
-        })
-      );
-
-      if (!current.Item) {
-        return reply.status(404).send({ error: "Product not found" });
-      }
-
-      const createdAt = current.Item.createdAt;
-
-      // Validate SKU uniqueness per tenant
-      const skuError = await validateSkuUniqueness(tenantId, productId, productData);
-      if (skuError) {
-        return reply.status(400).send({ error: skuError });
-      }
-
-      // Update in DB
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-            GSI1PK: `TENANT#${tenantId}`,
-            GSI1SK: `PRODUCT#${productData.status}#${createdAt}`,
-            productId,
-            ...productData,
-            createdAt,
-          },
-        })
-      );
-
-      return reply.send({ message: "Product updated successfully" });
-    }
-  );
-
-  /**
-   * Delete Product
-   */
-  fastify.delete(
-    "/products/:id",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const productId = (req.params as any).id;
-
-      const result = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-          },
-        })
-      );
-
-      if (!result.Item) {
-        return reply.status(404).send({ error: "Product not found" });
-      }
-
-      await ddbDocClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-          },
-        })
-      );
-
-      return reply.send({ message: "Product deleted successfully" });
-    }
-  );
-
-  /**
-   * Generate S3 Presigned Upload URL after validating magic bytes and size
-   */
-  fastify.post(
-    "/products/:id/upload-image",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const productId = (req.params as any).id;
-
-      const { fileName, contentType, fileSize, headerHex } = req.body as any;
-
-      if (!fileName || !contentType || !fileSize || !headerHex) {
-        return reply.status(400).send({
-          error:
-            "Missing parameters: fileName, contentType, fileSize, headerHex are required",
-        });
-      }
-
-      // 1. Enforce size limit
-      if (fileSize > MAX_FILE_SIZE) {
-        return reply.status(400).send({
-          error: `File size exceeds the limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-        });
-      }
-
-      // 2. Validate MIME type
-      const allowedMimeTypes = [
-        "image/jpeg",
-        "image/jpg",
-        "image/png",
-        "image/gif",
-        "image/webp",
-      ];
-      if (!allowedMimeTypes.includes(contentType)) {
-        return reply.status(400).send({
-          error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed",
-        });
-      }
-
-      // 3. Validate Magic Bytes (File Signatures)
-      if (!validateMagicBytes(headerHex, contentType)) {
-        return reply.status(400).send({
-          error: "Security Check Failed: File header does not match expected image magic bytes",
-        });
-      }
-
-      // 4. Create S3 path key
-      const fileId = crypto.randomBytes(8).toString("hex");
-      const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const key = `tenants/${tenantId}/products/${productId}/${fileId}-${cleanFileName}`;
-
-      // 5. Generate Presigned Upload URL (PUT method)
-      const command = new PutObjectCommand({
-        Bucket: S3_BUCKET,
-        Key: key,
-        ContentType: contentType,
-      });
-
-      try {
-        const uploadUrl = await getSignedUrl(s3Client, command, {
-          expiresIn: 300, // 5 minutes
-        });
-
-        // 6. Build the public/GET image URL
-        let imageUrl = "";
-        if (
-          process.env.NODE_ENV === "development" ||
-          process.env.AWS_ENDPOINT_URL
-        ) {
-          const s3Endpoint =
-            process.env.AWS_ENDPOINT_URL || "http://localhost:4566";
-          imageUrl = `${s3Endpoint}/${S3_BUCKET}/${key}`;
-        } else {
-          imageUrl = `https://${S3_BUCKET}.s3.amazonaws.com/${key}`;
-        }
-
-        return reply.send({ uploadUrl, imageUrl });
-      } catch (err: any) {
-        console.error("Failed to generate presigned S3 URL:", err);
-        return reply
-          .status(500)
-          .send({ error: "Failed to generate upload credentials" });
-      }
-    }
-  );
-
-  // --- Storefront Public Endpoints ---
-
-  /**
-   * List Active Products (Storefront public)
-   */
-  fastify.get(
-    "/store/:subdomain/products",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      // Query products by GSI1 sorted by status/creation date
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI1",
-          KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(GSI1SK, :gsi1sk)",
-          ExpressionAttributeValues: {
-            ":gsi1pk": `TENANT#${tenantId}`,
-            ":gsi1sk": "PRODUCT#active#",
-          },
-        })
-      );
-
-      return reply.send(result.Items || []);
-    }
-  );
-
-  /**
-   * Get Product detail (Storefront public)
-   */
-  fastify.get(
-    "/store/:subdomain/products/:id",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const productId = (req.params as any).id;
-
-      const result = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `PRODUCT#${productId}`,
-          },
-        })
-      );
-
-      const product = result.Item;
-      if (!product || product.status !== "active") {
-        return reply.status(404).send({ error: "Product not found or unavailable" });
-      }
-
-      return reply.send(product);
-    }
-  );
+  }
+  return copy;
 }
+
+// -------------------------------------------------------------
+// 1. Merchant Products CRUD Endpoints (Writes go straight to DO)
+// -------------------------------------------------------------
+
+/**
+ * Create Product
+ */
+app.post("/products", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = ProductSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const productData = parseResult.data;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // 1. Validate SKU uniqueness
+  const skuError = await validateSkuUniqueness(null, productData, tenantDb);
+  if (skuError) {
+    return c.json({ error: skuError }, 400);
+  }
+
+  // 2. Enforce plan limits from control DB
+  const controlDb = getControlDb(c.env);
+  const tenantRow = await controlDb
+    .prepare("SELECT plan FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ plan: string }>();
+
+  const plan = tenantRow?.plan || "starter";
+
+  const countRow = await tenantDb
+    .prepare("SELECT COUNT(*) as total FROM products")
+    .first<{ total: number }>();
+  const count = countRow?.total || 0;
+
+  if (plan === "starter" && count >= 50) {
+    return c.json({
+      error: "Plan limit reached: Starter tier allows a maximum of 50 products. Please upgrade your plan.",
+    }, 403);
+  }
+  if (plan === "growth" && count >= 500) {
+    return c.json({
+      error: "Plan limit reached: Growth tier allows a maximum of 500 products. Please upgrade your plan.",
+    }, 403);
+  }
+
+  const productId = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      "INSERT INTO products (productId, name, description, price, stockQuantity, status, images, compareAtPrice, costPerItem, sku, barcode, category, productType, vendor, weight, seoTitle, seoDescription, continueSellingOutOfStock, variants, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(
+      productId,
+      productData.name,
+      productData.description || null,
+      productData.price,
+      productData.stockQuantity,
+      productData.status || "active",
+      JSON.stringify(productData.images || []),
+      productData.compareAtPrice || null,
+      productData.costPerItem || null,
+      productData.sku || null,
+      productData.barcode || null,
+      productData.category || null,
+      productData.productType || null,
+      productData.vendor || null,
+      productData.weight || null,
+      productData.seoTitle || null,
+      productData.seoDescription || null,
+      productData.continueSellingOutOfStock ? 1 : 0,
+      JSON.stringify(productData.variants || []),
+      createdAt,
+      createdAt
+    )
+    .run();
+
+  const saved = await tenantDb
+    .prepare("SELECT * FROM products WHERE productId = ?")
+    .bind(productId)
+    .first();
+
+  return c.json(formatProduct(saved), 201);
+});
+
+/**
+ * List Products
+ */
+app.get("/products", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const result = await tenantDb.prepare("SELECT * FROM products ORDER BY createdAt DESC").all();
+  const products = (result.results || []).map(formatProduct);
+  return c.json(products);
+});
+
+/**
+ * Get Product
+ */
+app.get("/products/:id", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const productId = c.req.param("id");
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const product = await tenantDb
+    .prepare("SELECT * FROM products WHERE productId = ?")
+    .bind(productId)
+    .first();
+
+  if (!product) {
+    return c.json({ error: "Product not found" }, 404);
+  }
+
+  return c.json(formatProduct(product));
+});
+
+/**
+ * Update Product
+ */
+app.patch("/products/:id", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const productId = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = ProductSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const productData = parseResult.data;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // 1. Verify the product exists
+  const existing = await tenantDb
+    .prepare("SELECT productId FROM products WHERE productId = ?")
+    .bind(productId)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: "Product not found" }, 404);
+  }
+
+  // 2. Validate SKU uniqueness
+  const skuError = await validateSkuUniqueness(productId, productData, tenantDb);
+  if (skuError) {
+    return c.json({ error: skuError }, 400);
+  }
+
+  const updatedAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      "UPDATE products SET name = ?, description = ?, price = ?, stockQuantity = ?, status = ?, images = ?, compareAtPrice = ?, costPerItem = ?, sku = ?, barcode = ?, category = ?, productType = ?, vendor = ?, weight = ?, seoTitle = ?, seoDescription = ?, continueSellingOutOfStock = ?, variants = ?, updatedAt = ? WHERE productId = ?"
+    )
+    .bind(
+      productData.name,
+      productData.description || null,
+      productData.price,
+      productData.stockQuantity,
+      productData.status || "active",
+      JSON.stringify(productData.images || []),
+      productData.compareAtPrice || null,
+      productData.costPerItem || null,
+      productData.sku || null,
+      productData.barcode || null,
+      productData.category || null,
+      productData.productType || null,
+      productData.vendor || null,
+      productData.weight || null,
+      productData.seoTitle || null,
+      productData.seoDescription || null,
+      productData.continueSellingOutOfStock ? 1 : 0,
+      JSON.stringify(productData.variants || []),
+      updatedAt,
+      productId
+    )
+    .run();
+
+  return c.json({ message: "Product updated successfully" });
+});
+
+/**
+ * Delete Product
+ */
+app.delete("/products/:id", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const productId = c.req.param("id");
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const existing = await tenantDb
+    .prepare("SELECT productId FROM products WHERE productId = ?")
+    .bind(productId)
+    .first();
+
+  if (!existing) {
+    return c.json({ error: "Product not found" }, 404);
+  }
+
+  await tenantDb
+    .prepare("DELETE FROM products WHERE productId = ?")
+    .bind(productId)
+    .run();
+
+  return c.json({ message: "Product deleted successfully" });
+});
+
+/**
+ * Generate Presigned Upload URL for Image Storage
+ */
+app.post("/products/:id/upload-image", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const productId = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+
+  const { fileName, contentType, fileSize, headerHex } = body;
+
+  if (!fileName || !contentType || !fileSize || !headerHex) {
+    return c.json({
+      error: "Missing parameters: fileName, contentType, fileSize, headerHex are required",
+    }, 400);
+  }
+
+  if (fileSize > MAX_FILE_SIZE) {
+    return c.json({
+      error: `File size exceeds the limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
+    }, 400);
+  }
+
+  const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
+  if (!allowedMimeTypes.includes(contentType)) {
+    return c.json({
+      error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed",
+    }, 400);
+  }
+
+  if (!validateMagicBytes(headerHex, contentType)) {
+    return c.json({
+      error: "Security Check Failed: File header does not match expected image magic bytes",
+    }, 400);
+  }
+
+  const fileId = crypto.randomBytes(8).toString("hex");
+  const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
+  const key = `tenants/${tenantId}/products/${productId}/${fileId}-${cleanFileName}`;
+
+  const bucketName = getBucketName(c.env);
+  const storageClient = getStorageClient(c.env);
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+    ContentType: contentType,
+  });
+
+  try {
+    const uploadUrl = await getSignedUrl(storageClient, command, {
+      expiresIn: 300,
+    });
+
+    let imageUrl = "";
+    if (c.env.NODE_ENV === "development" || c.env.AWS_ENDPOINT_URL) {
+      const endpoint = c.env.AWS_ENDPOINT_URL || "http://localhost:4566";
+      imageUrl = `${endpoint}/${bucketName}/${key}`;
+    } else {
+      imageUrl = `https://${bucketName}.r2.cloudflarestorage.com/${key}`;
+    }
+
+    return c.json({ uploadUrl, imageUrl });
+  } catch (err: any) {
+    console.error("Failed to generate presigned upload credentials:", err);
+    return c.json({ error: "Failed to generate upload credentials" }, 500);
+  }
+});
+
+// -------------------------------------------------------------
+// 2. Storefront Public Endpoints (Reads: Marked Future-Cacheable)
+// -------------------------------------------------------------
+
+/**
+ * List Active Products (Storefront public)
+ * FUTURE-CACHEABLE: Public catalog reads can be served from edge KV cache
+ */
+app.get("/store/:subdomain/products", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  
+  const result = await tenantDb
+    .prepare("SELECT * FROM products WHERE status = 'active' ORDER BY createdAt DESC")
+    .all();
+
+  const products = (result.results || []).map(formatProduct);
+  return c.json(products);
+});
+
+/**
+ * Get Product detail (Storefront public)
+ * FUTURE-CACHEABLE: Product detail page reads can be served from edge KV cache
+ */
+app.get("/store/:subdomain/products/:id", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const productId = c.req.param("id");
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const product = await tenantDb
+    .prepare("SELECT * FROM products WHERE productId = ? AND status = 'active'")
+    .bind(productId)
+    .first();
+
+  if (!product) {
+    return c.json({ error: "Product not found or unavailable" }, 404);
+  }
+
+  return c.json(formatProduct(product));
+});
+
+export default app;

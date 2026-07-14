@@ -1,0 +1,70 @@
+name = "basecart-backend"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = [ "nodejs_compat" ]
+
+[vars]
+API_URL = "http://localhost:3001"
+NODE_ENV = "development"
+
+[[d1_databases]]
+binding = "CONTROL_DB"
+database_name = "basecart-control"
+database_id = "control-db-id"
+
+[durable_objects]
+bindings = [
+  { name = "TENANT_DO", class_name = "TenantDO" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TenantDO"]
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "basecart-media"
+
+[[queues.producers]]
+binding = "JOBS_QUEUE"
+queue = "basecart-jobs-queue"
+
+[[queues.consumers]]
+queue = "basecart-jobs-queue"
+max_batch_size = 10
+max_batch_timeout = 5
+
+# Production Environment Settings
+[env.production]
+name = "basecart-backend-prod"
+
+[env.production.vars]
+NODE_ENV = "production"
+API_URL = "https://api.basecart.app"
+ALLOWED_ORIGINS = "https://dashboard.basecart.app,https://admin.basecart.app,https://*.basecart.store"
+COOKIE_DOMAIN_MERCHANT = ".basecart.app"
+COOKIE_DOMAIN_CUSTOMER = ".basecart.store"
+COOKIE_DOMAIN_ADMIN = ".basecart.app"
+
+[[env.production.d1_databases]]
+binding = "CONTROL_DB"
+database_name = "basecart-control-prod"
+database_id = "PROD_D1_CONTROL_DB_ID" # REPLACE with real production D1 database ID
+
+[env.production.durable_objects]
+bindings = [
+  { name = "TENANT_DO", class_name = "TenantDO" }
+]
+
+[[env.production.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "basecart-media-prod"
+
+[[env.production.queues.producers]]
+binding = "JOBS_QUEUE"
+queue = "basecart-jobs-queue-prod"
+
+[[env.production.queues.consumers]]
+queue = "basecart-jobs-queue-prod"
+max_batch_size = 10
+max_batch_timeout = 5

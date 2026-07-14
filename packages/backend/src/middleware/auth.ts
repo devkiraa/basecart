@@ -1,115 +1,91 @@
-import { FastifyRequest, FastifyReply } from "fastify";
-import { GetCommand } from "@aws-sdk/lib-dynamodb";
-import { ddbDocClient } from "../lib/aws";
+import { Context, Next } from "hono";
+import { getCookie } from "hono/cookie";
+import { getControlDb } from "../lib/db";
 import { authService, TokenPayload } from "../services/auth";
 import { getTenantBySubdomain } from "../services/tenant";
-
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
-
-// Extend Fastify types
-declare module "fastify" {
-  interface FastifyRequest {
-    tenantId?: string;
-    user?: TokenPayload;
-  }
-}
 
 /**
  * Authenticate merchant request
  */
-export async function authenticateMerchant(
-  req: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function authenticateMerchant(c: Context, next: Next) {
   try {
-    let token = req.cookies.basecart_merchant_token;
+    let token = getCookie(c, "basecart_merchant_token");
     if (!token) {
-      const authHeader = req.headers.authorization;
+      const authHeader = c.req.header("authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
       }
     }
 
     if (!token) {
-      return reply.status(401).send({ error: "Unauthorized: Missing token" });
+      return c.json({ error: "Unauthorized: Missing token" }, 401);
     }
 
     const payload = await authService.verifyAccessToken(token);
 
     if (payload.type !== "merchant") {
-      return reply
-        .status(403)
-        .send({ error: "Forbidden: Not a merchant session" });
+      return c.json({ error: "Forbidden: Not a merchant session" }, 403);
     }
 
     // Verify store suspension
-    const tenantRes = await ddbDocClient.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          PK: `TENANT#${payload.tenantId}`,
-          SK: "METADATA",
-        },
-      })
-    );
-    if (tenantRes.Item?.status === "suspended") {
-      return reply.status(403).send({ error: "Store Suspended: This merchant account has been suspended" });
+    const db = getControlDb(c.env);
+    const tenantRow = await db
+      .prepare("SELECT status FROM tenants WHERE tenantId = ?")
+      .bind(payload.tenantId)
+      .first<{ status: string }>();
+
+    if (tenantRow?.status === "suspended") {
+      return c.json({ error: "Store Suspended: This merchant account has been suspended" }, 403);
     }
 
-    req.user = payload;
-    req.tenantId = payload.tenantId;
+    c.set("user", payload);
+    c.set("tenantId", payload.tenantId);
+    await next();
   } catch (error: any) {
-    return reply.status(401).send({ error: error.message || "Unauthorized" });
+    return c.json({ error: error.message || "Unauthorized" }, 401);
   }
 }
 
 /**
  * Authenticate customer request
  */
-export async function authenticateCustomer(
-  req: FastifyRequest,
-  reply: FastifyReply
-) {
+export async function authenticateCustomer(c: Context, next: Next) {
   try {
-    let token = req.cookies.basecart_customer_token;
+    let token = getCookie(c, "basecart_customer_token");
     if (!token) {
-      const authHeader = req.headers.authorization;
+      const authHeader = c.req.header("authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
       }
     }
 
     if (!token) {
-      return reply.status(401).send({ error: "Unauthorized: Missing token" });
+      return c.json({ error: "Unauthorized: Missing token" }, 401);
     }
 
     const payload = await authService.verifyAccessToken(token);
 
     if (payload.type !== "customer") {
-      return reply
-        .status(403)
-        .send({ error: "Forbidden: Not a customer session" });
+      return c.json({ error: "Forbidden: Not a customer session" }, 403);
     }
 
-    req.user = payload;
-    req.tenantId = payload.tenantId;
+    c.set("user", payload);
+    c.set("tenantId", payload.tenantId);
+    await next();
   } catch (error: any) {
-    return reply.status(401).send({ error: error.message || "Unauthorized" });
+    return c.json({ error: error.message || "Unauthorized" }, 401);
   }
 }
 
 /**
  * Resolves tenant details based on URL subdomain parameters, Host header, or a custom header
  */
-export async function resolveStorefrontTenant(
-  req: FastifyRequest,
-  reply: FastifyReply
-) {
-  let subdomain = (req.params as any).subdomain;
+export async function resolveStorefrontTenant(c: Context, next: Next) {
+  let subdomain = c.req.param("subdomain");
 
   if (!subdomain) {
     // Attempt to extract from host header
-    const host = req.headers.host || "";
+    const host = c.req.header("host") || "";
     const parts = host.split(".");
     if (parts.length >= 2) {
       const sub = parts[0];
@@ -128,23 +104,23 @@ export async function resolveStorefrontTenant(
 
   if (!subdomain) {
     // Fallback check: Custom header for easy API/integration testing
-    subdomain = req.headers["x-subdomain"] as string;
+    subdomain = c.req.header("x-subdomain");
   }
 
   if (!subdomain) {
-    return reply
-      .status(400)
-      .send({ error: "Bad Request: Subdomain is required" });
+    return c.json({ error: "Bad Request: Subdomain is required" }, 400);
   }
 
-  const tenant = await getTenantBySubdomain(subdomain);
+  const tenant = await getTenantBySubdomain(subdomain, c.env);
   if (!tenant) {
-    return reply.status(404).send({ error: `Store "${subdomain}" not found` });
+    return c.json({ error: `Store "${subdomain}" not found` }, 404);
   }
 
   if (tenant.status === "suspended") {
-    return reply.status(403).send({ error: "Store Suspended: This store has been suspended by platform administrators" });
+    return c.json({ error: "Store Suspended: This store has been suspended by platform administrators" }, 403);
   }
 
-  req.tenantId = tenant.tenantId;
+  c.set("tenantId", tenant.tenantId);
+  c.set("tenant", tenant);
+  await next();
 }

@@ -15,7 +15,8 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const STOREFRONT_DOMAIN = process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002";
 
 interface Merchant {
   tenantId: string;
@@ -233,7 +234,7 @@ export default function MerchantsListPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-mono text-xs">{m.subdomain}.localhost</td>
+                      <td className="px-6 py-4 font-mono text-xs">{m.subdomain}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
                           m.plan === "pro"

@@ -15,7 +15,8 @@ import {
   BadgeCent,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const STOREFRONT_DOMAIN = process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002";
 
 interface StoreDetails {
   store: {
@@ -31,6 +32,7 @@ interface StoreDetails {
   };
   products: any[];
   orders: any[];
+  statements?: any[];
 }
 
 export default function MerchantDetailPage() {
@@ -181,7 +183,7 @@ export default function MerchantDetailPage() {
                 </span>
               </div>
               <p className="text-sm text-slate-500 mt-0.5">
-                Subdomain: <span className="font-semibold text-slate-700">{store.subdomain}.localhost</span>
+                Subdomain: <span className="font-semibold text-slate-700">{store.subdomain}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>
               </p>
             </div>
           </div>

@@ -1,1178 +1,818 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import crypto from "crypto";
-import {
-  QueryCommand,
-  GetCommand,
-  TransactWriteCommand,
-  PutCommand,
-  UpdateCommand,
-  DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
-import { SendEmailCommand } from "@aws-sdk/client-ses";
-import { ddbDocClient, sesClient } from "../lib/aws";
+import { Hono } from "hono";
+import { setCookie, deleteCookie, getCookie } from "hono/cookie";
+import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
-import { resolveStorefrontTenant, authenticateMerchant, authenticateCustomer } from "../middleware/auth";
+import { getTenantBySubdomain, provisionTenantDatabase, createD1Database } from "../services/tenant";
+import { sendEmail } from "../services/email";
 import {
   MerchantSignupSchema,
   MerchantLoginSchema,
   CustomerSignupSchema,
   CustomerLoginSchema,
 } from "@basecart/shared";
+import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
+const app = new Hono();
 
-async function sendEmailSafely(to: string, subject: string, htmlContent: string) {
+function getMerchantCookieOptions(c: any, maxAge: number) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  return {
+    path: "/",
+    httpOnly: true,
+    secure: c.env && c.env.NODE_ENV === "production",
+    sameSite: "Lax" as const,
+    maxAge,
+    domain,
+  };
+}
+
+function getMerchantDeleteOptions(c: any) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  return {
+    path: "/",
+    domain,
+  };
+}
+
+function getCustomerCookieOptions(c: any, maxAge: number) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
+  return {
+    path: "/",
+    httpOnly: true,
+    secure: c.env && c.env.NODE_ENV === "production",
+    sameSite: "Lax" as const,
+    maxAge,
+    domain,
+  };
+}
+
+function getCustomerDeleteOptions(c: any) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
+  return {
+    path: "/",
+    domain,
+  };
+}
+
+// --- Helper: Send verification/reset emails safely ---
+async function sendEmailSafely(to: string, subject: string, htmlContent: string, env: any) {
   try {
-    await sesClient.send(
-      new SendEmailCommand({
-        Source: "noreply@basecart.io",
-        Destination: { ToAddresses: [to] },
-        Message: {
-          Subject: { Data: subject },
-          Body: {
-            Html: { Data: htmlContent }
-          }
-        }
-      })
-    );
-    console.log(`✅ Email sent successfully to ${to}`);
+    await sendEmail(to, subject, htmlContent, env);
   } catch (error) {
-    console.error(`❌ Failed to send email to ${to}:`, error);
+    console.error(`Failed to send email to ${to}:`, error);
   }
 }
 
-export async function authRoutes(fastify: FastifyInstance) {
-  // --- Merchant Auth Endpoints ---
+// -------------------------------------------------------------
+// 1. Merchant Auth Endpoints
+// -------------------------------------------------------------
 
-  /**
-   * Merchant Signup
-   * Creates a store (tenant) and the owner account atomically.
-   */
-  fastify.post(
-    "/auth/merchant/signup",
+/**
+ * Merchant Signup
+ * Creates a store (tenant) and the owner account atomically.
+ */
+app.post("/auth/merchant/signup", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = MerchantSignupSchema.safeParse(body);
+  
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const { email, password, storeName, subdomain } = parseResult.data;
+  const lowerEmail = email.toLowerCase();
+  const lowerSubdomain = subdomain.toLowerCase();
+
+  const controlDb = getControlDb(c.env);
+
+  // 1. Check if subdomain already exists
+  const existingSubdomain = await controlDb
+    .prepare("SELECT tenantId FROM tenants WHERE subdomain = ?")
+    .bind(lowerSubdomain)
+    .first();
+
+  if (existingSubdomain) {
+    return c.json({ error: "Subdomain is already registered by another store" }, 400);
+  }
+
+  // 2. Check if user already exists globally
+  const existingUser = await controlDb
+    .prepare("SELECT email FROM merchant_users WHERE email = ?")
+    .bind(lowerEmail)
+    .first();
+
+  if (existingUser) {
+    return c.json({ error: "Email is already registered" }, 400);
+  }
+
+  // 3. Generate credentials and IDs
+  const tenantId = crypto.randomUUID();
+  const userId = crypto.randomUUID();
+  const hashedPassword = await authService.hashPassword(password);
+  const createdAt = new Date().toISOString();
+
+  // 4. Provision the dynamic D1/Durable Object database
+  const databaseId = await createD1Database(tenantId, c.env);
+
+  // 5. Save registry details in the control database
+  const tStmt = controlDb
+    .prepare(
+      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(tenantId, storeName, lowerSubdomain, "starter", "active", createdAt, null, null, null, "[]", "{}");
+
+  const uStmt = controlDb
+    .prepare(
+      "INSERT INTO merchant_users (email, tenantId, userId, hashedPassword, role, emailVerified, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 0, createdAt);
+
+  await controlDb.batch([tStmt, uStmt]);
+
+  // 6. Run migrations & seed default configuration inside the tenant database
+  await provisionTenantDatabase(tenantId, storeName, c.env);
+
+  // 7. Create email verification token
+  const verificationToken = crypto.randomUUID();
+  const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+
+  await controlDb
+    .prepare(
+      "INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(verificationToken, lowerEmail, tenantId, verificationExpiry, verificationTtl)
+    .run();
+
+  const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
+  await sendEmailSafely(
+    lowerEmail,
+    "Verify Your Basecart Store Account",
+    `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #2563EB;">Welcome to Basecart!</h2>
+        <p>Thank you for signing up for ${storeName}. Please click the button below to verify your email address and unlock complete account access:</p>
+        <div style="margin: 24px 0;">
+          <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
+        </div>
+        <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+      </div>
+    `,
+    c.env
+  );
+
+  // 8. Generate auth tokens
+  const tokens = await authService.generateTokens(
     {
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
+      userId,
+      email: lowerEmail,
+      role: "owner",
+      tenantId,
+      type: "merchant",
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      // 1. Validate request body
-      const parseResult = MerchantSignupSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
+    controlDb
+  );
 
-      const { email, password, storeName, subdomain } = parseResult.data;
-      const lowerEmail = email.toLowerCase();
-      const lowerSubdomain = subdomain.toLowerCase();
+  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
+  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
 
-      // 2. Check if subdomain already exists using GSI1
-      const subdomainQuery = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI1",
-          KeyConditionExpression: "GSI1PK = :gsi1pk AND GSI1SK = :gsi1sk",
-          ExpressionAttributeValues: {
-            ":gsi1pk": `SUBDOMAIN#${lowerSubdomain}`,
-            ":gsi1sk": "METADATA",
-          },
-        })
-      );
+  return c.json({
+    message: "Merchant account and store created successfully",
+    tenantId,
+    store: {
+      storeName,
+      subdomain: lowerSubdomain,
+    },
+    ...tokens,
+  }, 201);
+});
 
-      if (subdomainQuery.Items && subdomainQuery.Items.length > 0) {
-        return reply
-          .status(400)
-          .send({ error: "Subdomain is already registered by another store" });
-      }
+/**
+ * Merchant Login
+ */
+app.post("/auth/merchant/login", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = MerchantLoginSchema.safeParse(body);
 
-      // 3. Check if user already exists globally using GSI2
-      const userQuery = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI2",
-          KeyConditionExpression: "GSI2PK = :gsi2pk AND GSI2SK = :gsi2sk",
-          ExpressionAttributeValues: {
-            ":gsi2pk": `USER#${lowerEmail}`,
-            ":gsi2sk": "METADATA",
-          },
-        })
-      );
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
 
-      if (userQuery.Items && userQuery.Items.length > 0) {
-        return reply
-          .status(400)
-          .send({ error: "Email is already registered" });
-      }
+  const { email, password } = parseResult.data;
+  const lowerEmail = email.toLowerCase();
 
-      // 4. Generate new tenant ID and hash password
-      const tenantId = crypto.randomUUID();
-      const userId = crypto.randomUUID();
-      const hashedPassword = await authService.hashPassword(password);
-      const createdAt = new Date().toISOString();
+  const controlDb = getControlDb(c.env);
 
-      // 5. Write tenant and user records atomically
-      await ddbDocClient.send(
-        new TransactWriteCommand({
-          TransactItems: [
-            {
-              Put: {
-                TableName: TABLE_NAME,
-                Item: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: "METADATA",
-                  GSI1PK: `SUBDOMAIN#${lowerSubdomain}`,
-                  GSI1SK: "METADATA",
-                  storeName,
-                  subdomain: lowerSubdomain,
-                  plan: "starter",
-                  createdAt,
-                },
-              },
-            },
-            {
-              Put: {
-                TableName: TABLE_NAME,
-                Item: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: `USER#${lowerEmail}`,
-                  GSI2PK: `USER#${lowerEmail}`,
-                  GSI2SK: "METADATA",
-                  userId,
-                  email: lowerEmail,
-                  hashedPassword,
-                  role: "owner",
-                  createdAt,
-                  emailVerified: false,
-                },
-              },
-            },
-          ],
-        })
-      );
+  const user = await controlDb
+    .prepare("SELECT * FROM merchant_users WHERE email = ?")
+    .bind(lowerEmail)
+    .first<any>();
 
-      // Generate verification token and email
-      const verificationToken = crypto.randomUUID();
-      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours
-      const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
-      
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            PK: `VERIFY_TOKEN#${verificationToken}`,
-            SK: "METADATA",
-            email: lowerEmail,
-            tenantId,
-            expiresAt: verificationExpiry,
-            ttl: verificationTtl,
-          }
-        })
-      );
-      
-      const verifyLink = `http://localhost:3001/auth/merchant/verify-email?token=${verificationToken}`;
-      await sendEmailSafely(
-        lowerEmail,
-        "Verify Your Basecart Store Account",
-        `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #2563EB;">Welcome to Basecart!</h2>
-            <p>Thank you for signing up for ${storeName}. Please click the button below to verify your email address and unlock complete account access:</p>
-            <div style="margin: 24px 0;">
-              <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
-            </div>
-            <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+  if (!user) {
+    return c.json({ error: "Invalid email or password" }, 401);
+  }
+
+  const valid = await authService.comparePassword(password, user.hashedPassword);
+  if (!valid) {
+    return c.json({ error: "Invalid email or password" }, 401);
+  }
+
+  const tokens = await authService.generateTokens(
+    {
+      userId: user.userId,
+      email: lowerEmail,
+      role: user.role,
+      tenantId: user.tenantId,
+      type: "merchant",
+    },
+    controlDb
+  );
+
+  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
+  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
+
+  return c.json({
+    tenantId: user.tenantId,
+    email: lowerEmail,
+    role: user.role,
+    emailVerified: user.emailVerified === 1,
+    ...tokens,
+  });
+});
+
+/**
+ * Merchant Refresh Token
+ */
+app.post("/auth/merchant/refresh", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  let refreshToken = getCookie(c, "basecart_merchant_refresh_token") || body.refreshToken;
+  const tenantId = body.tenantId;
+
+  if (!refreshToken || !tenantId) {
+    return c.json({ error: "refreshToken and tenantId are required" }, 400);
+  }
+
+  try {
+    const controlDb = getControlDb(c.env);
+    const tokens = await authService.refreshSession(refreshToken, tenantId, controlDb);
+
+    setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
+    setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
+
+    return c.json(tokens);
+  } catch (err: any) {
+    return c.json({ error: err.message || "Invalid session" }, 401);
+  }
+});
+
+/**
+ * Get Current Merchant Profile (Future cacheable by session token)
+ */
+app.get("/auth/merchant/me", authenticateMerchant, async (c) => {
+  const user = c.get("user");
+  const tenantId = c.get("tenantId");
+
+  const controlDb = getControlDb(c.env);
+  const dbUser = await controlDb
+    .prepare("SELECT emailVerified FROM merchant_users WHERE email = ? AND tenantId = ?")
+    .bind(user.email, tenantId)
+    .first<any>();
+
+  const tokens = await authService.generateTokens(
+    {
+      userId: user.userId,
+      email: user.email,
+      role: user.role,
+      tenantId: tenantId,
+      type: "merchant",
+    },
+    controlDb
+  );
+
+  return c.json({
+    tenantId,
+    email: user.email,
+    role: user.role,
+    emailVerified: dbUser?.emailVerified === 1,
+    accessToken: tokens.accessToken,
+  });
+});
+
+/**
+ * Merchant Logout
+ */
+app.post("/auth/merchant/logout", async (c) => {
+  deleteCookie(c, "basecart_merchant_token", getMerchantDeleteOptions(c));
+  deleteCookie(c, "basecart_merchant_refresh_token", getMerchantDeleteOptions(c));
+  return c.json({ message: "Logged out successfully" });
+});
+
+/**
+ * Merchant Forgot Password
+ */
+app.post("/auth/merchant/forgot-password", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { email } = body;
+  
+  if (!email) {
+    return c.json({ error: "Email is required" }, 400);
+  }
+  const lowerEmail = email.toLowerCase();
+
+  const controlDb = getControlDb(c.env);
+  const user = await controlDb
+    .prepare("SELECT tenantId FROM merchant_users WHERE email = ?")
+    .bind(lowerEmail)
+    .first<{ tenantId: string }>();
+
+  if (user) {
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
+
+    await controlDb
+      .prepare(
+        "INSERT INTO reset_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
+      )
+      .bind(token, lowerEmail, user.tenantId, expiresAt, ttl)
+      .run();
+
+    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+    await sendEmailSafely(
+      lowerEmail,
+      "Reset Your Basecart Password",
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Reset Your Password</h2>
+          <p>You requested a password reset for your Basecart store account. Click the link below to set a new password:</p>
+          <div style="margin: 24px 0;">
+            <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
           </div>
-        `
-      );
+          <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes. If you did not request this, you can safely ignore this email.</p>
+        </div>
+      `,
+      c.env
+    );
+  }
 
-      // 6. Generate access and refresh tokens
-      const tokens = await authService.generateTokens({
-        userId,
-        email: lowerEmail,
-        role: "owner",
-        tenantId,
-        type: "merchant",
-      });
+  return c.json({ message: "If the email is registered, a password reset link has been sent." });
+});
 
-      reply.setCookie("basecart_merchant_token", tokens.accessToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60, // 15 mins
-      });
-      reply.setCookie("basecart_merchant_refresh_token", tokens.refreshToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60, // 7 days
-      });
+/**
+ * Merchant Reset Password
+ */
+app.post("/auth/merchant/reset-password", async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { token, newPassword } = body;
 
-      return reply.status(201).send({
-        message: "Merchant account and store created successfully",
-        tenantId,
-        store: {
-          storeName,
-          subdomain: lowerSubdomain,
-        },
-        ...tokens,
-      });
-    }
+  if (!token || !newPassword || newPassword.length < 6) {
+    return c.json({ error: "Token and password (min 6 chars) are required" }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+  const resetToken = await controlDb
+    .prepare("SELECT * FROM reset_tokens WHERE token = ?")
+    .bind(token)
+    .first<any>();
+
+  if (!resetToken) {
+    return c.json({ error: "Invalid or expired reset token" }, 400);
+  }
+
+  if (new Date(resetToken.expiresAt) < new Date()) {
+    return c.json({ error: "Reset token has expired" }, 400);
+  }
+
+  const hashedPassword = await authService.hashPassword(newPassword);
+
+  // Update password and invalidate reset token & sessions in control DB
+  const updatePass = controlDb
+    .prepare("UPDATE merchant_users SET hashedPassword = ? WHERE email = ? AND tenantId = ?")
+    .bind(hashedPassword, resetToken.email, resetToken.tenantId);
+
+  const deleteSession = controlDb
+    .prepare("DELETE FROM refresh_tokens WHERE tenantId = ? AND email = ?")
+    .bind(resetToken.tenantId, resetToken.email);
+
+  const deleteToken = controlDb
+    .prepare("DELETE FROM reset_tokens WHERE token = ?")
+    .bind(token);
+
+  await controlDb.batch([updatePass, deleteSession, deleteToken]);
+
+  return c.json({ message: "Password has been successfully reset" });
+});
+
+/**
+ * Resend Verification Email (Merchant-only)
+ */
+app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) => {
+  const email = c.get("user").email;
+  const tenantId = c.get("tenantId");
+
+  const controlDb = getControlDb(c.env);
+  const dbUser = await controlDb
+    .prepare("SELECT emailVerified FROM merchant_users WHERE email = ? AND tenantId = ?")
+    .bind(email, tenantId)
+    .first<{ emailVerified: number }>();
+
+  if (!dbUser) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  if (dbUser.emailVerified === 1) {
+    return c.json({ error: "Email is already verified" }, 400);
+  }
+
+  const verificationToken = crypto.randomUUID();
+  const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
+
+  await controlDb
+    .prepare(
+      "INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(verificationToken, email, tenantId, verificationExpiry, verificationTtl)
+    .run();
+
+  const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
+  await sendEmailSafely(
+    email,
+    "Verify Your Basecart Store Account",
+    `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <h2 style="color: #2563EB;">Verify Your Basecart Email</h2>
+        <p>Please click the button below to verify your email address:</p>
+        <div style="margin: 24px 0;">
+          <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
+        </div>
+        <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+      </div>
+    `,
+    c.env
   );
 
-  /**
-   * Merchant Login
-   */
-  fastify.post(
-    "/auth/merchant/login",
+  return c.json({ message: "Verification email resent successfully" });
+});
+
+/**
+ * Verify Email
+ */
+app.get("/auth/merchant/verify-email", async (c) => {
+  const token = c.req.query("token");
+  if (!token) {
+    return c.json({ error: "Token is required" }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+  const tokenItem = await controlDb
+    .prepare("SELECT * FROM verification_tokens WHERE token = ?")
+    .bind(token)
+    .first<any>();
+
+  if (!tokenItem) {
+    return c.json({ error: "Invalid or expired token" }, 400);
+  }
+
+  if (new Date(tokenItem.expiresAt) < new Date()) {
+    return c.json({ error: "Token has expired" }, 400);
+  }
+
+  // Update merchant user emailVerified status and delete the verification token
+  const updateVerify = controlDb
+    .prepare("UPDATE merchant_users SET emailVerified = 1 WHERE email = ? AND tenantId = ?")
+    .bind(tokenItem.email, tokenItem.tenantId);
+
+  const deleteToken = controlDb
+    .prepare("DELETE FROM verification_tokens WHERE token = ?")
+    .bind(token);
+
+  await controlDb.batch([updateVerify, deleteToken]);
+
+  return c.redirect("http://localhost:3000/?verified=true");
+});
+
+// -------------------------------------------------------------
+// 2. Customer Auth Endpoints (Storefront-scoped)
+// -------------------------------------------------------------
+
+/**
+ * Customer Signup (Per-store scoped)
+ */
+app.post("/auth/customer/signup", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+
+  // 1. Fetch store plan details from control DB
+  const tenant = await controlDb
+    .prepare("SELECT plan FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ plan: string }>();
+
+  const plan = tenant?.plan || "starter";
+  if (plan === "starter") {
+    return c.json({
+      error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
+    }, 403);
+  }
+
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = CustomerSignupSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const { email, password, name } = parseResult.data;
+  const lowerEmail = email.toLowerCase();
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // 2. Check if customer email already exists in this tenant DB
+  const existingCustomer = await tenantDb
+    .prepare("SELECT customerId FROM customers WHERE email = ?")
+    .bind(lowerEmail)
+    .first();
+
+  if (existingCustomer) {
+    return c.json({ error: "Email is already registered on this store" }, 400);
+  }
+
+  // 3. Create customer record
+  const customerId = crypto.randomUUID();
+  const hashedPassword = await authService.hashPassword(password);
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      "INSERT INTO customers (customerId, name, email, hashedPassword, createdAt) VALUES (?, ?, ?, ?, ?)"
+    )
+    .bind(customerId, name, lowerEmail, hashedPassword, createdAt)
+    .run();
+
+  // 4. Generate tokens
+  const tokens = await authService.generateTokens(
     {
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
+      userId: customerId,
+      email: lowerEmail,
+      role: "customer",
+      tenantId,
+      type: "customer",
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const parseResult = MerchantLoginSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const { email, password } = parseResult.data;
-      const lowerEmail = email.toLowerCase();
-
-      // Lookup user globally via GSI2
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI2",
-          KeyConditionExpression: "GSI2PK = :gsi2pk AND GSI2SK = :gsi2sk",
-          ExpressionAttributeValues: {
-            ":gsi2pk": `USER#${lowerEmail}`,
-            ":gsi2sk": "METADATA",
-          },
-        })
-      );
-
-      if (!result.Items || result.Items.length === 0) {
-        return reply
-          .status(401)
-          .send({ error: "Invalid email or password" });
-      }
-
-      const userItem = result.Items[0];
-      const valid = await authService.comparePassword(
-        password,
-        userItem.hashedPassword
-      );
-
-      if (!valid) {
-        return reply
-          .status(401)
-          .send({ error: "Invalid email or password" });
-      }
-
-      // Extract tenantId from PK (PK = TENANT#<tenantId>)
-      const tenantId = (userItem.PK as string).replace("TENANT#", "");
-
-      const tokens = await authService.generateTokens({
-        userId: userItem.userId,
-        email: lowerEmail,
-        role: userItem.role,
-        tenantId,
-        type: "merchant",
-      });
-
-      reply.setCookie("basecart_merchant_token", tokens.accessToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60,
-      });
-      reply.setCookie("basecart_merchant_refresh_token", tokens.refreshToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60,
-      });
-
-      return reply.send({
-        tenantId,
-        email: lowerEmail,
-        role: userItem.role,
-        emailVerified: userItem.emailVerified !== false,
-        ...tokens,
-      });
-    }
+    controlDb
   );
 
-  /**
-   * Merchant Refresh Token
-   */
-  fastify.post(
-    "/auth/merchant/refresh",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      let refreshToken = req.cookies.basecart_merchant_refresh_token;
-      let tenantId = req.body ? (req.body as any).tenantId : undefined;
+  setCookie(c, "basecart_customer_token", tokens.accessToken, getCustomerCookieOptions(c, 15 * 60));
+  setCookie(c, "basecart_customer_refresh_token", tokens.refreshToken, getCustomerCookieOptions(c, 7 * 24 * 60 * 60));
 
-      if (!refreshToken && req.body) {
-        refreshToken = (req.body as any).refreshToken;
-      }
+  return c.json({
+    message: "Customer account created successfully",
+    customerId,
+    name,
+    email: lowerEmail,
+    ...tokens,
+  }, 201);
+});
 
-      if (!refreshToken || !tenantId) {
-        return reply
-          .status(400)
-          .send({ error: "refreshToken and tenantId are required" });
-      }
+/**
+ * Customer Login (Per-store scoped)
+ */
+app.post("/auth/customer/login", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
 
-      try {
-        const tokens = await authService.refreshSession(
-          refreshToken,
-          tenantId
-        );
+  // 1. Fetch store plan details
+  const tenant = await controlDb
+    .prepare("SELECT plan FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ plan: string }>();
 
-        reply.setCookie("basecart_merchant_token", tokens.accessToken, {
-          path: "/",
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 15 * 60,
-        });
-        reply.setCookie("basecart_merchant_refresh_token", tokens.refreshToken, {
-          path: "/",
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 7 * 24 * 60 * 60,
-        });
+  const plan = tenant?.plan || "starter";
+  if (plan === "starter") {
+    return c.json({
+      error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
+    }, 403);
+  }
 
-        return reply.send(tokens);
-      } catch (err: any) {
-        return reply.status(401).send({ error: err.message || "Invalid session" });
-      }
-    }
-  );
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = CustomerLoginSchema.safeParse(body);
 
-  // --- Customer Auth Endpoints (Storefront-facing) ---
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
 
-  /**
-   * Customer Signup (Per-store scoped)
-   */
-  fastify.post(
-    "/auth/customer/signup",
+  const { email, password } = parseResult.data;
+  const lowerEmail = email.toLowerCase();
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const customer = await tenantDb
+    .prepare("SELECT * FROM customers WHERE email = ?")
+    .bind(lowerEmail)
+    .first<any>();
+
+  if (!customer || !customer.hashedPassword) {
+    return c.json({ error: "Invalid email or password" }, 401);
+  }
+
+  const valid = await authService.comparePassword(password, customer.hashedPassword);
+  if (!valid) {
+    return c.json({ error: "Invalid email or password" }, 401);
+  }
+
+  const tokens = await authService.generateTokens(
     {
-      preHandler: [resolveStorefrontTenant],
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
+      userId: customer.customerId,
+      email: lowerEmail,
+      role: "customer",
+      tenantId,
+      type: "customer",
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      // 1. Fetch store plan details
-      const tenantRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const plan = tenantRes.Item?.plan || "starter";
-      if (plan === "starter") {
-        return reply.status(403).send({
-          error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
-        });
-      }
-
-      const parseResult = CustomerSignupSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const { email, password, name } = parseResult.data;
-      const lowerEmail = email.toLowerCase();
-
-      // Check unique email lookup for this tenant
-      const lookupResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `CUSTOMER_EMAIL#${lowerEmail}`,
-          },
-        })
-      );
-
-      if (lookupResult.Item) {
-        return reply
-          .status(400)
-          .send({ error: "Email is already registered on this store" });
-      }
-
-      const customerId = crypto.randomUUID();
-      const hashedPassword = await authService.hashPassword(password);
-      const createdAt = new Date().toISOString();
-
-      // Create customer record + unique email lookup atomically
-      await ddbDocClient.send(
-        new TransactWriteCommand({
-          TransactItems: [
-            {
-              Put: {
-                TableName: TABLE_NAME,
-                Item: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: `CUSTOMER#${customerId}`,
-                  customerId,
-                  email: lowerEmail,
-                  hashedPassword,
-                  name,
-                  savedAddresses: [],
-                  createdAt,
-                },
-              },
-            },
-            {
-              Put: {
-                TableName: TABLE_NAME,
-                Item: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: `CUSTOMER_EMAIL#${lowerEmail}`,
-                  customerId,
-                  createdAt,
-                },
-              },
-            },
-          ],
-        })
-      );
-
-      const tokens = await authService.generateTokens({
-        userId: customerId,
-        email: lowerEmail,
-        role: "customer",
-        tenantId,
-        type: "customer",
-      });
-
-      reply.setCookie("basecart_customer_token", tokens.accessToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60,
-      });
-      reply.setCookie("basecart_customer_refresh_token", tokens.refreshToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60,
-      });
-
-      return reply.status(201).send({
-        message: "Customer account created successfully",
-        customerId,
-        name,
-        email: lowerEmail,
-        ...tokens,
-      });
-    }
+    controlDb
   );
 
-  /**
-   * Customer Login (Per-store scoped)
-   */
-  fastify.post(
-    "/auth/customer/login",
+  setCookie(c, "basecart_customer_token", tokens.accessToken, getCustomerCookieOptions(c, 15 * 60));
+  setCookie(c, "basecart_customer_refresh_token", tokens.refreshToken, getCustomerCookieOptions(c, 7 * 24 * 60 * 60));
+
+  return c.json({
+    customerId: customer.customerId,
+    name: customer.name,
+    email: lowerEmail,
+    ...tokens,
+  });
+});
+
+/**
+ * Get Current Customer Profile (Future cacheable by session token)
+ */
+app.get("/auth/customer/me", resolveStorefrontTenant, authenticateCustomer, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const user = c.get("user")!;
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const customer = await tenantDb
+    .prepare("SELECT name FROM customers WHERE customerId = ?")
+    .bind(user.userId)
+    .first<{ name: string }>();
+
+  if (!customer) {
+    return c.json({ error: "Customer not found" }, 404);
+  }
+
+  const controlDb = getControlDb(c.env);
+  const tokens = await authService.generateTokens(
     {
-      preHandler: [resolveStorefrontTenant],
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
+      userId: user.userId,
+      email: user.email,
+      role: "customer",
+      tenantId,
+      type: "customer",
     },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      // 1. Fetch store plan details
-      const tenantRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const plan = tenantRes.Item?.plan || "starter";
-      if (plan === "starter") {
-        return reply.status(403).send({
-          error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
-        });
-      }
-
-      const parseResult = CustomerLoginSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const { email, password } = parseResult.data;
-      const lowerEmail = email.toLowerCase();
-
-      // Get lookup record first to get customerId
-      const lookupResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `CUSTOMER_EMAIL#${lowerEmail}`,
-          },
-        })
-      );
-
-      if (!lookupResult.Item) {
-        return reply
-          .status(401)
-          .send({ error: "Invalid email or password" });
-      }
-
-      const customerId = lookupResult.Item.customerId;
-
-      // Get full customer profile
-      const customerResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `CUSTOMER#${customerId}`,
-          },
-        })
-      );
-
-      const customerItem = customerResult.Item;
-      if (!customerItem || !customerItem.hashedPassword) {
-        return reply
-          .status(401)
-          .send({ error: "Invalid email or password" });
-      }
-
-      const valid = await authService.comparePassword(
-        password,
-        customerItem.hashedPassword
-      );
-
-      if (!valid) {
-        return reply
-          .status(401)
-          .send({ error: "Invalid email or password" });
-      }
-
-      const tokens = await authService.generateTokens({
-        userId: customerId,
-        email: lowerEmail,
-        role: "customer",
-        tenantId,
-        type: "customer",
-      });
-
-      reply.setCookie("basecart_customer_token", tokens.accessToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 15 * 60,
-      });
-      reply.setCookie("basecart_customer_refresh_token", tokens.refreshToken, {
-        path: "/",
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 7 * 24 * 60 * 60,
-      });
-
-      return reply.send({
-        customerId,
-        name: customerItem.name,
-        email: lowerEmail,
-        ...tokens,
-      });
-    }
+    controlDb
   );
 
-  /**
-   * Get Current Merchant Profile (Cookie authenticated)
-   */
-  fastify.get(
-    "/auth/merchant/me",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tokens = await authService.generateTokens({
-        userId: req.user!.userId,
-        email: req.user!.email,
-        role: req.user!.role,
-        tenantId: req.user!.tenantId,
-        type: "merchant",
-      });
+  return c.json({
+    customerId: user.userId,
+    email: user.email,
+    role: "customer",
+    name: customer.name,
+    accessToken: tokens.accessToken,
+  });
+});
 
-      const userRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${req.user!.tenantId}`,
-            SK: `USER#${req.user!.email}`,
-          },
-        })
-      );
-      const emailVerified = userRes.Item?.emailVerified !== false;
+/**
+ * Customer Logout
+ */
+app.post("/auth/customer/logout", resolveStorefrontTenant, async (c) => {
+  deleteCookie(c, "basecart_customer_token", getCustomerDeleteOptions(c));
+  deleteCookie(c, "basecart_customer_refresh_token", getCustomerDeleteOptions(c));
+  return c.json({ message: "Logged out successfully" });
+});
 
-      return reply.send({
-        tenantId: req.user!.tenantId,
-        email: req.user!.email,
-        role: req.user!.role,
-        emailVerified,
-        accessToken: tokens.accessToken,
-      });
-    }
-  );
+/**
+ * Customer Forgot Password
+ */
+app.post("/auth/customer/forgot-password", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const { email } = body;
 
-  /**
-   * Merchant Logout
-   */
-  fastify.post(
-    "/auth/merchant/logout",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      reply.clearCookie("basecart_merchant_token", { path: "/" });
-      reply.clearCookie("basecart_merchant_refresh_token", { path: "/" });
-      return reply.send({ message: "Logged out successfully" });
-    }
-  );
+  if (!email) {
+    return c.json({ error: "Email is required" }, 400);
+  }
+  const lowerEmail = email.toLowerCase();
 
-  /**
-   * Get Current Customer Profile (Cookie authenticated)
-   */
-  fastify.get(
-    "/auth/customer/me",
-    {
-      preHandler: [resolveStorefrontTenant, authenticateCustomer],
-    },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const customerResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${req.user!.tenantId}`,
-            SK: `CUSTOMER#${req.user!.userId}`,
-          },
-        })
-      );
-      const name = customerResult.Item?.name || req.user!.email.split("@")[0];
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const customer = await tenantDb
+    .prepare("SELECT customerId FROM customers WHERE email = ?")
+    .bind(lowerEmail)
+    .first<{ customerId: string }>();
 
-      const tokens = await authService.generateTokens({
-        userId: req.user!.userId,
-        email: req.user!.email,
-        role: req.user!.role,
-        tenantId: req.user!.tenantId,
-        type: "customer",
-      });
+  if (customer) {
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
 
-      return reply.send({
-        customerId: req.user!.userId,
-        email: req.user!.email,
-        role: req.user!.role,
-        name,
-        accessToken: tokens.accessToken,
-      });
-    }
-  );
+    const controlDb = getControlDb(c.env);
+    await controlDb
+      .prepare(
+        "INSERT INTO reset_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
+      )
+      .bind(token, lowerEmail, tenantId, expiresAt, ttl)
+      .run();
 
-  /**
-   * Customer Logout
-   */
-  fastify.post(
-    "/auth/customer/logout",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      reply.clearCookie("basecart_customer_token", { path: "/" });
-      reply.clearCookie("basecart_customer_refresh_token", { path: "/" });
-      return reply.send({ message: "Logged out successfully" });
-    }
-  );
+    const tenant = c.get("tenant");
+    const subdomain = tenant?.subdomain || "demo";
+    const resetLink = `http://${subdomain}.localhost:3002/reset-password?token=${token}`;
 
-  /**
-   * Merchant Forgot Password
-   */
-  fastify.post(
-    "/auth/merchant/forgot-password",
-    {
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
-    },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const { email } = req.body as any;
-      if (!email) {
-        return reply.status(400).send({ error: "Email is required" });
-      }
-      const lowerEmail = email.toLowerCase();
-
-      const userQuery = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI2",
-          KeyConditionExpression: "GSI2PK = :gsi2pk AND GSI2SK = :gsi2sk",
-          ExpressionAttributeValues: {
-            ":gsi2pk": `USER#${lowerEmail}`,
-            ":gsi2sk": "METADATA",
-          },
-        })
-      );
-
-      if (userQuery.Items && userQuery.Items.length > 0) {
-        const userItem = userQuery.Items[0];
-        const tenantId = userItem.PK.replace("TENANT#", "");
-
-        const token = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-        const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
-
-        await ddbDocClient.send(
-          new PutCommand({
-            TableName: TABLE_NAME,
-            Item: {
-              PK: `RESET_TOKEN#${token}`,
-              SK: "METADATA",
-              email: lowerEmail,
-              tenantId,
-              type: "merchant",
-              expiresAt,
-              ttl,
-            },
-          })
-        );
-
-        const resetLink = `http://localhost:3000/reset-password?token=${token}`;
-        await sendEmailSafely(
-          lowerEmail,
-          "Reset Your Basecart Password",
-          `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <h2>Reset Your Password</h2>
-              <p>You requested a password reset for your Basecart store account. Click the link below to set a new password:</p>
-              <div style="margin: 24px 0;">
-                <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-              </div>
-              <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes. If you did not request this, you can safely ignore this email.</p>
-            </div>
-          `
-        );
-      }
-
-      return reply.send({ message: "If the email is registered, a password reset link has been sent." });
-    }
-  );
-
-  /**
-   * Merchant Reset Password
-   */
-  fastify.post(
-    "/auth/merchant/reset-password",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const { token, newPassword } = req.body as any;
-      if (!token || !newPassword || newPassword.length < 6) {
-        return reply.status(400).send({ error: "Token and password (min 6 chars) are required" });
-      }
-
-      const tokenRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `RESET_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
-
-      const tokenItem = tokenRes.Item;
-      if (!tokenItem || tokenItem.type !== "merchant") {
-        return reply.status(400).send({ error: "Invalid or expired reset token" });
-      }
-
-      if (new Date(tokenItem.expiresAt) < new Date()) {
-        return reply.status(400).send({ error: "Reset token has expired" });
-      }
-
-      const hashedPassword = await authService.hashPassword(newPassword);
-      await ddbDocClient.send(
-        new UpdateCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tokenItem.tenantId}`,
-            SK: `USER#${tokenItem.email}`,
-          },
-          UpdateExpression: "SET hashedPassword = :hp",
-          ExpressionAttributeValues: {
-            ":hp": hashedPassword,
-          },
-        })
-      );
-
-      // Invalidate active sessions
-      const tokensRes = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tokenItem.tenantId}`,
-            ":sk": "REFRESH_TOKEN#",
-          },
-        })
-      );
-      const tokensToRevoke = (tokensRes.Items || []).filter(item => item.email === tokenItem.email);
-      for (const item of tokensToRevoke) {
-        await ddbDocClient.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: item.PK, SK: item.SK },
-          })
-        );
-      }
-
-      // Invalidate token
-      await ddbDocClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `RESET_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
-
-      return reply.send({ message: "Password has been successfully reset" });
-    }
-  );
-
-  /**
-   * Customer Forgot Password
-   */
-  fastify.post(
-    "/auth/customer/forgot-password",
-    {
-      preHandler: [resolveStorefrontTenant],
-      config: {
-        rateLimit: {
-          max: 5,
-          timeWindow: "1 minute",
-        },
-      },
-    },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const { email } = req.body as any;
-      if (!email) {
-        return reply.status(400).send({ error: "Email is required" });
-      }
-      const lowerEmail = email.toLowerCase();
-
-      const lookupResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `CUSTOMER_EMAIL#${lowerEmail}`,
-          },
-        })
-      );
-
-      if (lookupResult.Item) {
-        const token = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-        const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
-
-        await ddbDocClient.send(
-          new PutCommand({
-            TableName: TABLE_NAME,
-            Item: {
-              PK: `RESET_TOKEN#${token}`,
-              SK: "METADATA",
-              email: lowerEmail,
-              tenantId,
-              type: "customer",
-              customerId: lookupResult.Item.customerId,
-              expiresAt,
-              ttl,
-            },
-          })
-        );
-
-        const tenantRes = await ddbDocClient.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              PK: `TENANT#${tenantId}`,
-              SK: "METADATA",
-            },
-          })
-        );
-        const subdomain = tenantRes.Item?.subdomain || "demo";
-        const resetLink = `http://${subdomain}.localhost:3002/reset-password?token=${token}`;
-
-        await sendEmailSafely(
-          lowerEmail,
-          "Reset Your Storefront Password",
-          `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <h2>Reset Your Storefront Password</h2>
-              <p>You requested a password reset for your account. Click the link below to set a new password:</p>
-              <div style="margin: 24px 0;">
-                <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-              </div>
-              <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes.</p>
-            </div>
-          `
-        );
-      }
-
-      return reply.send({ message: "If the email is registered, a password reset link has been sent." });
-    }
-  );
-
-  /**
-   * Customer Reset Password
-   */
-  fastify.post(
-    "/auth/customer/reset-password",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const { token, newPassword } = req.body as any;
-      if (!token || !newPassword || newPassword.length < 6) {
-        return reply.status(400).send({ error: "Token and password (min 6 chars) are required" });
-      }
-
-      const tokenRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `RESET_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
-
-      const tokenItem = tokenRes.Item;
-      if (!tokenItem || tokenItem.type !== "customer" || tokenItem.tenantId !== tenantId) {
-        return reply.status(400).send({ error: "Invalid or expired reset token" });
-      }
-
-      if (new Date(tokenItem.expiresAt) < new Date()) {
-        return reply.status(400).send({ error: "Reset token has expired" });
-      }
-
-      const hashedPassword = await authService.hashPassword(newPassword);
-      await ddbDocClient.send(
-        new UpdateCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `CUSTOMER#${tokenItem.customerId}`,
-          },
-          UpdateExpression: "SET hashedPassword = :hp",
-          ExpressionAttributeValues: {
-            ":hp": hashedPassword,
-          },
-        })
-      );
-
-      // Invalidate customer sessions
-      const tokensRes = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tenantId}`,
-            ":sk": "REFRESH_TOKEN#",
-          },
-        })
-      );
-      const tokensToRevoke = (tokensRes.Items || []).filter(item => item.email === tokenItem.email);
-      for (const item of tokensToRevoke) {
-        await ddbDocClient.send(
-          new DeleteCommand({
-            TableName: TABLE_NAME,
-            Key: { PK: item.PK, SK: item.SK },
-          })
-        );
-      }
-
-      // Clean up token
-      await ddbDocClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `RESET_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
-
-      return reply.send({ message: "Password has been successfully reset" });
-    }
-  );
-
-  /**
-   * Resend Verification Email (Merchant-only)
-   */
-  fastify.post(
-    "/auth/merchant/resend-verification",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const email = req.user!.email;
-      const tenantId = req.user!.tenantId;
-
-      const userRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `USER#${email}`,
-          },
-        })
-      );
-      if (!userRes.Item) {
-        return reply.status(404).send({ error: "User not found" });
-      }
-
-      if (userRes.Item.emailVerified === true) {
-        return reply.status(400).send({ error: "Email is already verified" });
-      }
-
-      const verificationToken = crypto.randomUUID();
-      const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-      const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
-
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            PK: `VERIFY_TOKEN#${verificationToken}`,
-            SK: "METADATA",
-            email,
-            tenantId,
-            expiresAt: verificationExpiry,
-            ttl: verificationTtl,
-          }
-        })
-      );
-
-      const verifyLink = `http://localhost:3001/auth/merchant/verify-email?token=${verificationToken}`;
-      await sendEmailSafely(
-        email,
-        "Verify Your Basecart Store Account",
-        `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #2563EB;">Verify Your Basecart Email</h2>
-            <p>Please click the button below to verify your email address:</p>
-            <div style="margin: 24px 0;">
-              <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
-            </div>
-            <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
+    await sendEmailSafely(
+      lowerEmail,
+      "Reset Your Storefront Password",
+      `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2>Reset Your Storefront Password</h2>
+          <p>You requested a password reset for your account. Click the link below to set a new password:</p>
+          <div style="margin: 24px 0;">
+            <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
           </div>
-        `
-      );
+          <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes.</p>
+        </div>
+      `,
+      c.env
+    );
+  }
 
-      return reply.send({ message: "Verification email resent successfully" });
-    }
-  );
+  return c.json({ message: "If the email is registered, a password reset link has been sent." });
+});
 
-  /**
-   * Verify Email
-   */
-  fastify.get(
-    "/auth/merchant/verify-email",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const token = (req.query as any).token;
-      if (!token) {
-        return reply.status(400).send({ error: "Token is required" });
-      }
+/**
+ * Customer Reset Password
+ */
+app.post("/auth/customer/reset-password", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const { token, newPassword } = body;
 
-      const tokenRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `VERIFY_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
+  if (!token || !newPassword || newPassword.length < 6) {
+    return c.json({ error: "Token and password (min 6 chars) are required" }, 400);
+  }
 
-      const tokenItem = tokenRes.Item;
-      if (!tokenItem) {
-        return reply.status(400).send({ error: "Invalid or expired token" });
-      }
+  const controlDb = getControlDb(c.env);
+  const resetToken = await controlDb
+    .prepare("SELECT * FROM reset_tokens WHERE token = ?")
+    .bind(token)
+    .first<any>();
 
-      if (new Date(tokenItem.expiresAt) < new Date()) {
-        return reply.status(400).send({ error: "Token has expired" });
-      }
+  if (!resetToken || resetToken.tenantId !== tenantId) {
+    return c.json({ error: "Invalid or expired reset token" }, 400);
+  }
 
-      // Mark user as verified
-      await ddbDocClient.send(
-        new UpdateCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tokenItem.tenantId}`,
-            SK: `USER#${tokenItem.email}`,
-          },
-          UpdateExpression: "SET emailVerified = :val",
-          ExpressionAttributeValues: {
-            ":val": true,
-          },
-        })
-      );
+  if (new Date(resetToken.expiresAt) < new Date()) {
+    return c.json({ error: "Reset token has expired" }, 400);
+  }
 
-      // Clean up token
-      await ddbDocClient.send(
-        new DeleteCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `VERIFY_TOKEN#${token}`,
-            SK: "METADATA",
-          },
-        })
-      );
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const customer = await tenantDb
+    .prepare("SELECT customerId FROM customers WHERE email = ?")
+    .bind(resetToken.email)
+    .first<{ customerId: string }>();
 
-      // Redirect back to merchant dashboard
-      return reply.redirect("http://localhost:3000/?verified=true");
-    }
-  );
-}
+  if (!customer) {
+    return c.json({ error: "Customer profile not found" }, 400);
+  }
+
+  const hashedPassword = await authService.hashPassword(newPassword);
+
+  // Update customer password in tenant DB
+  await tenantDb
+    .prepare("UPDATE customers SET hashedPassword = ? WHERE customerId = ?")
+    .bind(hashedPassword, customer.customerId)
+    .run();
+
+  // Invalidate sessions and cleanup reset token in control DB
+  const deleteSessions = controlDb
+    .prepare("DELETE FROM refresh_tokens WHERE tenantId = ? AND email = ?")
+    .bind(tenantId, resetToken.email);
+
+  const deleteToken = controlDb
+    .prepare("DELETE FROM reset_tokens WHERE token = ?")
+    .bind(token);
+
+  await controlDb.batch([deleteSessions, deleteToken]);
+
+  return c.json({ message: "Password has been successfully reset" });
+});
+
+export default app;

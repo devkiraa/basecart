@@ -1,0 +1,51 @@
+name: Pull Request Validation CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate-backend:
+    name: Validate Backend Worker
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Backend Integration Tests
+        run: npm test --workspace=packages/backend
+
+  validate-frontends:
+    name: Validate Next.js Frontends Edge-Compilation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Validate Merchant Dashboard Build
+        run: npm run pages:build --workspace=packages/merchant-dashboard
+
+      - name: Validate Storefront Build
+        run: npm run pages:build --workspace=packages/storefront
+
+      - name: Validate Admin Panel Build
+        run: npm run pages:build --workspace=packages/admin-panel

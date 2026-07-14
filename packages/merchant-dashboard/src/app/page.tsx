@@ -39,7 +39,9 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const STOREFRONT_DOMAIN = process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002";
+const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "http";
 
 interface ProductVariant {
   id: string;
@@ -786,6 +788,9 @@ export default function MerchantDashboard() {
       let cleanedSubdomain = subdomainInput.trim().toLowerCase();
       if (cleanedSubdomain.endsWith(".basecart.io")) {
         cleanedSubdomain = cleanedSubdomain.replace(/\.?basecart\.io$/, "");
+      }
+      if (cleanedSubdomain.endsWith("." + STOREFRONT_DOMAIN.replace(/:[0-9]+$/, ""))) {
+        cleanedSubdomain = cleanedSubdomain.replace(new RegExp(`\\.?${STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "").replace(/\./g, "\\.")}$`), "");
       }
       if (cleanedSubdomain.endsWith(".localhost")) {
         cleanedSubdomain = cleanedSubdomain.replace(/\.?localhost$/, "");
@@ -1896,7 +1901,7 @@ export default function MerchantDashboard() {
               Good morning, Kiran! 👋
             </h1>
             <p className="text-xs text-slate-500 mt-0.5">
-              Here's what's happening with your store today. (Subdomain: <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.localhost</span>)
+              Here's what's happening with your store today. (Subdomain: <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>)
             </p>
           </div>
 
@@ -1990,10 +1995,10 @@ export default function MerchantDashboard() {
                   <div className="px-3 py-2 border-b border-slate-50">
                     <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Active Store</p>
                     <p className="text-xs font-bold text-slate-800 mt-0.5">{settings.storeName || "My Store"}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{settings.subdomain || "demo"}.localhost:3002</p>
+                    <p className="text-[10px] text-slate-400 truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</p>
                   </div>
                   <a 
-                    href={`http://${settings.subdomain || "demo"}.localhost:3002`}
+                    href={`${STOREFRONT_PROTOCOL}://${settings.subdomain || "demo"}.${STOREFRONT_DOMAIN}`}
                     target="_blank"
                     rel="noreferrer"
                     className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
@@ -2003,7 +2008,7 @@ export default function MerchantDashboard() {
                   </a>
                   <button 
                     onClick={() => {
-                      navigator.clipboard.writeText(`http://${settings.subdomain || "demo"}.localhost:3002`);
+                      navigator.clipboard.writeText(`${STOREFRONT_PROTOCOL}://${settings.subdomain || "demo"}.${STOREFRONT_DOMAIN}`);
                       setActionSuccess("Storefront link copied to clipboard!");
                       setIsStoreSwitcherOpen(false);
                     }}
@@ -3898,7 +3903,7 @@ export default function MerchantDashboard() {
                     </label>
                     <div className="mt-1 text-sm font-semibold text-blue-600 flex items-center gap-1">
                       <span className="underline cursor-pointer">
-                        http://{settings.subdomain}.localhost:3002
+                        {STOREFRONT_PROTOCOL}://{settings.subdomain}.{STOREFRONT_DOMAIN}
                       </span>
                     </div>
                   </div>
@@ -4604,7 +4609,7 @@ export default function MerchantDashboard() {
                   </div>
 
                   <a 
-                    href={`http://${settings.subdomain || "demo"}.localhost:3002`} 
+                    href={`${STOREFRONT_PROTOCOL}://${settings.subdomain || "demo"}.${STOREFRONT_DOMAIN}`} 
                     target="_blank" 
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
@@ -4719,7 +4724,7 @@ export default function MerchantDashboard() {
                   </div>
                   <div className="flex items-center gap-3">
                     <a 
-                      href={`http://${settings.subdomain || "demo"}.localhost:3002`} 
+                      href={`${STOREFRONT_PROTOCOL}://${settings.subdomain || "demo"}.${STOREFRONT_DOMAIN}`} 
                       target="_blank" 
                       rel="noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold rounded-lg shadow-sm"

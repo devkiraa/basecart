@@ -1,9 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import { PutCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
-import { ddbDocClient } from "../lib/aws";
+import { D1Database } from "../lib/db";
 
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
 const JWT_SECRET =
   process.env.JWT_SECRET || "local_jwt_secret_key_for_testing_purposes";
 const ACCESS_TOKEN_EXPIRY = "15m";
@@ -31,7 +29,7 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  async generateTokens(payload: TokenPayload): Promise<AuthTokens> {
+  async generateTokens(payload: TokenPayload, db?: D1Database): Promise<AuthTokens> {
     const accessToken = jwt.sign(
       {
         userId: payload.userId,
@@ -55,24 +53,25 @@ export class AuthService {
       { expiresIn: "7d" }
     );
 
-    // Save refresh token to DynamoDB (under the matching tenant partition key)
-    const expiryTime = Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY;
-
-    await ddbDocClient.send(
-      new PutCommand({
-        TableName: TABLE_NAME,
-        Item: {
-          PK: `TENANT#${payload.tenantId}`,
-          SK: `REFRESH_TOKEN#${refreshToken}`,
-          userId: payload.userId,
-          email: payload.email,
-          role: payload.role,
-          type: payload.type,
-          expiresAt: expiryTime, // Managed by DynamoDB TTL
-          createdAt: new Date().toISOString(),
-        },
-      })
-    );
+    // Save refresh token to D1 control database if DB client is provided
+    if (db) {
+      const expiryTime = Math.floor(Date.now() / 1000) + REFRESH_TOKEN_EXPIRY;
+      await db
+        .prepare(
+          "INSERT OR REPLACE INTO refresh_tokens (token, tenantId, userId, email, role, type, expiresAt, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          refreshToken,
+          payload.tenantId,
+          payload.userId,
+          payload.email,
+          payload.role,
+          payload.type,
+          expiryTime,
+          new Date().toISOString()
+        )
+        .run();
+    }
 
     return { accessToken, refreshToken };
   }
@@ -97,7 +96,8 @@ export class AuthService {
 
   async refreshSession(
     refreshToken: string,
-    tenantId: string
+    tenantId: string,
+    db: D1Database
   ): Promise<AuthTokens> {
     let decoded: any;
     try {
@@ -111,32 +111,24 @@ export class AuthService {
     }
 
     // Lookup refresh token from DB
-    const result = await ddbDocClient.send(
-      new GetCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          PK: `TENANT#${tenantId}`,
-          SK: `REFRESH_TOKEN#${refreshToken}`,
-        },
-      })
-    );
+    const tokenItem = await db
+      .prepare("SELECT * FROM refresh_tokens WHERE token = ? AND tenantId = ?")
+      .bind(refreshToken, tenantId)
+      .first<any>();
 
-    const tokenItem = result.Item;
     if (!tokenItem) {
       throw new Error("Refresh token not found or revoked");
     }
 
-    // Verify expiration time manually in case DynamoDB TTL hasn't cleared it yet
-    if (
-      tokenItem.expiresAt &&
-      tokenItem.expiresAt < Math.floor(Date.now() / 1000)
-    ) {
-      await this.revokeSession(refreshToken, tenantId);
+    // Verify expiration time manually
+    const nowSecs = Math.floor(Date.now() / 1000);
+    if (tokenItem.expiresAt && tokenItem.expiresAt < nowSecs) {
+      await this.revokeSession(refreshToken, tenantId, db);
       throw new Error("Refresh token expired");
     }
 
     // Rotate refresh token: Revoke old, generate new
-    await this.revokeSession(refreshToken, tenantId);
+    await this.revokeSession(refreshToken, tenantId, db);
 
     return this.generateTokens({
       userId: tokenItem.userId,
@@ -144,19 +136,15 @@ export class AuthService {
       role: tokenItem.role,
       tenantId: tenantId,
       type: tokenItem.type,
-    });
+    }, db);
   }
 
-  async revokeSession(refreshToken: string, tenantId: string): Promise<void> {
-    await ddbDocClient.send(
-      new DeleteCommand({
-        TableName: TABLE_NAME,
-        Key: {
-          PK: `TENANT#${tenantId}`,
-          SK: `REFRESH_TOKEN#${refreshToken}`,
-        },
-      })
-    );
+  async revokeSession(refreshToken: string, tenantId: string, db: D1Database): Promise<void> {
+    await db
+      .prepare("DELETE FROM refresh_tokens WHERE token = ? AND tenantId = ?")
+      .bind(refreshToken, tenantId)
+      .run();
   }
 }
+
 export const authService = new AuthService();

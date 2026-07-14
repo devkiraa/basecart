@@ -14,7 +14,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface AdminProfile {
   email: string;
@@ -82,6 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Merchants", href: "/merchants", icon: Users },
     { name: "Audit Logs", href: "/audit-logs", icon: FileSpreadsheet },
+    { name: "Super Admins", href: "/admins", icon: ShieldCheck },
   ];
 
   return (

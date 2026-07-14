@@ -1,11 +1,14 @@
-import { awsLambdaFastify } from "@fastify/aws-lambda";
 import { buildApp } from "./app";
+import { handleQueueBatch } from "./queue";
+export { TenantDO } from "./lib/tenant_do";
 
 const app = buildApp();
-const proxyHandler = awsLambdaFastify(app);
 
-// AWS Lambda Handler for HTTP API Gateway integration
-export const handler = async (event: any, context: any) => {
-  context.callbackWaitsForEmptyEventLoop = false;
-  return proxyHandler(event, context);
+export default {
+  async fetch(request: Request, env: any, ctx: any): Promise<Response> {
+    return app.fetch(request, env, ctx);
+  },
+  async queue(batch: any, env: any, ctx: any): Promise<void> {
+    await handleQueueBatch(batch, env, ctx);
+  }
 };

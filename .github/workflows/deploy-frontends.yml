@@ -1,0 +1,60 @@
+name: Deploy Frontend Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/merchant-dashboard/**'
+      - 'packages/storefront/**'
+      - 'packages/admin-panel/**'
+      - 'packages/shared/**'
+      - '.github/workflows/deploy-frontends.yml'
+
+jobs:
+  deploy-frontends:
+    name: Deploy Next.js Frontends to Cloudflare Pages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      # 1. Deploy Merchant Dashboard
+      - name: Build Merchant Dashboard
+        run: npm run pages:build --workspace=packages/merchant-dashboard
+      - name: Deploy Merchant Dashboard to Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy packages/merchant-dashboard/.vercel/output/static --project-name=basecart-merchant-dashboard
+
+      # 2. Deploy Storefront Router
+      - name: Build Storefront
+        run: npm run pages:build --workspace=packages/storefront
+      - name: Deploy Storefront to Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy packages/storefront/.vercel/output/static --project-name=basecart-storefront
+
+      # 3. Deploy Admin Panel
+      - name: Build Admin Panel
+        run: npm run pages:build --workspace=packages/admin-panel
+      - name: Deploy Admin Panel to Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy packages/admin-panel/.vercel/output/static --project-name=basecart-admin-panel

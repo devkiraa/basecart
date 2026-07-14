@@ -1,41 +1,21 @@
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import crypto from "crypto";
-import {
-  PutCommand,
-  GetCommand,
-  QueryCommand,
-  UpdateCommand,
-  TransactWriteCommand,
-  BatchGetCommand,
-  DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
-import { SendMessageCommand } from "@aws-sdk/client-sqs";
-import { ddbDocClient, sqsClient } from "../lib/aws";
-import {
-  authenticateMerchant,
-  authenticateCustomer,
-  resolveStorefrontTenant,
-} from "../middleware/auth";
+import { Hono } from "hono";
+import { getControlDb, getTenantDb } from "../lib/db";
 import { decrypt } from "../lib/crypto";
 import { validateDiscountCode } from "./discounts";
 import { CheckoutSchema, OrderStatusUpdateSchema } from "@basecart/shared";
 import { createShiprocketShipment, verifyShiprocketSignature } from "../services/shiprocket";
+import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 
-const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
-const SQS_QUEUE_URL = process.env.SQS_QUEUE_URL || "";
-
-// Custom interface to access rawBody for webhook validation
-interface FastifyRequestWithRawBody extends FastifyRequest {
-  rawBody?: string;
-}
+const app = new Hono();
 
 /**
- * Recalculate cart totals server-side using current DB pricing to prevent tampering
+ * Recalculate cart totals server-side using isolated DB pricing to prevent client-side tampering
  */
 export async function computeCartTotal(
   tenantId: string,
   lineItems: Array<{ productId: string; quantity: number; variantId?: string | null }>,
-  discountCode?: string
+  discountCode: string | undefined,
+  env: any
 ): Promise<{
   valid: boolean;
   reason?: string;
@@ -55,24 +35,15 @@ export async function computeCartTotal(
     };
   }
 
-  // 1. Gather all unique keys for BatchGet
-  const keys = lineItems.map((item) => ({
-    PK: `TENANT#${tenantId}`,
-    SK: `PRODUCT#${item.productId}`,
-  }));
+  const tenantDb = await getTenantDb(tenantId, env);
 
-  // 2. Fetch products in batch
-  const batchRes = await ddbDocClient.send(
-    new BatchGetCommand({
-      RequestItems: {
-        [TABLE_NAME]: {
-          Keys: keys,
-        },
-      },
-    })
-  );
+  // Fetch unique products from isolated database
+  const productIds = Array.from(new Set(lineItems.map(item => item.productId)));
+  const placeholders = productIds.map(() => "?").join(",");
+  const query = `SELECT * FROM products WHERE productId IN (${placeholders})`;
+  const result = await tenantDb.prepare(query).bind(...productIds).all<any>();
+  const fetchedItems = result.results || [];
 
-  const fetchedItems = batchRes.Responses?.[TABLE_NAME] || [];
   const productMap = new Map<string, any>();
   for (const prod of fetchedItems) {
     productMap.set(prod.productId, prod);
@@ -98,8 +69,16 @@ export async function computeCartTotal(
     let availableStock = product.stockQuantity;
     let variantNameSuffix = "";
 
+    // Parse variants JSON
+    let variants: any[] = [];
+    if (product.variants) {
+      try {
+        variants = typeof product.variants === "string" ? JSON.parse(product.variants) : product.variants;
+      } catch (e) {}
+    }
+
     if (item.variantId) {
-      const variant = product.variants?.find((v: any) => v.id === item.variantId);
+      const variant = variants?.find((v: any) => v.id === item.variantId);
       if (!variant) {
         return {
           valid: false,
@@ -114,10 +93,10 @@ export async function computeCartTotal(
         finalPrice = variant.price;
       }
       availableStock = variant.stockQuantity;
-      variantNameSuffix = " (" + Object.entries(variant.options).map(([k, v]) => `${k}: ${v}`).join(", ") + ")";
+      variantNameSuffix = " (" + Object.entries(variant.options || {}).map(([k, v]) => `${k}: ${v}`).join(", ") + ")";
     }
 
-    const continueSelling = !!product.continueSellingOutOfStock;
+    const continueSelling = product.continueSellingOutOfStock === 1;
     if (!continueSelling && availableStock < item.quantity) {
       return {
         valid: false,
@@ -138,7 +117,7 @@ export async function computeCartTotal(
       name: product.name + variantNameSuffix,
       price: finalPrice,
       quantity: item.quantity,
-      images: product.images,
+      images: product.images ? JSON.parse(product.images) : [],
     });
   }
 
@@ -147,7 +126,8 @@ export async function computeCartTotal(
     const validation = await validateDiscountCode(
       tenantId,
       discountCode,
-      subtotal
+      subtotal,
+      env
     );
     if (validation.valid && validation.discountAmount) {
       discountApplied = validation.discountAmount;
@@ -165,867 +145,648 @@ export async function computeCartTotal(
   };
 }
 
-export async function orderRoutes(fastify: FastifyInstance) {
-  // Capture the raw body string for Razorpay signature verification
-  fastify.addContentTypeParser(
-    "application/json",
-    { parseAs: "string" },
-    (req, body, done) => {
+// -------------------------------------------------------------
+// 1. Merchant Admin Endpoints
+// -------------------------------------------------------------
+
+/**
+ * List Orders (Merchant-only)
+ */
+app.get("/orders", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const result = await tenantDb.prepare("SELECT * FROM orders ORDER BY createdAt DESC").all();
+  const rows = result.results || [];
+
+  const orders = [];
+  for (const row of rows) {
+    const items = await tenantDb.prepare("SELECT * FROM order_items WHERE orderId = ?").bind(row.orderId).all();
+    orders.push({
+      ...row,
+      lineItems: items.results || [],
+    });
+  }
+
+  return c.json(orders);
+});
+
+/**
+ * Get Order Details
+ */
+app.get("/orders/:id", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const orderId = c.req.param("id");
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const order = await tenantDb
+    .prepare("SELECT * FROM orders WHERE orderId = ?")
+    .bind(orderId)
+    .first<any>();
+
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  const items = await tenantDb
+    .prepare("SELECT * FROM order_items WHERE orderId = ?")
+    .bind(orderId)
+    .all();
+
+  return c.json({
+    ...order,
+    lineItems: items.results || [],
+  });
+});
+
+/**
+ * Update Order Status (Merchant-only)
+ */
+app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const orderId = c.req.param("id");
+
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = OrderStatusUpdateSchema.safeParse(body);
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const { status } = parseResult.data;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const order = await tenantDb
+    .prepare("SELECT * FROM orders WHERE orderId = ?")
+    .bind(orderId)
+    .first<any>();
+
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  const updatedAt = new Date().toISOString();
+
+  // Fetch store metadata to check add-ons
+  const controlDb = getControlDb(c.env);
+  const store = await controlDb
+    .prepare("SELECT * FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<any>();
+
+  const addOns = store?.addOns ? JSON.parse(store.addOns) : [];
+
+  let trackingNumber = order.trackingNumber;
+  let carrier = order.carrier;
+
+  if (status === "shipped" && addOns.includes("shiprocket") && !order.trackingNumber) {
+    try {
+      const shipment = await createShiprocketShipment({
+        orderId,
+        customerName: order.customerName,
+        customerAddress: order.shippingAddress,
+        customerCity: "New Delhi",
+        customerState: "Delhi",
+        customerPostalCode: "110001",
+        totalWeightKg: 1.0,
+      }, store.gstin || "N/A");
+      trackingNumber = shipment.trackingNumber;
+      carrier = shipment.carrier;
+    } catch (shiprocketErr) {
+      console.error("Failed to create Shiprocket shipment:", shiprocketErr);
+    }
+  }
+
+  await tenantDb
+    .prepare("UPDATE orders SET status = ?, trackingNumber = ?, carrier = ?, updatedAt = ? WHERE orderId = ?")
+    .bind(status, trackingNumber || null, carrier || null, updatedAt, orderId)
+    .run();
+
+  // Queue WhatsApp status notification if enabled
+  if (addOns.includes("whatsapp") && (status === "shipped" || status === "delivered")) {
+    if (c.env.JOBS_QUEUE) {
       try {
-        const bodyStr = typeof body === "string" ? body : (body as Buffer).toString("utf8");
-        (req as any).rawBody = bodyStr;
-        const json = JSON.parse(bodyStr);
-        done(null, json);
-      } catch (err: any) {
-        done(err, undefined);
-      }
-    }
-  );
-
-  // --- Merchant Admin Endpoints ---
-
-  /**
-   * List Orders (Merchant-only)
-   */
-  fastify.get(
-    "/orders",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-          ExpressionAttributeValues: {
-            ":pk": `TENANT#${tenantId}`,
-            ":sk": "ORDER#",
-          },
-        })
-      );
-
-      return reply.send(result.Items || []);
-    }
-  );
-
-  /**
-   * Get Order Details
-   */
-  fastify.get(
-    "/orders/:id",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const orderId = (req.params as any).id;
-
-      const result = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `ORDER#${orderId}`,
-          },
-        })
-      );
-
-      if (!result.Item) {
-        return reply.status(404).send({ error: "Order not found" });
-      }
-
-      return reply.send(result.Item);
-    }
-  );
-
-  /**
-   * Update Order Status (Merchant-only)
-   */
-  fastify.patch(
-    "/orders/:id/status",
-    { preHandler: [authenticateMerchant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const orderId = (req.params as any).id;
-
-      const parseResult = OrderStatusUpdateSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const { status } = parseResult.data;
-
-      // Fetch existing order first
-      const getResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `ORDER#${orderId}`,
-          },
-        })
-      );
-
-      const order = getResult.Item;
-      if (!order) {
-        return reply.status(404).send({ error: "Order not found" });
-      }
-
-      const updatedAt = new Date().toISOString();
-
-      // Fetch store metadata to check add-ons
-      const storeRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const store = storeRes.Item || {};
-
-      let trackingNumber = order.trackingNumber;
-      let carrier = order.carrier;
-
-      if (status === "shipped" && store.addOns?.includes("shiprocket") && !order.trackingNumber) {
-        try {
-          const shipment = await createShiprocketShipment({
-            orderId,
-            customerName: order.customerInfo.name,
-            customerAddress: `${order.customerInfo.shippingAddress.addressLine1}, ${order.customerInfo.shippingAddress.city}`,
-            customerCity: order.customerInfo.shippingAddress.city,
-            customerState: order.customerInfo.shippingAddress.state,
-            customerPostalCode: order.customerInfo.shippingAddress.postalCode,
-            totalWeightKg: 1.0,
-          }, store.gstin || "N/A");
-          trackingNumber = shipment.trackingNumber;
-          carrier = shipment.carrier;
-        } catch (shiprocketErr) {
-          console.error("Failed to create Shiprocket shipment:", shiprocketErr);
-        }
-      }
-
-      const updatedItem = {
-        ...order,
-        status,
-        GSI2SK: `ORDER#${status}#${order.createdAt}`,
-        updatedAt,
-        trackingNumber,
-        carrier,
-      };
-
-      // Update base order + update status on GSI2 indices
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: updatedItem,
-        })
-      );
-
-      // Queue WhatsApp status notification if enabled
-      if (store.addOns?.includes("whatsapp") && (status === "shipped" || status === "delivered")) {
-        if (SQS_QUEUE_URL) {
-          try {
-            await sqsClient.send(
-              new SendMessageCommand({
-                QueueUrl: SQS_QUEUE_URL,
-                MessageBody: JSON.stringify({
-                  type: "WHATSAPP_NOTIFICATION",
-                  tenantId,
-                  orderId,
-                  recipient: order.customerInfo.phone || "+919876543210",
-                  recipientType: "customer",
-                  event: status === "shipped" ? "ORDER_SHIPPED" : "ORDER_DELIVERED",
-                }),
-              })
-            );
-          } catch (sqsErr) {
-            console.error("Failed to push WhatsApp notification to SQS:", sqsErr);
-          }
-        }
-      }
-
-      return reply.send({ message: `Order status updated to ${status}` });
-    }
-  );
-
-  // --- Storefront Public / Customer Endpoints ---
-
-  /**
-   * Validate Cart Totals (Public storefront)
-   */
-  fastify.post(
-    "/store/:subdomain/cart/validate",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const { lineItems, discountCode } = req.body as any;
-
-      if (!lineItems || !Array.isArray(lineItems)) {
-        return reply.status(400).send({ error: "lineItems array is required" });
-      }
-
-      const computation = await computeCartTotal(
-        tenantId,
-        lineItems,
-        discountCode
-      );
-
-      if (!computation.valid) {
-        return reply.status(400).send({ error: computation.reason });
-      }
-
-      return reply.send({
-        subtotal: computation.subtotal,
-        discountApplied: computation.discountApplied,
-        total: computation.total,
-        itemsSnapshot: computation.itemsSnapshot,
-      });
-    }
-  );
-
-  /**
-   * Checkout (Create order & setup Razorpay order)
-   */
-  fastify.post(
-    "/store/:subdomain/checkout",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-
-      const parseResult = CheckoutSchema.safeParse(req.body);
-      if (!parseResult.success) {
-        return reply.status(400).send({
-          error: "Validation failed",
-          issues: parseResult.error.format(),
-        });
-      }
-
-      const checkoutData = parseResult.data;
-      const { customerName, customerEmail, shippingAddress, lineItems, discountCode, idempotencyKey } = checkoutData;
-
-      // 1. Idempotency check: reserve this key atomically in database
-      try {
-        await ddbDocClient.send(
-          new PutCommand({
-            TableName: TABLE_NAME,
-            Item: {
-              PK: `TENANT#${tenantId}`,
-              SK: `IDEMPOTENCY#${idempotencyKey}`,
-              status: "PROCESSING",
-              createdAt: new Date().toISOString(),
-            },
-            ConditionExpression: "attribute_not_exists(PK)",
-          })
-        );
-      } catch (err: any) {
-        if (err.name === "ConditionalCheckFailedException") {
-          // Lock exists, retrieve state
-          const existing = await ddbDocClient.send(
-            new GetCommand({
-              TableName: TABLE_NAME,
-              Key: {
-                PK: `TENANT#${tenantId}`,
-                SK: `IDEMPOTENCY#${idempotencyKey}`,
-              },
-            })
-          );
-          if (existing.Item) {
-            if (existing.Item.status === "COMPLETED") {
-              return reply.send(existing.Item.response);
-            }
-            return reply.status(409).send({ error: "Checkout request is currently being processed" });
-          }
-        }
-        return reply.status(500).send({ error: "Idempotency initialization failed", message: err.message });
-      }
-
-      // Process Checkout
-      try {
-        // 2. Fetch merchant settings for Razorpay credentials
-        const storeRes = await ddbDocClient.send(
-          new GetCommand({
-            TableName: TABLE_NAME,
-            Key: {
-              PK: `TENANT#${tenantId}`,
-              SK: "METADATA",
-            },
-          })
-        );
-
-        const store = storeRes.Item;
-        if (!store) {
-          throw new Error("Store details not found");
-        }
-
-        const plan = store.plan || "starter";
-
-        // Enforce monthly order limits
-        const ordersRes = await ddbDocClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
-            ExpressionAttributeValues: {
-              ":pk": `TENANT#${tenantId}`,
-              ":sk": "ORDER#",
-            },
-          })
-        );
-
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        const monthlyOrdersCount = (ordersRes.Items || []).filter(
-          (order) => order.createdAt >= startOfMonth
-        ).length;
-
-        if (plan === "starter" && monthlyOrdersCount >= 100) {
-          throw new Error("Plan limit reached: Starter tier allows a maximum of 100 orders per month. Please upgrade your plan.");
-        }
-        if (plan === "growth" && monthlyOrdersCount >= 1000) {
-          throw new Error("Plan limit reached: Growth tier allows a maximum of 1000 orders per month. Please upgrade your plan.");
-        }
-
-        // Check if credentials exist
-        if (!store.razorpayKeyId || !store.razorpaySecret) {
-          throw new Error("Store checkout is currently unavailable (Razorpay credentials missing)");
-        }
-
-        const rpKey = await decrypt(store.razorpayKeyId);
-        const rpSecret = await decrypt(store.razorpaySecret);
-
-        // 3. Compute price on server side
-        const computation = await computeCartTotal(
+        await c.env.JOBS_QUEUE.send({
+          type: "WHATSAPP_NOTIFICATION",
           tenantId,
-          lineItems,
-          discountCode
-        );
-
-        if (!computation.valid) {
-          throw new Error(computation.reason || "Price validation failed");
-        }
-
-        // Calculate transaction fee based on plan
-        let platformFeePercent = 0.02; // Starter 2%
-        if (plan === "growth") {
-          platformFeePercent = 0.01;
-        } else if (plan === "pro") {
-          platformFeePercent = 0.005;
-        }
-        const platformFee = Math.round(computation.total * platformFeePercent * 100) / 100;
-
-        // 4. Create Razorpay order (mocked for localStack testing / fallback)
-        const orderId = crypto.randomUUID();
-        let razorpayOrderId = `order_mock_${crypto.randomBytes(8).toString("hex")}`;
-
-        // Try calling Razorpay API if keys aren't mocks
-        if (!rpKey.startsWith("mock") && !rpSecret.startsWith("mock")) {
-          try {
-            const authString = Buffer.from(`${rpKey}:${rpSecret}`).toString("base64");
-            const razorpayRes = await fetch("https://api.razorpay.com/v1/orders", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Basic ${authString}`,
-              },
-              body: JSON.stringify({
-                amount: computation.total * 100, // paise
-                currency: "INR",
-                receipt: orderId,
-              }),
-            });
-
-            if (razorpayRes.ok) {
-              const data = (await razorpayRes.json()) as any;
-              razorpayOrderId = data.id;
-            } else {
-              console.error("Razorpay order creation failed, falling back to mock ID");
-            }
-          } catch (err) {
-            console.error("Error communicating with Razorpay, falling back to mock ID", err);
-          }
-        }
-
-        // 5. Construct order items and create order
-        const createdAt = new Date().toISOString();
-        const customerId = req.headers["x-customer-id"] as string || "GUEST";
-
-        const orderItem = {
-          PK: `TENANT#${tenantId}`,
-          SK: `ORDER#${orderId}`,
-          GSI2PK: `TENANT#${tenantId}`,
-          GSI2SK: `ORDER#pending#${createdAt}`,
-          GSI3PK: `TENANT#${tenantId}#CUSTOMER#${customerId}`,
-          GSI3SK: `ORDER#${createdAt}`,
           orderId,
-          customerId,
-          customerInfo: {
-            name: customerName,
-            email: customerEmail.toLowerCase(),
-            shippingAddress,
-          },
-          lineItems: computation.itemsSnapshot,
-          subtotal: computation.subtotal,
-          discountApplied: computation.discountApplied,
-          total: computation.total,
-          platformFee,
-          platformFeePercent,
-          reconciliationStatus: "pending",
-          status: "pending",
-          discountCode,
-          razorpayOrderId,
-          idempotencyKey,
-          createdAt,
-          updatedAt: createdAt,
-        };
-
-        const checkoutResponse = {
-          orderId,
-          razorpayOrderId,
-          amount: computation.total,
-          currency: "INR",
-          key: rpKey, // Deliver key to storefront for script integration
-        };
-
-        // 6. Write order + idempotency cache atomically
-        await ddbDocClient.send(
-          new TransactWriteCommand({
-            TransactItems: [
-              {
-                Put: {
-                  TableName: TABLE_NAME,
-                  Item: orderItem,
-                },
-              },
-              {
-                Put: {
-                  TableName: TABLE_NAME,
-                  Item: {
-                    PK: `TENANT#${tenantId}`,
-                    SK: `IDEMPOTENCY#${idempotencyKey}`,
-                    status: "COMPLETED",
-                    response: checkoutResponse,
-                    createdAt,
-                  },
-                },
-              },
-            ],
-          })
-        );
-
-        return reply.send(checkoutResponse);
-      } catch (err: any) {
-        // Clean up the idempotency lock on failure so the client can retry
-        try {
-          await ddbDocClient.send(
-            new DeleteCommand({
-              TableName: TABLE_NAME,
-              Key: {
-                PK: `TENANT#${tenantId}`,
-                SK: `IDEMPOTENCY#${idempotencyKey}`,
-              },
-            })
-          );
-        } catch (cleanupErr) {
-          console.error("Failed to clean up idempotency key lock:", cleanupErr);
-        }
-
-        // Return a clean error message
-        const errMsg = err.message || "An error occurred during checkout processing";
-        return reply.status(errMsg.includes("missing") || errMsg.includes("failed") ? 400 : 500).send({ error: errMsg });
+          recipient: order.customerPhone || "+919876543210",
+          recipientType: "customer",
+          event: status === "shipped" ? "ORDER_SHIPPED" : "ORDER_DELIVERED",
+        });
+      } catch (queueErr) {
+        console.error("Failed to push WhatsApp notification to Queue:", queueErr);
       }
     }
+  }
+
+  return c.json({ message: `Order status updated to ${status}` });
+});
+
+// -------------------------------------------------------------
+// 2. Storefront / Customer Endpoints
+// -------------------------------------------------------------
+
+/**
+ * Validate Cart Totals (Public storefront)
+ */
+app.post("/store/:subdomain/cart/validate", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const { lineItems, discountCode } = body;
+
+  if (!lineItems || !Array.isArray(lineItems)) {
+    return c.json({ error: "lineItems array is required" }, 400);
+  }
+
+  const computation = await computeCartTotal(tenantId, lineItems, discountCode, c.env);
+  if (!computation.valid) {
+    return c.json({ error: computation.reason }, 400);
+  }
+
+  return c.json({
+    subtotal: computation.subtotal,
+    discountApplied: computation.discountApplied,
+    total: computation.total,
+    itemsSnapshot: computation.itemsSnapshot,
+  });
+});
+
+/**
+ * Checkout (Create order & setup Razorpay order)
+ */
+app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const parseResult = CheckoutSchema.safeParse(body);
+
+  if (!parseResult.success) {
+    return c.json({
+      error: "Validation failed",
+      issues: parseResult.error.format(),
+    }, 400);
+  }
+
+  const { customerName, customerEmail, customerPhone, shippingAddress, lineItems, discountCode, idempotencyKey } = parseResult.data;
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // 1. Idempotency check: reserve this key atomically in isolated DB
+  const lockRes = await tenantDb
+    .prepare("INSERT OR IGNORE INTO idempotency_keys (key, status, response, createdAt) VALUES (?, ?, ?, ?)")
+    .bind(idempotencyKey, "PROCESSING", null, new Date().toISOString())
+    .run();
+
+  if (lockRes.meta?.changes === 0) {
+    const existing = await tenantDb
+      .prepare("SELECT * FROM idempotency_keys WHERE key = ?")
+      .bind(idempotencyKey)
+      .first<any>();
+
+    if (existing) {
+      if (existing.status === "COMPLETED") {
+        return c.json(JSON.parse(existing.response));
+      }
+      return c.json({ error: "Checkout request is currently being processed" }, 409);
+    }
+    return c.json({ error: "Idempotency reservation conflict occurred" }, 500);
+  }
+
+  // Process Checkout
+  try {
+    const controlDb = getControlDb(c.env);
+    const store = await controlDb
+      .prepare("SELECT * FROM tenants WHERE tenantId = ?")
+      .bind(tenantId)
+      .first<any>();
+
+    if (!store) {
+      throw new Error("Store details not found");
+    }
+
+    const plan = store.plan || "starter";
+
+    // Enforce monthly order limits
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const countRow = await tenantDb
+      .prepare("SELECT COUNT(*) as total FROM orders WHERE createdAt >= ?")
+      .bind(startOfMonth)
+      .first<{ total: number }>();
+    
+    const monthlyOrdersCount = countRow?.total || 0;
+
+    if (plan === "starter" && monthlyOrdersCount >= 100) {
+      throw new Error("Plan limit reached: Starter tier allows a maximum of 100 orders per month. Please upgrade your plan.");
+    }
+    if (plan === "growth" && monthlyOrdersCount >= 1000) {
+      throw new Error("Plan limit reached: Growth tier allows a maximum of 1000 orders per month. Please upgrade your plan.");
+    }
+
+    if (!store.razorpayKeyId || !store.razorpaySecret) {
+      throw new Error("Store checkout is currently unavailable (Razorpay credentials missing)");
+    }
+
+    const rpKey = await decrypt(store.razorpayKeyId, c.env.ENCRYPTION_SECRET);
+    const rpSecret = await decrypt(store.razorpaySecret, c.env.ENCRYPTION_SECRET);
+
+    // 2. Compute price server-side
+    const computation = await computeCartTotal(tenantId, lineItems, discountCode, c.env);
+    if (!computation.valid) {
+      throw new Error(computation.reason || "Price validation failed");
+    }
+
+    // platform fee %
+    let platformFeePercent = 0.02; // Starter 2%
+    if (plan === "growth") {
+      platformFeePercent = 0.01;
+    } else if (plan === "pro") {
+      platformFeePercent = 0.005;
+    }
+    const platformFee = Math.round(computation.total * platformFeePercent * 100) / 100;
+
+    const orderId = crypto.randomUUID();
+    let razorpayOrderId = "order_mock_" + Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, "0")).join("");
+
+    // Create Razorpay order if credentials are not mock keys
+    if (!rpKey.startsWith("mock") && !rpSecret.startsWith("mock") && process.env.NODE_ENV !== "test") {
+      try {
+        const authString = btoa(`${rpKey}:${rpSecret}`);
+        const razorpayRes = await fetch("https://api.razorpay.com/v1/orders", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Basic ${authString}`,
+          },
+          body: JSON.stringify({
+            amount: computation.total * 100, // paise
+            currency: "INR",
+            receipt: orderId,
+          }),
+        });
+
+        if (razorpayRes.ok) {
+          const data = (await razorpayRes.json()) as any;
+          razorpayOrderId = data.id;
+        } else {
+          console.error("Razorpay order creation failed, falling back to mock ID");
+        }
+      } catch (err) {
+        console.error("Error communicating with Razorpay, falling back to mock ID", err);
+      }
+    }
+
+    const createdAt = new Date().toISOString();
+    const customerId = c.req.header("x-customer-id") || "GUEST";
+    const addressStr = typeof shippingAddress === "string" ? shippingAddress : JSON.stringify(shippingAddress);
+
+    // Generate incremental orderNumber
+    const maxNumRow = await tenantDb.prepare("SELECT MAX(orderNumber) as lastNum FROM orders").first<{ lastNum: number }>();
+    const orderNumber = (maxNumRow?.lastNum || 1000) + 1;
+
+    // 3. Write base order in tenant DB
+    await tenantDb
+      .prepare(
+        "INSERT INTO orders (orderId, orderNumber, customerId, customerName, customerEmail, customerPhone, shippingAddress, status, subtotal, taxAmount, total, discountCode, discountAmount, paymentId, paymentStatus, razorpayOrderId, idempotencyKey, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+      .bind(
+        orderId,
+        orderNumber,
+        customerId,
+        customerName,
+        customerEmail.toLowerCase(),
+        customerPhone || null,
+        addressStr,
+        "pending",
+        computation.subtotal,
+        0, // taxAmount
+        computation.total,
+        discountCode || null,
+        computation.discountApplied,
+        null, // paymentId
+        "pending",
+        razorpayOrderId,
+        idempotencyKey,
+        createdAt,
+        createdAt
+      )
+      .run();
+
+    // 4. Write line items in tenant DB
+    for (const item of computation.itemsSnapshot) {
+      await tenantDb
+        .prepare(
+          "INSERT INTO order_items (itemId, orderId, productId, name, price, quantity, variantId, variantName) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+        )
+        .bind(
+          crypto.randomUUID(),
+          orderId,
+          item.productId,
+          item.name,
+          item.price,
+          item.quantity,
+          item.variantId || null,
+          null
+        )
+        .run();
+    }
+
+    const checkoutResponse = {
+      orderId,
+      razorpayOrderId,
+      amount: computation.total,
+      currency: "INR",
+      key: rpKey,
+    };
+
+    // 5. Complete the idempotency key lock status
+    await tenantDb
+      .prepare("UPDATE idempotency_keys SET status = ?, response = ? WHERE key = ?")
+      .bind("COMPLETED", JSON.stringify(checkoutResponse), idempotencyKey)
+      .run();
+
+    return c.json(checkoutResponse);
+  } catch (err: any) {
+    // Cleanup the idempotency key lock on failure so the client can retry
+    try {
+      await tenantDb.prepare("DELETE FROM idempotency_keys WHERE key = ?").bind(idempotencyKey).run();
+    } catch (cleanupErr) {
+      console.error("Failed to clean up idempotency key lock:", cleanupErr);
+    }
+    const errMsg = err.message || "An error occurred during checkout processing";
+    return c.json(
+      { error: errMsg },
+      errMsg.includes("missing") || errMsg.includes("failed") ? 400 : 500
+    );
+  }
+});
+
+/**
+ * Razorpay Webhook Handler
+ */
+app.post("/store/:subdomain/webhooks/razorpay", async (c) => {
+  const subdomain = c.req.param("subdomain");
+  const signature = c.req.header("x-razorpay-signature");
+
+  if (!signature) {
+    return c.json({ error: "Missing x-razorpay-signature header" }, 400);
+  }
+
+  // Resolve subdomain and secret
+  const controlDb = getControlDb(c.env);
+  const store = await controlDb
+    .prepare("SELECT * FROM tenants WHERE subdomain = ?")
+    .bind(subdomain.toLowerCase())
+    .first<any>();
+
+  if (!store || !store.razorpaySecret) {
+    return c.json({ error: "Razorpay settings not configured for tenant" }, 400);
+  }
+
+  const rpSecret = await decrypt(store.razorpaySecret, c.env.ENCRYPTION_SECRET);
+
+  // 1. Capture the raw text body before any parsing
+  const rawBody = await c.req.text();
+  const payload = JSON.parse(rawBody);
+
+  // 2. Verify Razorpay signature
+  const encoder = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(rpSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
   );
+  
+  const signatureBuffer = await crypto.subtle.sign("HMAC", keyMaterial, encoder.encode(rawBody));
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 
-  /**
-   * Razorpay Webhook Handler
-   */
-  fastify.post(
-    "/store/:subdomain/webhooks/razorpay",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequestWithRawBody, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const signature = req.headers["x-razorpay-signature"] as string;
+  const isSignatureValid = expectedSignature === signature;
+  const isMockBypass =
+    (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test") && signature === "mock-signature-bypass";
 
-      if (!signature) {
-        return reply.status(400).send({ error: "Missing x-razorpay-signature header" });
-      }
+  if (!isSignatureValid && !isMockBypass) {
+    return c.json({ error: "Invalid webhook signature verification failed" }, 400);
+  }
 
-      // Fetch webhook credentials
-      const storeRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
+  const event = payload.event;
+  const tenantId = store.tenantId;
 
-      const store = storeRes.Item;
-      if (!store || !store.razorpaySecret) {
-        return reply.status(400).send({ error: "Razorpay settings not configured for tenant" });
-      }
+  if (event === "order.paid" || event === "payment.captured") {
+    const entity = payload.payload.payment?.entity || payload.payload.order?.entity;
+    const razorpayOrderId = entity?.order_id || entity?.id;
+    const razorpayPaymentId = entity?.id;
 
-      const rpSecret = await decrypt(store.razorpaySecret);
+    if (!razorpayOrderId) {
+      return c.json({ error: "No razorpay order ID found in payload" }, 400);
+    }
 
-      // Verify Webhook signature
-      const rawBody = req.rawBody || "";
-      const expectedSignature = crypto
-        .createHmac("sha256", rpSecret)
-        .update(rawBody)
-        .digest("hex");
+    const tenantDb = await getTenantDb(tenantId, c.env);
 
-      // Verify signature. If locally mocked testing, allow fallback
-      const isSignatureValid = expectedSignature === signature;
-      const isMockBypass =
-        ((process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") && signature === "mock-signature-bypass");
+    // Find the pending order for this tenant
+    const targetOrder = await tenantDb
+      .prepare("SELECT * FROM orders WHERE razorpayOrderId = ? AND status = 'pending'")
+      .bind(razorpayOrderId)
+      .first<any>();
 
-      if (!isSignatureValid && !isMockBypass) {
-        return reply.status(400).send({ error: "Invalid webhook signature verification failed" });
-      }
+    if (!targetOrder) {
+      return c.json({ message: "Order already processed or not found" });
+    }
 
-      const payload = req.body as any;
-      const event = payload.event;
+    const orderId = targetOrder.orderId;
+    const updatedAt = new Date().toISOString();
 
-      // Handle order paid or payment captured
-      if (event === "order.paid" || event === "payment.captured") {
-        const entity = payload.payload.payment?.entity || payload.payload.order?.entity;
-        const razorpayOrderId = entity?.order_id || entity?.id;
-        const razorpayPaymentId = entity?.id;
+    // 1. Update order status and payment ID
+    await tenantDb
+      .prepare("UPDATE orders SET status = ?, paymentId = ?, paymentStatus = ?, updatedAt = ? WHERE orderId = ?")
+      .bind("paid", razorpayPaymentId || null, "captured", updatedAt, orderId)
+      .run();
 
-        if (!razorpayOrderId) {
-          return reply.status(400).send({ error: "No razorpay order ID found in payload" });
-        }
+    // 2. Fetch order items to decrement product stock levels
+    const orderItemsResult = await tenantDb.prepare("SELECT * FROM order_items WHERE orderId = ?").bind(orderId).all();
+    const orderItems = orderItemsResult.results || [];
 
-        // Find the pending order for this tenant
-        const pendingOrders = await ddbDocClient.send(
-          new QueryCommand({
-            TableName: TABLE_NAME,
-            IndexName: "GSI2",
-            KeyConditionExpression: "GSI2PK = :gsi2pk AND begins_with(GSI2SK, :gsi2sk)",
-            ExpressionAttributeValues: {
-              ":gsi2pk": `TENANT#${tenantId}`,
-              ":gsi2sk": "ORDER#pending#",
-            },
-          })
-        );
-
-        const targetOrder = pendingOrders.Items?.find(
-          (o) => o.razorpayOrderId === razorpayOrderId
-        );
-
-        if (!targetOrder) {
-          // If not found in pending, check if already paid/processed
-          return reply.status(200).send({ message: "Order already processed or not found" });
-        }
-
-        const orderId = targetOrder.orderId;
-        const updatedAt = new Date().toISOString();
-
-        // Prepare operations: decrement product stock and update status
-        const transactItems: any[] = [
-          {
-            Update: {
-              TableName: TABLE_NAME,
-              Key: {
-                PK: `TENANT#${tenantId}`,
-                SK: `ORDER#${orderId}`,
-              },
-              UpdateExpression:
-                "SET #status = :paidStatus, GSI2SK = :gsi2sk, razorpayPaymentId = :paymentId, updatedAt = :updatedAt",
-              ExpressionAttributeNames: {
-                "#status": "status",
-              },
-              ExpressionAttributeValues: {
-                ":paidStatus": "paid",
-                ":gsi2sk": `ORDER#paid#${targetOrder.createdAt}`,
-                ":paymentId": razorpayPaymentId,
-                ":updatedAt": updatedAt,
-              },
-            },
-          },
-        ];
-
-        // 1. Decrement stock levels for each item
-        for (const item of targetOrder.lineItems) {
+    for (const item of orderItems) {
+      const product = await tenantDb.prepare("SELECT * FROM products WHERE productId = ?").bind(item.productId).first<any>();
+      if (product) {
+        let variants: any[] = [];
+        if (product.variants) {
           try {
-            const prodRes = await ddbDocClient.send(
-              new GetCommand({
-                TableName: TABLE_NAME,
-                Key: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: `PRODUCT#${item.productId}`,
-                },
-              })
-            );
-
-            const product = prodRes.Item;
-            if (product) {
-              let updatedVariants = product.variants;
-              if (item.variantId && Array.isArray(product.variants)) {
-                updatedVariants = product.variants.map((v: any) => {
-                  if (v.id === item.variantId) {
-                    return {
-                      ...v,
-                      stockQuantity: Math.max(0, v.stockQuantity - item.quantity),
-                    };
-                  }
-                  return v;
-                });
-              }
-
-              transactItems.push({
-                Update: {
-                  TableName: TABLE_NAME,
-                  Key: {
-                    PK: `TENANT#${tenantId}`,
-                    SK: `PRODUCT#${item.productId}`,
-                  },
-                  UpdateExpression: "SET stockQuantity = stockQuantity - :qty, variants = :variants",
-                  ExpressionAttributeValues: {
-                    ":qty": item.quantity,
-                    ":variants": updatedVariants || [],
-                  },
-                },
-              });
-            } else {
-              transactItems.push({
-                Update: {
-                  TableName: TABLE_NAME,
-                  Key: {
-                    PK: `TENANT#${tenantId}`,
-                    SK: `PRODUCT#${item.productId}`,
-                  },
-                  UpdateExpression: "SET stockQuantity = stockQuantity - :qty",
-                  ExpressionAttributeValues: {
-                    ":qty": item.quantity,
-                  },
-                },
-              });
-            }
-          } catch (err) {
-            console.error("Failed fetching product for stock decrement:", err);
-            transactItems.push({
-              Update: {
-                TableName: TABLE_NAME,
-                Key: {
-                  PK: `TENANT#${tenantId}`,
-                  SK: `PRODUCT#${item.productId}`,
-                },
-                UpdateExpression: "SET stockQuantity = stockQuantity - :qty",
-                ExpressionAttributeValues: {
-                  ":qty": item.quantity,
-                },
-              },
-            });
-          }
+            variants = typeof product.variants === "string" ? JSON.parse(product.variants) : product.variants;
+          } catch (e) {}
         }
 
-        // 2. Increment discount usage count if a code was applied
-        if (targetOrder.discountCode) {
-          transactItems.push({
-            Update: {
-              TableName: TABLE_NAME,
-              Key: {
-                PK: `TENANT#${tenantId}`,
-                SK: `DISCOUNT#${targetOrder.discountCode.toUpperCase()}`,
-              },
-              UpdateExpression: "SET usageCount = usageCount + :one",
-              ExpressionAttributeValues: {
-                ":one": 1,
-              },
-            },
+        if (item.variantId && Array.isArray(variants)) {
+          const updatedVariants = variants.map((v: any) => {
+            if (v.id === item.variantId) {
+              return {
+                ...v,
+                stockQuantity: Math.max(0, v.stockQuantity - item.quantity),
+              };
+            }
+            return v;
+          });
+
+          await tenantDb
+            .prepare("UPDATE products SET stockQuantity = MAX(0, stockQuantity - ?), variants = ? WHERE productId = ?")
+            .bind(item.quantity, JSON.stringify(updatedVariants), item.productId)
+            .run();
+        } else {
+          await tenantDb
+            .prepare("UPDATE products SET stockQuantity = MAX(0, stockQuantity - ?) WHERE productId = ?")
+            .bind(item.quantity, item.productId)
+            .run();
+        }
+      }
+    }
+
+    // 3. Increment discount usage count
+    if (targetOrder.discountCode) {
+      await tenantDb
+        .prepare("UPDATE discount_codes SET usageCount = usageCount + 1 WHERE code = ?")
+        .bind(targetOrder.discountCode.toUpperCase())
+        .run();
+    }
+
+    // 4. Queue Background Jobs
+    if (c.env.JOBS_QUEUE) {
+      try {
+        await c.env.JOBS_QUEUE.send({
+          type: "ORDER_CONFIRMATION",
+          tenantId,
+          orderId,
+          email: targetOrder.customerEmail,
+          total: targetOrder.total,
+        });
+
+        const addOns = store.addOns ? JSON.parse(store.addOns) : [];
+        if (addOns.includes("whatsapp")) {
+          // Customer alert
+          await c.env.JOBS_QUEUE.send({
+            type: "WHATSAPP_NOTIFICATION",
+            tenantId,
+            orderId,
+            recipient: targetOrder.customerPhone || "+919876543210",
+            recipientType: "customer",
+            event: "ORDER_PLACED",
+          });
+          
+          // Merchant alert
+          await c.env.JOBS_QUEUE.send({
+            type: "WHATSAPP_NOTIFICATION",
+            tenantId,
+            orderId,
+            recipient: "+919999999999",
+            recipientType: "merchant",
+            event: "NEW_ORDER_RECEIVED",
           });
         }
-
-        // Execute transactions
-        await ddbDocClient.send(
-          new TransactWriteCommand({
-            TransactItems: transactItems,
-          })
-        );
-
-        // 3. Queue email confirmation via SQS
-        if (SQS_QUEUE_URL) {
-          try {
-            await sqsClient.send(
-              new SendMessageCommand({
-                QueueUrl: SQS_QUEUE_URL,
-                MessageBody: JSON.stringify({
-                  type: "ORDER_CONFIRMATION",
-                  tenantId,
-                  orderId,
-                  email: targetOrder.customerInfo.email,
-                  total: targetOrder.total,
-                }),
-              })
-            );
-
-            // Queue WhatsApp notifications if toggled (Add-On 1)
-            if (store && store.addOns?.includes("whatsapp")) {
-              // Customer notification
-              await sqsClient.send(
-                new SendMessageCommand({
-                  QueueUrl: SQS_QUEUE_URL,
-                  MessageBody: JSON.stringify({
-                    type: "WHATSAPP_NOTIFICATION",
-                    tenantId,
-                    orderId,
-                    recipient: targetOrder.customerInfo.phone || "+919876543210",
-                    recipientType: "customer",
-                    event: "ORDER_PLACED",
-                  }),
-                })
-              );
-
-              // Merchant notification
-              await sqsClient.send(
-                new SendMessageCommand({
-                  QueueUrl: SQS_QUEUE_URL,
-                  MessageBody: JSON.stringify({
-                    type: "WHATSAPP_NOTIFICATION",
-                    tenantId,
-                    orderId,
-                    recipient: "+919999999999", // Merchant alerts contact
-                    recipientType: "merchant",
-                    event: "NEW_ORDER_RECEIVED",
-                  }),
-                })
-              );
-            }
-          } catch (sqsErr) {
-            console.error("Failed to push message to SQS queue:", sqsErr);
-          }
-        }
+      } catch (queueErr) {
+        console.error("Failed to push tasks to JOBS_QUEUE:", queueErr);
       }
-
-      return reply.status(200).send({ received: true });
     }
-  );
+  }
 
-  /**
-   * List Customer Orders (Storefront public/auth-scoped)
-   */
-  fastify.get(
-    "/store/:subdomain/my-orders",
-    { preHandler: [resolveStorefrontTenant, authenticateCustomer] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const customerId = req.user!.userId;
+  return c.json({ received: true });
+});
 
-      // Query customer orders via GSI3
-      const result = await ddbDocClient.send(
-        new QueryCommand({
-          TableName: TABLE_NAME,
-          IndexName: "GSI3",
-          KeyConditionExpression: "GSI3PK = :gsi3pk AND begins_with(GSI3SK, :gsi3sk)",
-          ExpressionAttributeValues: {
-            ":gsi3pk": `TENANT#${tenantId}#CUSTOMER#${customerId}`,
-            ":gsi3sk": "ORDER#",
-          },
-        })
-      );
+/**
+ * List Customer Orders (Storefront auth-scoped)
+ */
+app.get("/store/:subdomain/my-orders", resolveStorefrontTenant, authenticateCustomer, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const user = c.get("user")!;
 
-      return reply.send(result.Items || []);
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const result = await tenantDb
+    .prepare("SELECT * FROM orders WHERE customerId = ? ORDER BY createdAt DESC")
+    .bind(user.userId)
+    .all();
+
+  const rows = result.results || [];
+  const orders = [];
+  for (const row of rows) {
+    const items = await tenantDb.prepare("SELECT * FROM order_items WHERE orderId = ?").bind(row.orderId).all();
+    orders.push({
+      ...row,
+      lineItems: items.results || [],
+    });
+  }
+
+  return c.json(orders);
+});
+
+/**
+ * Shiprocket Webhook (Public storefront)
+ */
+app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const signature = c.req.header("x-shiprocket-signature");
+
+  const expectedToken = c.env.SHIPROCKET_WEBHOOK_TOKEN || "mock-shiprocket-token";
+  const isValid = verifyShiprocketSignature(signature || "", expectedToken);
+  const isSignatureBypass =
+    (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test") && signature === "mock-signature-bypass";
+
+  if (!isValid && !isSignatureBypass) {
+    return c.json({ error: "Invalid Shiprocket webhook signature" }, 400);
+  }
+
+  const body = await c.req.json().catch(() => ({}));
+  const { order_id, current_status, awb } = body;
+
+  if (!order_id || !current_status) {
+    return c.json({ error: "order_id and current_status are required" }, 400);
+  }
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const order = await tenantDb
+    .prepare("SELECT * FROM orders WHERE orderId = ?")
+    .bind(order_id)
+    .first<any>();
+
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  const newStatus = current_status.toLowerCase() === "delivered" ? "delivered" : "shipped";
+  const updatedAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare("UPDATE orders SET status = ?, trackingNumber = ?, updatedAt = ? WHERE orderId = ?")
+    .bind(newStatus, awb || order.trackingNumber, updatedAt, order_id)
+    .run();
+
+  // Queue WhatsApp status update
+  const controlDb = getControlDb(c.env);
+  const store = await controlDb
+    .prepare("SELECT addOns FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ addOns: string }>();
+
+  const addOns = store?.addOns ? JSON.parse(store.addOns) : [];
+
+  if (addOns.includes("whatsapp") && c.env.JOBS_QUEUE) {
+    try {
+      await c.env.JOBS_QUEUE.send({
+        type: "WHATSAPP_NOTIFICATION",
+        tenantId,
+        orderId: order_id,
+        recipient: order.customerPhone || "+919876543210",
+        recipientType: "customer",
+        event: newStatus === "delivered" ? "ORDER_DELIVERED" : "ORDER_SHIPPED",
+      });
+    } catch (queueErr) {
+      console.error("Failed to push WhatsApp status update to Queue:", queueErr);
     }
-  );
+  }
 
-  /**
-   * Shiprocket Webhook (Public storefront)
-   */
-  fastify.post(
-    "/store/:subdomain/webhooks/shiprocket",
-    { preHandler: [resolveStorefrontTenant] },
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const tenantId = req.tenantId!;
-      const signature = req.headers["x-shiprocket-signature"] as string;
+  return c.json({ success: true });
+});
 
-      // Verify webhook signature (using a pre-shared token or mock key verification)
-      const expectedToken = process.env.SHIPROCKET_WEBHOOK_TOKEN || "mock-shiprocket-token";
-      const isValid = verifyShiprocketSignature(signature, expectedToken);
-
-      // Allow signature bypass in dev
-      const isSignatureBypass =
-        ((process.env.NODE_ENV === "development" || process.env.NODE_ENV === "test") && signature === "mock-signature-bypass");
-
-      if (!isValid && !isSignatureBypass) {
-        return reply.status(400).send({ error: "Invalid Shiprocket webhook signature" });
-      }
-
-      const payload = req.body as any;
-      const { order_id, current_status, awb } = payload;
-
-      if (!order_id || !current_status) {
-        return reply.status(400).send({ error: "order_id and current_status are required" });
-      }
-
-      // Fetch the order
-      const getResult = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: `ORDER#${order_id}`,
-          },
-        })
-      );
-
-      const order = getResult.Item;
-      if (!order) {
-        return reply.status(404).send({ error: "Order not found" });
-      }
-
-      const newStatus = current_status.toLowerCase() === "delivered" ? "delivered" : "shipped";
-      const updatedAt = new Date().toISOString();
-
-      await ddbDocClient.send(
-        new PutCommand({
-          TableName: TABLE_NAME,
-          Item: {
-            ...order,
-            status: newStatus,
-            GSI2SK: `ORDER#${newStatus}#${order.createdAt}`,
-            updatedAt,
-            trackingNumber: awb || order.trackingNumber,
-          },
-        })
-      );
-
-      // Trigger WhatsApp delivery notification if enabled
-      const storeRes = await ddbDocClient.send(
-        new GetCommand({
-          TableName: TABLE_NAME,
-          Key: {
-            PK: `TENANT#${tenantId}`,
-            SK: "METADATA",
-          },
-        })
-      );
-      const store = storeRes.Item || {};
-
-      if (store.addOns?.includes("whatsapp") && SQS_QUEUE_URL) {
-        try {
-          await sqsClient.send(
-            new SendMessageCommand({
-              QueueUrl: SQS_QUEUE_URL,
-              MessageBody: JSON.stringify({
-                type: "WHATSAPP_NOTIFICATION",
-                tenantId,
-                orderId: order_id,
-                recipient: order.customerInfo.phone || "+919876543210",
-                recipientType: "customer",
-                event: newStatus === "delivered" ? "ORDER_DELIVERED" : "ORDER_SHIPPED",
-              }),
-            })
-          );
-        } catch (sqsErr) {
-          console.error("Failed to push WhatsApp notification to SQS:", sqsErr);
-        }
-      }
-
-      return reply.send({ success: true });
-    }
-  );
-}
+export default app;

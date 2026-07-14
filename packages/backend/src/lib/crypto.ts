@@ -1,65 +1,96 @@
-import { kmsClient } from "./aws";
-import { EncryptCommand, DecryptCommand } from "@aws-sdk/client-kms";
+const ALGORITHM = "AES-GCM";
+const IV_LENGTH = 12;
 
-// Task 1: Audit & validate startup config to avoid default keys in production
-if (process.env.NODE_ENV === "production" && !process.env.KMS_KEY_ID) {
-  throw new Error("FATAL: KMS_KEY_ID environment variable is required in production environment! Shutting down.");
+/**
+ * Derives a CryptoKey from a secret key string using PBKDF2.
+ */
+async function getCryptoKey(secret: string): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(secret.padEnd(32, "0").substring(0, 32)),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt: enc.encode("basecart-salt-string-for-pbkdf2"),
+      iterations: 10000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: ALGORITHM, length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
 }
 
 /**
- * Encrypts plaintext using AWS KMS
- * Returns base64 ciphertext
+ * Encrypts plaintext using Web Crypto AES-256-GCM
  */
-export async function encrypt(text: string): Promise<string> {
-  const keyId = process.env.KMS_KEY_ID;
-  if (!keyId) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("KMS_KEY_ID is missing");
-    }
-    // Fallback for local development/test if KMS key is not yet bootstrapped
-    return Buffer.from(`mock-encrypted:${text}`).toString("base64");
+export async function encrypt(text: string, secret?: string): Promise<string> {
+  if (process.env.NODE_ENV !== "production" && !secret) {
+    return btoa(`mock-encrypted:${text}`);
   }
 
-  const command = new EncryptCommand({
-    KeyId: keyId,
-    Plaintext: Buffer.from(text, "utf8"),
-  });
-
-  const response = await kmsClient.send(command);
-  if (!response.CiphertextBlob) {
-    throw new Error("KMS Encrypt failed to return CiphertextBlob");
+  if (!secret) {
+    throw new Error("ENCRYPTION_SECRET is required for production encryption");
   }
-  return Buffer.from(response.CiphertextBlob).toString("base64");
+
+  const key = await getCryptoKey(secret);
+  const iv = crypto.getRandomValues(new Uint8Array(IV_LENGTH));
+  const enc = new TextEncoder();
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: ALGORITHM, iv },
+    key,
+    enc.encode(text)
+  );
+
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+
+  return btoa(String.fromCharCode(...combined));
 }
 
 /**
- * Decrypts base64 ciphertext using AWS KMS
+ * Decrypts base64 ciphertext using Web Crypto AES-256-GCM
  */
-export async function decrypt(cipherTextBase64: string): Promise<string> {
-  const keyId = process.env.KMS_KEY_ID;
-  // Check if we are using the local mock fallback in non-production
-  if (!keyId) {
+export async function decrypt(cipherTextBase64: string, secret?: string): Promise<string> {
+  if (process.env.NODE_ENV !== "production" && !secret) {
     try {
-      const decoded = Buffer.from(cipherTextBase64, "base64").toString("utf8");
+      const decoded = atob(cipherTextBase64);
       if (decoded.startsWith("mock-encrypted:")) {
         return decoded.replace("mock-encrypted:", "");
       }
     } catch {
-      // ignore
+      // ignore decoding fallback
     }
   }
 
-  if (!keyId) {
-    throw new Error("KMS_KEY_ID is missing");
+  if (!secret) {
+    throw new Error("ENCRYPTION_SECRET is required for decryption");
   }
 
-  const command = new DecryptCommand({
-    CiphertextBlob: Buffer.from(cipherTextBase64, "base64"),
-  });
-
-  const response = await kmsClient.send(command);
-  if (!response.Plaintext) {
-    throw new Error("KMS Decrypt failed to return Plaintext");
+  const key = await getCryptoKey(secret);
+  const binaryString = atob(cipherTextBase64);
+  const combined = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    combined[i] = binaryString.charCodeAt(i);
   }
-  return Buffer.from(response.Plaintext).toString("utf8");
+
+  const iv = combined.slice(0, IV_LENGTH);
+  const ciphertext = combined.slice(IV_LENGTH);
+
+  const decrypted = await crypto.subtle.decrypt(
+    { name: ALGORITHM, iv },
+    key,
+    ciphertext
+  );
+
+  const dec = new TextDecoder();
+  return dec.decode(decrypted);
 }

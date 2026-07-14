@@ -12,7 +12,7 @@ import {
   Lock,
 } from "lucide-react";
 
-const API_URL = "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface Metrics {
   totalMerchants: number;
@@ -195,14 +195,24 @@ export default function DashboardHome() {
               logs.slice(0, 5).map((log) => (
                 <div key={log.logId} className="p-6 flex items-start gap-4 hover:bg-slate-50/50 transition-colors">
                   <div className={`p-2 rounded-lg mt-0.5 ${
-                    log.action.includes("suspend") ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-600"
+                    log.action === "suspend_store" 
+                      ? "bg-red-50 text-red-600" 
+                      : log.action === "change_plan" 
+                        ? "bg-blue-50 text-blue-600" 
+                        : "bg-emerald-50 text-emerald-600"
                   }`}>
                     <Lock className="w-4 h-4" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-700">
                       <span className="font-semibold text-slate-900">{log.adminEmail}</span>{" "}
-                      {log.action === "suspend_store" ? "suspended tenant store" : "activated tenant store"}
+                      {log.action === "suspend_store" 
+                        ? "suspended tenant store" 
+                        : log.action === "change_plan" 
+                          ? "changed store subscription tier" 
+                          : log.action === "activate_store" 
+                            ? "activated tenant store" 
+                            : log.action}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Tenant ID: <span className="font-mono">{log.targetTenantId}</span>

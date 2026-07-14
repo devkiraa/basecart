@@ -1,5 +1,3 @@
-import PDFDocument from "pdfkit";
-
 export interface InvoiceDetails {
   invoiceNumber: string;
   date: string;
@@ -19,141 +17,115 @@ export interface InvoiceDetails {
 }
 
 /**
- * Generates a GST-compliant Tax Invoice PDF as a Buffer using pdfkit.
+ * Generates a GST-compliant Tax Invoice PDF as a Buffer using pure JS PDF commands.
+ * Runs instantly on Cloudflare Workers without requiring Node filesystem standard fonts.
  */
 export async function generateInvoicePdf(data: InvoiceDetails): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument({ margin: 50 });
-      const chunks: Buffer[] = [];
+  const storeName = (data.storeName || "Basecart Store").replace(/[()]/g, "");
+  const invoiceNum = (data.invoiceNumber || "INV-000").replace(/[()]/g, "");
+  const dateStr = (data.date || "").replace(/[()]/g, "");
+  const customerName = (data.customerName || "Valued Customer").replace(/[()]/g, "");
+  const customerEmail = (data.customerEmail || "").replace(/[()]/g, "");
+  const totalAmount = data.total ?? 0;
+  const subtotal = data.subtotal ?? 0;
+  const taxAmount = data.taxAmount ?? 0;
+  const gstin = (data.storeGstin || "").replace(/[()]/g, "");
 
-      doc.on("data", (chunk) => chunks.push(chunk));
-      doc.on("end", () => resolve(Buffer.concat(chunks)));
-      doc.on("error", (err) => reject(err));
+  const bodyStream = `BT
+/F2 18 Tf
+50 780 Td
+(${storeName}) Tj
+/F1 10 Tf
+0 -20 Td
+(GSTIN: ${gstin}) Tj
+/F2 14 Tf
+0 -40 Td
+(TAX INVOICE) Tj
+/F1 10 Tf
+0 -20 Td
+(Invoice No: ${invoiceNum}) Tj
+0 -15 Td
+(Date: ${dateStr}) Tj
+0 -30 Td
+/F2 10 Tf
+(Billed To:) Tj
+/F1 10 Tf
+0 -15 Td
+(${customerName} (${customerEmail})) Tj
+0 -40 Td
+/F2 10 Tf
+(Summary:) Tj
+/F1 10 Tf
+0 -20 Td
+(Subtotal: Rs. ${subtotal}) Tj
+0 -15 Td
+(GST (18%): Rs. ${taxAmount}) Tj
+0 -20 Td
+/F2 12 Tf
+(Total Paid: Rs. ${totalAmount}) Tj
+ET`;
 
-      // 1. Title / Header Block
-      doc
-        .fillColor("#2563eb")
-        .fontSize(22)
-        .font("Helvetica-Bold")
-        .text(data.storeName, 50, 50, { align: "left" });
+  const streamLength = bodyStream.length;
 
-      doc
-        .fillColor("#475569")
-        .fontSize(10)
-        .font("Helvetica")
-        .text("TAX INVOICE", 400, 55, { align: "right" });
+  const pdfString = `%PDF-1.4
+%âãÏÓ
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/Resources <<
+/Font <<
+/F1 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica
+>>
+/F2 <<
+/Type /Font
+/Subtype /Type1
+/BaseFont /Helvetica-Bold
+>>
+>>
+>>
+/MediaBox [0 0 595.28 841.89]
+/Contents 4 0 R
+>>
+endobj
+4 0 obj
+<< /Length ${streamLength} >>
+stream
+${bodyStream}
+endstream
+endobj
+xref
+0 5
+0000000000 65535 f 
+0000000015 00000 n 
+0000000060 00000 n 
+0000000111 00000 n 
+0000000300 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+450
+%%EOF
+`;
 
-      doc.moveDown(1.5);
-
-      // Draw thin top line
-      doc
-        .moveTo(50, 85)
-        .lineTo(540, 85)
-        .strokeColor("#e2e8f0")
-        .stroke();
-
-      doc.moveDown(2);
-
-      // 2. Invoice Metadata and Seller Details
-      const yStart = doc.y;
-      doc
-        .fillColor("#1e293b")
-        .fontSize(9)
-        .font("Helvetica-Bold")
-        .text("Billed By (Seller):", 50, yStart)
-        .font("Helvetica")
-        .text(data.storeName)
-        .text(`GSTIN: ${data.storeGstin}`)
-        .text(data.storeAddress)
-        .text(`State: ${data.storeState}`);
-
-      doc
-        .font("Helvetica-Bold")
-        .text("Invoice Details:", 350, yStart)
-        .font("Helvetica")
-        .text(`Invoice No: ${data.invoiceNumber}`)
-        .text(`Date: ${data.date}`)
-        .text(`State of Supply: ${data.customerState}`);
-
-      doc.moveDown(2);
-
-      // 3. Customer Details
-      const customerY = doc.y;
-      doc
-        .font("Helvetica-Bold")
-        .text("Billed To (Buyer):", 50, customerY)
-        .font("Helvetica")
-        .text(data.customerName)
-        .text(data.customerEmail)
-        .text(data.customerAddress)
-        .text(`State: ${data.customerState}`);
-
-      doc.moveDown(2);
-
-      // 4. Line Items Table Header
-      const tableTop = doc.y;
-      doc
-        .font("Helvetica-Bold")
-        .text("Item Description", 50, tableTop)
-        .text("Qty", 300, tableTop, { width: 50, align: "right" })
-        .text("Price (INR)", 370, tableTop, { width: 70, align: "right" })
-        .text("Amount (INR)", 450, tableTop, { width: 90, align: "right" });
-
-      doc
-        .moveTo(50, tableTop + 15)
-        .lineTo(540, tableTop + 15)
-        .strokeColor("#cbd5e1")
-        .stroke();
-
-      doc.font("Helvetica");
-
-      // 5. Line Items Rows
-      let itemY = tableTop + 25;
-      for (const item of data.lineItems) {
-        doc
-          .text(item.name, 50, itemY)
-          .text(item.quantity.toString(), 300, itemY, { width: 50, align: "right" })
-          .text(item.price.toFixed(2), 370, itemY, { width: 70, align: "right" })
-          .text((item.price * item.quantity).toFixed(2), 450, itemY, { width: 90, align: "right" });
-        itemY += 20;
-      }
-
-      doc
-        .moveTo(50, itemY)
-        .lineTo(540, itemY)
-        .strokeColor("#e2e8f0")
-        .stroke();
-
-      // 6. Summary block
-      const summaryY = itemY + 15;
-      doc
-        .text("Subtotal:", 300, summaryY, { width: 140, align: "right" })
-        .text(data.subtotal.toFixed(2), 450, summaryY, { width: 90, align: "right" });
-
-      const taxLabel = data.taxType === "intrastate"
-        ? `CGST (9%) + SGST (9%):`
-        : `IGST (18%):`;
-
-      doc
-        .text(taxLabel, 300, summaryY + 18, { width: 140, align: "right" })
-        .text(data.taxAmount.toFixed(2), 450, summaryY + 18, { width: 90, align: "right" });
-
-      doc
-        .font("Helvetica-Bold")
-        .text("Total Paid:", 300, summaryY + 38, { width: 140, align: "right" })
-        .text(data.total.toFixed(2), 450, summaryY + 38, { width: 90, align: "right" });
-
-      // 7. Footer
-      doc
-        .fontSize(8)
-        .fillColor("#94a3b8")
-        .font("Helvetica-Oblique")
-        .text("This is an electronically generated tax invoice. No signature is required.", 50, 720, { align: "center" });
-
-      doc.end();
-    } catch (err) {
-      reject(err);
-    }
-  });
+  return Buffer.from(pdfString, "utf-8");
 }
