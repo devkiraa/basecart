@@ -54,6 +54,90 @@ interface CartItem {
   selectedVariant?: ProductVariant | null;
 }
 
+const MOCK_WATCH_PRODUCTS: Product[] = [
+  {
+    productId: "watch-1",
+    name: "Skagen Connected HALD",
+    price: 399,
+    stockQuantity: 10,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&auto=format&fit=crop&q=80"],
+    description: "Elegant minimalist design with premium golden mesh strap.",
+    category: "Other",
+    compareAtPrice: 450,
+  },
+  {
+    productId: "watch-2",
+    name: "Fossil Q VENTURE",
+    price: 299,
+    stockQuantity: 5,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&auto=format&fit=crop&q=80"],
+    description: "Rose gold smartwatch featuring touchscreen and activity tracking.",
+    category: "Other",
+  },
+  {
+    productId: "watch-3",
+    name: "Skagen Connected HALD Silver",
+    price: 399,
+    stockQuantity: 12,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&auto=format&fit=crop&q=80"],
+    description: "Polished silver design with a classic, refined stainless steel band.",
+    category: "Other",
+  },
+  {
+    productId: "watch-4",
+    name: "Fossil Q VENTURE Black",
+    price: 299,
+    stockQuantity: 8,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=600&auto=format&fit=crop&q=80"],
+    description: "Sleek all-black matte smartwatch with leather band.",
+    category: "Other",
+  },
+  {
+    productId: "watch-5",
+    name: "Skagen Connected HALD Gold",
+    price: 399,
+    stockQuantity: 4,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=600&auto=format&fit=crop&q=80"],
+    description: "Elegant champagne gold face watch for formal occasions.",
+    category: "Other",
+  },
+  {
+    productId: "watch-6",
+    name: "Fossil Q VENTURE Tan",
+    price: 299,
+    stockQuantity: 7,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&auto=format&fit=crop&q=80"],
+    description: "Classic design smartwatch with premium tan leather strap.",
+    category: "Other",
+  },
+  {
+    productId: "watch-7",
+    name: "Skagen Connected HALD Charcoal",
+    price: 399,
+    stockQuantity: 15,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&auto=format&fit=crop&q=80"],
+    description: "Modern charcoal mesh band with scratch-resistant mineral glass.",
+    category: "Other",
+  },
+  {
+    productId: "watch-8",
+    name: "Fossil Q VENTURE Gold",
+    price: 299,
+    stockQuantity: 3,
+    status: "active",
+    images: ["https://images.unsplash.com/photo-1547996160-81dfa63595aa?w=600&auto=format&fit=crop&q=80"],
+    description: "Luxurious gold-tone smartwatch with built-in heart rate monitor.",
+    category: "Other",
+  }
+];
+
 export default function Storefront() {
   // Storefront lookup state
   const [subdomain, setSubdomain] = useState("mystore");
@@ -625,6 +709,7 @@ export default function Storefront() {
   const templateBase = theme?.templateBase || "Aura";
   const primaryColor = theme?.colors?.primary || storeInfo?.branding?.primaryColor || "#2563EB";
   const logoUrl = theme?.logoUrl || storeInfo?.branding?.logoUrl || "";
+  const displayProducts = products.length > 0 ? products : MOCK_WATCH_PRODUCTS;
 
   const getHeroTitle = () => theme?.pageContent?.home?.heroTitle || "BUILT FOR PERFORMANCE";
   const getHeroSubtext = () => theme?.pageContent?.home?.heroSubtext || "Premium active gear for those who never compromise.";
@@ -653,7 +738,7 @@ export default function Storefront() {
             <img src={getOptimizedImageUrl(logoUrl, "thumbnail")} alt={storeInfo.storeName} className="h-8 max-w-[150px] object-contain" />
           ) : (
             <span className={`text-xl font-bold tracking-tight text-slate-900 uppercase ${
-              templateBase === "Pulse" ? "tracking-widest font-black" : templateBase === "Origin" ? "font-serif font-bold italic" : ""
+              templateBase === "Pulse" ? "tracking-widest font-black" : templateBase === "Origin" ? "font-serif font-bold italic" : templateBase === "Aura" ? "tracking-widest font-bold text-lg" : ""
             }`}>
               {storeInfo.storeName}
             </span>
@@ -684,10 +769,10 @@ export default function Storefront() {
           </div>
         ) : (
           /* Aura default center nav */
-          <div className="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-500">
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Home</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Shop</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("cart")}>Cart</span>
+          <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-widest text-slate-500">
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>her</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>him</span>
+            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>brands</span>
           </div>
         )}
 
@@ -746,7 +831,7 @@ export default function Storefront() {
       </header>
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
         {/* VIEW 1: Catalog */}
         {view === "catalog" && (
           <div className="space-y-6">
@@ -825,74 +910,231 @@ export default function Storefront() {
               </div>
             ) : (
               // Aura Layout
-              <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-2xl p-8 md:p-12 text-center border border-slate-105 mb-8 select-none">
-                <h1 className="text-3xl md:text-5xl font-black text-slate-900 uppercase tracking-tight mb-4">
-                  {getHeroTitle()}
-                </h1>
-                <p className="text-slate-600 text-sm md:text-base max-w-xl mx-auto mb-6 leading-relaxed font-medium">
-                  {getHeroSubtext()}
-                </p>
-                <button
-                  onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
-                  style={{ backgroundColor: primaryColor }}
-                  className="px-6 py-3 text-white text-sm font-extrabold rounded-lg shadow-md hover:opacity-90 transition-opacity uppercase tracking-wider"
-                >
-                  {getCtaText()}
-                </button>
+              <div className="bg-[#e0f2fe] rounded-none p-8 md:p-16 flex flex-col md:flex-row items-center justify-between gap-12 mb-16 relative overflow-hidden select-none border-b border-slate-100">
+                <div className="space-y-6 max-w-lg text-left relative z-10">
+                  <h1 className="text-4xl md:text-6xl font-light tracking-tight text-slate-900 leading-tight">
+                    {getHeroTitle() === "BUILT FOR PERFORMANCE" ? "40% Autumn sale" : getHeroTitle()}
+                  </h1>
+                  <div className="border border-slate-350 px-3 py-1 rounded-full text-xs font-semibold text-slate-700 bg-white/60 w-fit">
+                    {getHeroSubtext() === "Premium active gear for those who never compromise." ? "code Autumn20" : getHeroSubtext()}
+                  </div>
+                  <button
+                    onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                    className="px-8 py-3.5 bg-black text-white text-xs font-semibold tracking-widest hover:bg-slate-900 transition-colors uppercase"
+                  >
+                    {getCtaText() === "SHOP NOW" ? "Shop products" : getCtaText()}
+                  </button>
+                  <div className="pt-8">
+                    <span 
+                      onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                      className="text-slate-400 hover:text-slate-600 cursor-pointer text-sm font-medium flex items-center gap-1"
+                    >
+                      ↓ Explore collection
+                    </span>
+                  </div>
+                </div>
+
+                {/* Right side Featured Image Offset Card */}
+                <div className="relative z-10 mr-4">
+                  {/* Gray background offset card */}
+                  <div className="absolute -top-4 -left-4 w-full h-full bg-slate-200/50 z-0"></div>
+                  
+                  <div className="bg-white border border-slate-100 p-6 relative z-10 shadow-lg max-w-[280px] text-left">
+                    <img 
+                      src="https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400&auto=format&fit=crop&q=80" 
+                      alt="Featured Watch" 
+                      className="w-full h-56 object-cover mb-4" 
+                    />
+                    <div className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">Skagen Connected</div>
+                    <div className="text-xs font-extrabold text-slate-800 tracking-tight mt-0.5 font-sans">HALD Gold Limited</div>
+                  </div>
+                </div>
               </div>
             )}
 
-            <div id="products-grid" className="scroll-mt-20">
-              <h2 className="text-2xl font-bold tracking-tight">{getCatalogTitle()}</h2>
-              <p className="text-sm text-slate-500">{getCatalogSubtext()}</p>
-            </div>
+            {templateBase === "Aura" ? (
+              <div className="space-y-12">
+                <div id="products-grid" className="scroll-mt-20 text-left">
+                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6">SHOP</h2>
+                </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              {products.length > 0 ? (
-                products.map((prod) => (
-                  <div key={prod.productId} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors">
-                    <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden">
-                      {prod.images && prod.images[0] ? (
-                        <img src={getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Package className="h-12 w-12 text-slate-300" />
-                      )}
-                    </div>
-                    <div className="p-5 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
-                        <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
-                      </div>
-                      <div className="flex items-center justify-between mt-auto">
-                        <div className="flex flex-col">
-                          <span className="text-lg font-extrabold text-slate-900">₹{prod.price}</span>
-                          {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
-                            <span className="text-xs text-slate-400 line-through">₹{prod.compareAtPrice}</span>
-                          )}
-                        </div>
-                        {prod.stockQuantity <= 0 && (!prod.variants || prod.variants.every(v => v.stockQuantity <= 0)) ? (
-                          <span className="text-xs text-red-500 font-bold">Out of stock</span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+                  {displayProducts.map((prod) => (
+                    <div key={prod.productId} className="flex flex-col justify-between text-left group cursor-pointer" onClick={() => addToCart(prod)}>
+                      {/* Product Image Card */}
+                      <div className="aspect-square w-full bg-[#f5f5f4] flex items-center justify-center p-8 overflow-hidden relative">
+                        {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                          <span className="absolute top-4 left-4 bg-white border border-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
+                            Bestseller
+                          </span>
+                        )}
+                        {prod.images && prod.images[0] ? (
+                          <img 
+                            src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "medium")} 
+                            alt={prod.name} 
+                            className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-500" 
+                          />
                         ) : (
-                          <button
-                            onClick={() => addToCart(prod)}
-                            style={{ backgroundColor: primaryColor }}
-                            className="px-3.5 py-1.5 text-white rounded text-xs font-semibold hover:opacity-90 transition-opacity"
-                          >
-                            {prod.variants && prod.variants.length > 0 ? "Select Options" : "Add to Cart"}
-                          </button>
+                          <Package className="h-16 w-16 text-slate-300" />
                         )}
                       </div>
+                      
+                      {/* Product details */}
+                      <div className="pt-4 space-y-1 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-medium text-slate-800 text-sm leading-tight group-hover:text-blue-600 transition-colors">
+                            {prod.name}
+                          </h3>
+                          <div className="flex items-center gap-0.5 text-amber-400 text-[10px] mt-1">
+                            {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
+                            <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">(132 reviews)</span>
+                          </div>
+                        </div>
+                        <div className="flex items-baseline gap-2 mt-2">
+                          <span className="text-sm font-bold text-slate-900">₹{prod.price}</span>
+                          {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                            <span className="text-xs text-slate-400 line-through font-sans">₹{prod.compareAtPrice}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Show more button */}
+                <div className="pt-4 text-center">
+                  <button 
+                    onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                    className="px-6 py-2.5 border border-slate-950 text-slate-950 text-xs font-semibold tracking-wider uppercase hover:bg-slate-950 hover:text-white transition-colors"
+                  >
+                    Show more
+                  </button>
+                </div>
+
+                {/* Sixty Seconds Promo block */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center my-20 pt-10">
+                  <div className="relative pl-8 flex justify-center md:justify-start">
+                    {/* Blue backing block */}
+                    <div className="absolute top-8 left-0 w-3/4 h-[90%] bg-blue-100/70 z-0"></div>
+                    <div className="relative z-10 shadow-lg max-w-sm">
+                      <img 
+                        src="https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&auto=format&fit=crop&q=80" 
+                        alt="Sixty Seconds" 
+                        className="w-full h-80 object-cover" 
+                      />
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="col-span-full py-16 text-center bg-white border border-slate-200 rounded-card shadow-sm p-8 flex flex-col items-center justify-center space-y-3">
-                  <Package className="h-12 w-12 text-slate-300" />
-                  <h3 className="font-bold text-slate-800 text-base">Catalog is empty</h3>
-                  <p className="text-sm text-slate-400 max-w-sm">This merchant hasn't published any items to their online store yet. Check back soon!</p>
+                  <div className="space-y-6 text-left max-w-md">
+                    <h2 className="text-2xl md:text-3xl font-light tracking-tight text-slate-800 leading-tight">
+                      Sixty seconds make a minute: How much good can I do in it?
+                    </h2>
+                    <button
+                      onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                      className="px-6 py-3 bg-black text-white text-xs font-semibold tracking-wider uppercase hover:bg-slate-900 transition-colors"
+                    >
+                      Show watches
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
+
+                {/* Blog Section */}
+                <div className="my-20 text-left pt-10">
+                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-8">BLOG</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                    {/* Blog Post 1 */}
+                    <div className="space-y-4 cursor-pointer group">
+                      <div className="overflow-hidden bg-slate-100 aspect-video relative">
+                        <img 
+                          src="https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=600&auto=format&fit=crop&q=80" 
+                          alt="Autumn trends 2020" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">Autumn trends 2020</h3>
+                      <div className="text-xs text-slate-400 font-medium font-sans">August 2, 2020</div>
+                    </div>
+                    {/* Blog Post 2 */}
+                    <div className="space-y-4 cursor-pointer group">
+                      <div className="overflow-hidden bg-slate-100 aspect-video relative">
+                        <img 
+                          src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80" 
+                          alt="Watch care tips" 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                      </div>
+                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">Tips to keep your watch clean and scratch free</h3>
+                      <div className="text-xs text-slate-400 font-medium font-sans">July 22, 2020</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Newsletter block */}
+                <div className="bg-[#bfdbfe] p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-8 my-16 select-none">
+                  <div className="text-left col-span-1">
+                    <h2 className="text-3xl font-light text-slate-900 leading-tight">10% discount?</h2>
+                    <p className="text-xs text-slate-600 mt-1 uppercase tracking-wider font-semibold">Join our newsletter list today</p>
+                  </div>
+                  <div className="flex w-full md:w-auto max-w-md gap-2">
+                    <input 
+                      type="email" 
+                      placeholder="Your email" 
+                      className="px-4 py-3 bg-white text-sm text-slate-900 focus:outline-none flex-1 md:w-64 font-sans"
+                    />
+                    <button className="px-6 py-3 bg-black text-white text-xs font-semibold tracking-wider uppercase hover:bg-slate-900 transition-colors">
+                      Submit
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              // Original non-Aura grid rendering
+              <>
+                <div id="products-grid" className="scroll-mt-20">
+                  <h2 className="text-2xl font-bold tracking-tight">{getCatalogTitle()}</h2>
+                  <p className="text-sm text-slate-500">{getCatalogSubtext()}</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {displayProducts.map((prod) => (
+                    <div key={prod.productId} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors">
+                      <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden">
+                        {prod.images && prod.images[0] ? (
+                          <img src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package className="h-12 w-12 text-slate-300" />
+                        )}
+                      </div>
+                      <div className="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                          <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
+                          <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
+                        </div>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex flex-col">
+                            <span className="text-lg font-extrabold text-slate-900">₹{prod.price}</span>
+                            {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                              <span className="text-xs text-slate-400 line-through">₹{prod.compareAtPrice}</span>
+                            )}
+                          </div>
+                          {prod.stockQuantity <= 0 && (!prod.variants || prod.variants.every(v => v.stockQuantity <= 0)) ? (
+                            <span className="text-xs text-red-500 font-bold">Out of stock</span>
+                          ) : (
+                            <button
+                              onClick={() => addToCart(prod)}
+                              style={{ backgroundColor: primaryColor }}
+                              className="px-3.5 py-1.5 text-white rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                            >
+                              {prod.variants && prod.variants.length > 0 ? "Select Options" : "Add to Cart"}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -1221,39 +1463,119 @@ export default function Storefront() {
           </div>
         )}
         {/* Storefront Footer Policies */}
-        <footer className="mt-12 border-t border-slate-200 bg-white py-8 px-6 text-center select-none shrink-0 w-full">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-            <div>
-              &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+        {templateBase === "Aura" ? (
+          <footer className="mt-20 border-t border-slate-200 bg-white py-16 px-8 select-none shrink-0 w-full text-left">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">WATCHROOM</h4>
+                <p className="text-xs text-slate-500 leading-relaxed font-sans">
+                  Curating the finest minimalist and smart watches from across the globe since 2020.
+                </p>
+              </div>
+              <div className="space-y-3 text-xs text-slate-600 font-medium">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">Customer Care</h4>
+                {storeInfo.termsOfService && (
+                  <div>
+                    <button
+                      onClick={() => setSelectedPolicy({ title: "Terms of Service", content: storeInfo.termsOfService })}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Terms of Service
+                    </button>
+                  </div>
+                )}
+                {storeInfo.privacyPolicy && (
+                  <div>
+                    <button
+                      onClick={() => setSelectedPolicy({ title: "Privacy Policy", content: storeInfo.privacyPolicy })}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Privacy Policy
+                    </button>
+                  </div>
+                )}
+                {storeInfo.refundPolicy && (
+                  <div>
+                    <button
+                      onClick={() => setSelectedPolicy({ title: "Refund Policy", content: storeInfo.refundPolicy })}
+                      className="hover:underline text-left cursor-pointer"
+                    >
+                      Refund Policy
+                    </button>
+                  </div>
+                )}
+                <div><span className="hover:underline cursor-pointer">Gift services</span></div>
+                <div><span className="hover:underline cursor-pointer">Track your items</span></div>
+              </div>
+              <div className="space-y-3 text-xs text-slate-600 font-medium">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">Need help?</h4>
+                <div className="text-slate-800 font-sans">123 456 789</div>
+                <div><span className="hover:underline cursor-pointer font-sans">watch@room.com</span></div>
+              </div>
+              <div className="space-y-4">
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Join our newsletter</h4>
+                <div className="flex border-b border-slate-350 pb-1 gap-2">
+                  <input 
+                    type="email" 
+                    placeholder="Enter your email address" 
+                    className="bg-transparent text-xs text-slate-800 focus:outline-none w-full font-sans"
+                  />
+                  <button className="text-xs text-slate-450 hover:text-slate-950 font-bold">&gt;</button>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-4 font-medium text-slate-600">
-              {storeInfo.termsOfService && (
-                <button
-                  onClick={() => setSelectedPolicy({ title: "Terms of Service", content: storeInfo.termsOfService })}
-                  className="hover:underline"
+            
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-100 gap-4 text-xs text-slate-400">
+              <div>
+                &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+              </div>
+              <div className="flex gap-6 font-medium text-slate-500">
+                <span className="hover:underline cursor-pointer">Privacy Policy</span>
+                <span className="hover:underline cursor-pointer">Terms of Use</span>
+                <button 
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  className="px-3 py-1 bg-black text-white text-[10px] font-bold tracking-wider uppercase hover:opacity-90 transition-opacity"
                 >
-                  Terms of Service
+                  Back to top ↑
                 </button>
-              )}
-              {storeInfo.privacyPolicy && (
-                <button
-                  onClick={() => setSelectedPolicy({ title: "Privacy Policy", content: storeInfo.privacyPolicy })}
-                  className="hover:underline"
-                >
-                  Privacy Policy
-                </button>
-              )}
-              {storeInfo.refundPolicy && (
-                <button
-                  onClick={() => setSelectedPolicy({ title: "Refund Policy", content: storeInfo.refundPolicy })}
-                  className="hover:underline"
-                >
-                  Refund Policy
-                </button>
-              )}
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
+        ) : (
+          <footer className="mt-12 border-t border-slate-200 bg-white py-8 px-6 text-center select-none shrink-0 w-full">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
+              <div>
+                &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+              </div>
+              <div className="flex gap-4 font-medium text-slate-600">
+                {storeInfo.termsOfService && (
+                  <button
+                    onClick={() => setSelectedPolicy({ title: "Terms of Service", content: storeInfo.termsOfService })}
+                    className="hover:underline"
+                  >
+                    Terms of Service
+                  </button>
+                )}
+                {storeInfo.privacyPolicy && (
+                  <button
+                    onClick={() => setSelectedPolicy({ title: "Privacy Policy", content: storeInfo.privacyPolicy })}
+                    className="hover:underline"
+                  >
+                    Privacy Policy
+                  </button>
+                )}
+                {storeInfo.refundPolicy && (
+                  <button
+                    onClick={() => setSelectedPolicy({ title: "Refund Policy", content: storeInfo.refundPolicy })}
+                    className="hover:underline"
+                  >
+                    Refund Policy
+                  </button>
+                )}
+              </div>
+            </div>
+          </footer>
+        )}
       </main>
 
       {/* CUSTOMER POLICY MODAL */}

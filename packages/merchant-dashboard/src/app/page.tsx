@@ -785,7 +785,7 @@ export default function MerchantDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          storeName: "Demo Store",
+          storeName: "Watchroom",
           subdomain: "demo",
           email: "merchant@basecart.io",
           password: "password123",
