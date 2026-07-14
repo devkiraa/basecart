@@ -107,6 +107,9 @@ interface StoreSettings {
     primaryColor?: string;
     accentColor?: string;
   };
+  termsOfService?: string;
+  privacyPolicy?: string;
+  refundPolicy?: string;
 }
 
 // PREMIUM SKELETON PRIMITIVES
