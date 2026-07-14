@@ -55,6 +55,28 @@ export function buildApp() {
     })
   );
 
+  // Global Rate Limiter Middleware
+  app.use("*", async (c, next) => {
+    if (c.env && (c.env as any).API_RATE_LIMITER) {
+      const ip = c.req.header("cf-connecting-ip") || "unknown";
+      try {
+        const { success } = await (c.env as any).API_RATE_LIMITER.limit({ key: ip });
+        if (!success) {
+          return c.json(
+            {
+              error: "Too Many Requests",
+              message: "Rate limit exceeded. Please try again later.",
+            },
+            429
+          );
+        }
+      } catch (err) {
+        console.error("Rate limiter error:", err);
+      }
+    }
+    await next();
+  });
+
   // Global Error Handler
   app.onError((err, c) => {
     console.error("Hono error handler caught error:", err);
