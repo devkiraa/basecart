@@ -168,31 +168,27 @@ export default function MerchantDetailPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
-          <p className="text-slate-500 text-sm">Querying tenant details from database partitions...</p>
-        </div>
-      </AdminLayout>
+      <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+        <Loader2 className="w-8 h-8 text-blue-600 animate-spin mb-2" />
+        <p className="text-slate-500 text-sm font-semibold">Querying tenant details from database partitions...</p>
+      </div>
     );
   }
 
   if (error || !details) {
     return (
-      <AdminLayout>
-        <div className="space-y-4">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to list
-          </button>
-          <div className="p-4 bg-red-50 border border-red-100 text-sm text-red-600 rounded-xl">
-            {error || "Merchant detail records could not be resolved."}
-          </div>
+      <div className="space-y-4">
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to list
+        </button>
+        <div className="p-4 bg-red-50 border border-red-100 text-sm text-red-650 rounded-xl">
+          {error || "Merchant detail records could not be resolved."}
         </div>
-      </AdminLayout>
+      </div>
     );
   }
 
@@ -203,8 +199,7 @@ export default function MerchantDetailPage() {
       : "bg-red-50 text-red-700 border border-red-100";
 
   return (
-    <AdminLayout>
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Navigation Breadcrumb */}
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <button
@@ -621,6 +616,5 @@ export default function MerchantDetailPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 }

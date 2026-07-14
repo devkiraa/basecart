@@ -39,18 +39,15 @@ export default function SecurityPage() {
 
   if (loading) {
     return (
-      <AdminLayout>
-        <div className="flex flex-col items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-indigo-650 animate-spin mb-2" />
-          <p className="text-slate-500 text-sm">Querying admin sessions registry...</p>
-        </div>
-      </AdminLayout>
+      <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+        <Loader2 className="w-8 h-8 text-indigo-650 animate-spin mb-2" />
+        <p className="text-slate-500 text-sm font-semibold">Querying admin sessions registry...</p>
+      </div>
     );
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Security Command Center</h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -134,6 +131,5 @@ export default function SecurityPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 }

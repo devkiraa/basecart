@@ -114,8 +114,7 @@ export default function MerchantsListPage() {
   });
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-start">
           <div>
@@ -335,6 +334,5 @@ export default function MerchantsListPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 }

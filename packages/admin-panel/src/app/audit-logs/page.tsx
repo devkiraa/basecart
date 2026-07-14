@@ -61,8 +61,7 @@ export default function AuditLogsPage() {
   });
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Administrative Audit Trail</h1>
@@ -187,6 +186,5 @@ export default function AuditLogsPage() {
           </div>
         </div>
       </div>
-    </AdminLayout>
   );
 }

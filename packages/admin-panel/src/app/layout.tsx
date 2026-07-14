@@ -1,5 +1,6 @@
 import "./globals.css";
 import React from "react";
+import ClientLayout from "../components/ClientLayout";
 
 export const metadata = {
   title: "Basecart Admin Console",
@@ -18,7 +19,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
-      <body>{children}</body>
+      <body>
+        <ClientLayout>{children}</ClientLayout>
+      </body>
     </html>
   );
 }
