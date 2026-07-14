@@ -389,4 +389,229 @@ app.post("/admin/auth/logout", async (c) => {
   return c.json({ message: "Logged out successfully" });
 });
 
+/**
+ * Global Search
+ */
+app.get("/admin/search", authenticateAdmin, async (c) => {
+  const q = c.req.query("q") || "";
+  const controlDb = getControlDb(c.env);
+
+  if (!q) {
+    return c.json({ merchants: [], admins: [], tickets: [] });
+  }
+
+  const queryLike = `%${q}%`;
+
+  const merchants = await controlDb
+    .prepare("SELECT tenantId, storeName, subdomain, plan, status FROM tenants WHERE storeName LIKE ? OR subdomain LIKE ? OR tenantId LIKE ? LIMIT 10")
+    .bind(queryLike, queryLike, queryLike)
+    .all();
+
+  const admins = await controlDb
+    .prepare("SELECT email, role FROM admins WHERE email LIKE ? LIMIT 5")
+    .bind(queryLike)
+    .all();
+
+  const tickets = await controlDb
+    .prepare("SELECT ticketId, storeName, subject, status, priority FROM support_tickets WHERE subject LIKE ? OR message LIKE ? OR storeName LIKE ? LIMIT 10")
+    .bind(queryLike, queryLike, queryLike)
+    .all();
+
+  return c.json({
+    merchants: merchants.results || [],
+    admins: admins.results || [],
+    tickets: tickets.results || [],
+  });
+});
+
+/**
+ * Impersonate Merchant Owner
+ */
+app.post("/admin/merchants/:tenantId/impersonate", authenticateAdmin, async (c) => {
+  const tenantId = c.req.param("tenantId");
+  const controlDb = getControlDb(c.env);
+
+  const owner = await controlDb
+    .prepare("SELECT * FROM merchant_users WHERE tenantId = ? AND role = 'owner'")
+    .bind(tenantId)
+    .first<any>();
+
+  if (!owner) {
+    return c.json({ error: "Owner user not found for this store" }, 404);
+  }
+
+  const tokens = await authService.generateTokens(
+    {
+      userId: owner.userId,
+      email: owner.email,
+      role: owner.role,
+      tenantId,
+      type: "merchant",
+    },
+    controlDb
+  );
+
+  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
+  const merchantCookieOptions = {
+    path: "/",
+    httpOnly: true,
+    secure: isProdOrStaging,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    maxAge: 15 * 60,
+    domain,
+  };
+
+  setCookie(c, "basecart_merchant_token", tokens.accessToken, merchantCookieOptions);
+  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, merchantCookieOptions);
+
+  return c.json({
+    success: true,
+    message: "Impersonation session initialized",
+    impersonateUrl: "https://basecart.pages.dev/",
+  });
+});
+
+/**
+ * Reset Merchant Owner Password
+ */
+app.post("/admin/merchants/:tenantId/reset-password", authenticateAdmin, async (c) => {
+  const tenantId = c.req.param("tenantId");
+  const body = await c.req.json().catch(() => ({}));
+  const { newPassword } = body;
+
+  if (!newPassword) {
+    return c.json({ error: "New password is required" }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+
+  const owner = await controlDb
+    .prepare("SELECT email FROM merchant_users WHERE tenantId = ? AND role = 'owner'")
+    .bind(tenantId)
+    .first<any>();
+
+  if (!owner) {
+    return c.json({ error: "Owner user not found for this store" }, 404);
+  }
+
+  const hashedPassword = await authService.hashPassword(newPassword);
+
+  await controlDb
+    .prepare("UPDATE merchant_users SET hashedPassword = ? WHERE email = ?")
+    .bind(hashedPassword, owner.email)
+    .run();
+
+  const adminProfile = c.get("admin");
+  const adminEmail = adminProfile?.email || "system";
+  const logId = crypto.randomUUID();
+  await controlDb
+    .prepare("INSERT INTO admin_audit_logs (logId, adminEmail, action, targetTenantId, createdAt) VALUES (?, ?, ?, ?, ?)")
+    .bind(logId, adminEmail, "reset_merchant_password", tenantId, new Date().toISOString())
+    .run();
+
+  return c.json({ success: true, message: "Merchant password reset successfully" });
+});
+
+/**
+ * Delete Merchant Tenant
+ */
+app.delete("/admin/merchants/:tenantId", authenticateAdmin, async (c) => {
+  const tenantId = c.req.param("tenantId");
+  const controlDb = getControlDb(c.env);
+
+  await controlDb.prepare("DELETE FROM tenants WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM merchant_users WHERE tenantId = ?").bind(tenantId).run();
+
+  const adminProfile = c.get("admin");
+  const adminEmail = adminProfile?.email || "system";
+  const logId = crypto.randomUUID();
+  await controlDb
+    .prepare("INSERT INTO admin_audit_logs (logId, adminEmail, action, targetTenantId, createdAt) VALUES (?, ?, ?, ?, ?)")
+    .bind(logId, adminEmail, "delete_store", tenantId, new Date().toISOString())
+    .run();
+
+  return c.json({ success: true, message: "Merchant store records deleted successfully" });
+});
+
+/**
+ * Support Tickets Endpoints
+ */
+app.get("/admin/support/tickets", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const result = await controlDb.prepare("SELECT * FROM support_tickets ORDER BY createdAt DESC").all();
+  return c.json(result.results || []);
+});
+
+app.post("/admin/support/tickets", authenticateAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { tenantId, storeName, subject, message, priority } = body;
+
+  if (!tenantId || !storeName || !subject || !message) {
+    return c.json({ error: "Missing required fields" }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+  const ticketId = crypto.randomUUID();
+  const createdAt = new Date().toISOString();
+
+  await controlDb
+    .prepare("INSERT INTO support_tickets (ticketId, tenantId, storeName, subject, message, status, priority, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(ticketId, tenantId, storeName, subject, message, "open", priority || "medium", createdAt)
+    .run();
+
+  return c.json({ success: true, ticketId, message: "Ticket created successfully" }, 201);
+});
+
+app.patch("/admin/support/tickets/:ticketId", authenticateAdmin, async (c) => {
+  const ticketId = c.req.param("ticketId");
+  const body = await c.req.json().catch(() => ({}));
+  const { status, priority } = body;
+
+  const controlDb = getControlDb(c.env);
+
+  if (status) {
+    await controlDb.prepare("UPDATE support_tickets SET status = ? WHERE ticketId = ?").bind(status, ticketId).run();
+  }
+  if (priority) {
+    await controlDb.prepare("UPDATE support_tickets SET priority = ? WHERE ticketId = ?").bind(priority, ticketId).run();
+  }
+
+  return c.json({ success: true, message: "Ticket updated successfully" });
+});
+
+/**
+ * Billing Staging Overview
+ */
+app.get("/admin/billing/overview", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+
+  const tenants = await controlDb.prepare("SELECT plan, status FROM tenants").all<any>();
+  let starterCount = 0;
+  let growthCount = 0;
+  let proCount = 0;
+
+  tenants.results?.forEach((t) => {
+    if (t.status === "active") {
+      if (t.plan === "starter") starterCount++;
+      else if (t.plan === "growth") growthCount++;
+      else if (t.plan === "pro") proCount++;
+    }
+  });
+
+  const mrr = starterCount * 999 + growthCount * 4999 + proCount * 9999;
+  const arr = mrr * 12;
+
+  return c.json({
+    mrr,
+    arr,
+    planDistribution: {
+      starter: starterCount,
+      growth: growthCount,
+      pro: proCount,
+    },
+    totalInvoices: tenants.results?.length || 0,
+  });
+});
+
 export default app;

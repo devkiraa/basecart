@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS admin_audit_logs (
   createdAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS support_tickets (
+  ticketId TEXT PRIMARY KEY,
+  tenantId TEXT NOT NULL,
+  storeName TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  priority TEXT NOT NULL DEFAULT 'medium',
+  createdAt TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS refresh_tokens (
   token TEXT PRIMARY KEY,
   tenantId TEXT NOT NULL,

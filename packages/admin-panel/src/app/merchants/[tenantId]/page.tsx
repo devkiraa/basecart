@@ -15,6 +15,9 @@ import {
   Package,
   ShoppingCart,
   BadgeCent,
+  ExternalLink,
+  KeyRound,
+  Trash2,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -47,6 +50,12 @@ export default function MerchantDetailPage() {
   const [error, setError] = useState("");
 
   const [confirmModal, setConfirmModal] = useState(false);
+  
+  // Advanced actions state
+  const [impersonating, setImpersonating] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
 
   const loadDetails = async () => {
     try {
@@ -102,6 +111,61 @@ export default function MerchantDetailPage() {
     }
   };
 
+  const handleImpersonation = async () => {
+    try {
+      setImpersonating(true);
+      const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/impersonate`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Impersonation request failed");
+      const data = await res.json();
+      window.open(data.impersonateUrl, "_blank");
+    } catch (err) {
+      console.error(err);
+      alert("Error starting merchant impersonation session.");
+    } finally {
+      setImpersonating(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!newPassword) return alert("Password cannot be blank");
+    try {
+      const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword }),
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Password reset failed");
+      alert("Store owner password has been reset successfully.");
+      setShowResetModal(false);
+      setNewPassword("");
+    } catch (err) {
+      console.error(err);
+      alert("Error resetting password.");
+    }
+  };
+
+  const handleDeleteStore = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/merchants/${tenantId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Delete store request failed");
+      alert("Store and owner records deleted successfully.");
+      router.push("/merchants");
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting store registry.");
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -142,7 +206,7 @@ export default function MerchantDetailPage() {
     <AdminLayout>
       <div className="space-y-8">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <button
             onClick={() => router.push("/merchants")}
             className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 font-medium transition-colors"
@@ -151,24 +215,55 @@ export default function MerchantDetailPage() {
             Back to merchants
           </button>
 
-          {/* Action button */}
-          {store.status === "active" ? (
+          {/* Action button panel */}
+          <div className="flex flex-wrap gap-2.5">
             <button
-              onClick={() => setConfirmModal(true)}
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+              onClick={handleImpersonation}
+              disabled={impersonating}
+              className="px-3.5 py-2 bg-indigo-50 border border-indigo-250 text-indigo-700 hover:bg-indigo-100/70 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5"
             >
-              <Lock className="w-4 h-4" />
-              Suspend Store
+              {impersonating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ExternalLink className="w-4 h-4" />
+              )}
+              Login as Merchant
             </button>
-          ) : (
+
             <button
-              onClick={() => handleStatusChange("active")}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+              onClick={() => setShowResetModal(true)}
+              className="px-3.5 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5"
             >
-              <Unlock className="w-4 h-4" />
-              Reactivate Store
+              <KeyRound className="w-4 h-4 text-slate-400" />
+              Reset Password
             </button>
-          )}
+
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="px-3.5 py-2 bg-white border border-red-200 text-red-650 hover:bg-red-50/50 rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5"
+            >
+              <Trash2 className="w-4 h-4 text-red-400" />
+              Delete Store
+            </button>
+
+            {store.status === "active" ? (
+              <button
+                onClick={() => setConfirmModal(true)}
+                className="px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Lock className="w-4 h-4" />
+                Suspend Store
+              </button>
+            ) : (
+              <button
+                onClick={() => handleStatusChange("active")}
+                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+              >
+                <Unlock className="w-4 h-4" />
+                Reactivate Store
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Info panel */}
@@ -436,6 +531,90 @@ export default function MerchantDetailPage() {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors"
                 >
                   Suspend Store
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reset Password Modal */}
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md p-6 overflow-hidden">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-indigo-50 text-indigo-650 rounded-lg">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-800 text-lg">Reset Store Owner Password</h3>
+                  <p className="text-sm text-slate-500 mt-2">
+                    Enter the new password for the administrator/owner of <span className="font-semibold text-slate-800">{store.storeName}</span>.
+                  </p>
+                  
+                  <div className="mt-4">
+                    <input
+                      type="password"
+                      placeholder="Enter new secure password..."
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowResetModal(false);
+                    setNewPassword("");
+                  }}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordReset}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Reset Password
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Store Modal */}
+        {showDeleteModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md p-6 overflow-hidden">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-red-50 text-red-650 rounded-lg">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-slate-800 text-lg">Confirm Action: Delete Store</h3>
+                  <p className="text-sm text-slate-500 mt-2">
+                    Are you absolutely sure you want to permanently delete <span className="font-semibold text-slate-800">{store.storeName}</span>?
+                  </p>
+                  <p className="text-xs text-red-500 font-medium bg-red-50 border border-red-100 rounded-lg p-2.5 mt-3">
+                    Warning: This is destructive. This will permanently delete the tenant registry record and delete access.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteStore}
+                  className="px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                >
+                  Delete Permanently
                 </button>
               </div>
             </div>

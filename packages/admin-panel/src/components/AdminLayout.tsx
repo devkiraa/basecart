@@ -12,6 +12,12 @@ import {
   ShieldCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  CreditCard,
+  MessageSquare,
+  Activity,
+  ShieldAlert,
+  Settings,
+  Search,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -28,6 +34,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+
+  // Search state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<{
+    merchants: any[];
+    admins: any[];
+    tickets: any[];
+  }>({ merchants: [], admins: [], tickets: [] });
+  const [searching, setSearching] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
@@ -55,6 +71,42 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     checkAuth();
   }, [router]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen((open) => !open);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
+    if (!searchQuery) {
+      setSearchResults({ merchants: [], admins: [], tickets: [] });
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`${API_URL}/admin/search?q=${encodeURIComponent(searchQuery)}`, {
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Search failed:", err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const handleLogout = async () => {
     try {
       await fetch(`${API_URL}/admin/auth/logout`, {
@@ -81,7 +133,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Merchants", href: "/merchants", icon: Users },
+    { name: "Billing & Subs", href: "/billing", icon: CreditCard },
+    { name: "Support Tickets", href: "/support", icon: MessageSquare },
+    { name: "Platform Health", href: "/monitoring", icon: Activity },
+    { name: "Security Center", href: "/security", icon: ShieldAlert },
     { name: "Audit Logs", href: "/audit-logs", icon: FileSpreadsheet },
+    { name: "System Settings", href: "/settings", icon: Settings },
     { name: "Super Admins", href: "/admins", icon: ShieldCheck },
   ];
 
@@ -194,8 +251,156 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         style={{ paddingLeft: collapsed ? 72 : 256 }}
         className="flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out"
       >
+        {/* Top Header Bar */}
+        <header className="h-14 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between sticky top-0 z-20">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/85 hover:bg-slate-100/70 rounded-lg text-xs font-semibold text-slate-450 select-none transition-colors"
+          >
+            <Search className="w-3.5 h-3.5 text-slate-450" />
+            <span>Search console...</span>
+            <kbd className="bg-white border border-slate-200/90 rounded px-1.5 py-0.5 ml-3 font-mono text-[10px] text-slate-450">
+              Ctrl+K
+            </kbd>
+          </button>
+
+          <div className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded px-2.5 py-1 uppercase tracking-wider">
+            Staging Operations Console
+          </div>
+        </header>
+
         <div className="p-8 flex-1">{children}</div>
       </main>
+
+      {/* Cmd+K Search Modal */}
+      {searchOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-start justify-center p-4 pt-[15vh]">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-2xl w-full max-w-xl overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+            {/* Input */}
+            <div className="flex items-center gap-3 px-4 border-b border-slate-100">
+              <Search className="w-5 h-5 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Search merchants, admins, or support tickets..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full py-4 text-slate-800 text-sm focus:outline-none"
+                autoFocus
+              />
+              <button
+                onClick={() => setSearchOpen(false)}
+                className="text-xs font-semibold text-slate-450 hover:text-slate-600 px-2 py-1 rounded bg-slate-50 border border-slate-200"
+              >
+                ESC
+              </button>
+            </div>
+
+            {/* Results */}
+            <div className="max-h-[350px] overflow-y-auto p-4 space-y-4">
+              {searching && (
+                <div className="flex items-center justify-center py-8 text-xs text-slate-400 gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+                  Searching registry partitions...
+                </div>
+              )}
+
+              {!searching && !searchQuery && (
+                <div className="text-center py-8 text-xs text-slate-400">
+                  Type a store name, email domain, or ticket subject to search.
+                </div>
+              )}
+
+              {!searching && searchQuery && Object.values(searchResults).every(arr => arr.length === 0) && (
+                <div className="text-center py-8 text-xs text-slate-400">
+                  No results matched your search.
+                </div>
+              )}
+
+              {/* Merchants Results */}
+              {searchResults.merchants.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Merchants</h4>
+                  <div className="space-y-1">
+                    {searchResults.merchants.map((m: any) => (
+                      <button
+                        key={m.tenantId}
+                        onClick={() => {
+                          router.push(`/merchants/${m.tenantId}`);
+                          setSearchOpen(false);
+                        }}
+                        className="flex items-center justify-between w-full p-2.5 hover:bg-slate-50 rounded-lg text-left text-sm text-slate-700 font-medium transition-colors"
+                      >
+                        <div>
+                          <div className="text-slate-800">{m.storeName}</div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{m.subdomain}.basecart-storefront.pages.dev</div>
+                        </div>
+                        <span className="text-[9px] uppercase font-bold text-slate-400 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">
+                          {m.plan}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Admins Results */}
+              {searchResults.admins.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Super Admins</h4>
+                  <div className="space-y-1">
+                    {searchResults.admins.map((a: any) => (
+                      <button
+                        key={a.email}
+                        onClick={() => {
+                          router.push("/admins");
+                          setSearchOpen(false);
+                        }}
+                        className="flex items-center justify-between w-full p-2.5 hover:bg-slate-50 rounded-lg text-left text-sm text-slate-700 font-medium transition-colors"
+                      >
+                        <div>
+                          <div className="text-slate-800">{a.email}</div>
+                        </div>
+                        <span className="text-[9px] uppercase font-bold text-indigo-600 px-1.5 py-0.5 bg-indigo-50 rounded border border-indigo-100">
+                          {a.role}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tickets Results */}
+              {searchResults.tickets.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Support Tickets</h4>
+                  <div className="space-y-1">
+                    {searchResults.tickets.map((t: any) => (
+                      <button
+                        key={t.ticketId}
+                        onClick={() => {
+                          router.push(`/support?ticketId=${t.ticketId}`);
+                          setSearchOpen(false);
+                        }}
+                        className="flex items-center justify-between w-full p-2.5 hover:bg-slate-50 rounded-lg text-left text-sm text-slate-700 font-medium transition-colors"
+                      >
+                        <div>
+                          <div className="text-slate-800 truncate max-w-[300px]">{t.subject}</div>
+                          <div className="text-[10px] text-slate-400 mt-0.5">Store: {t.storeName}</div>
+                        </div>
+                        <span className="text-[9px] uppercase font-bold text-red-650 px-1.5 py-0.5 bg-red-50 rounded border border-red-100">
+                          {t.priority}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
   );
 }
