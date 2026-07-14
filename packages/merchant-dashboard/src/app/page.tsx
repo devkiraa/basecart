@@ -217,8 +217,18 @@ function formatINR(val: number | string) {
 
 export default function MerchantDashboard() {
   // Auth state
-  const [token, setToken] = useState<string | null>(null);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("basecart_merchant_token");
+    }
+    return null;
+  });
+  const [tenantId, setTenantId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("basecart_tenant_id");
+    }
+    return null;
+  });
   const [isLoginView, setIsLoginView] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -336,18 +346,34 @@ export default function MerchantDashboard() {
     { name: "", values: [] }
   ]);
 
-  // Read tokens on startup (via httpOnly cookie session check)
+  // Read tokens on startup (via httpOnly cookie session check & localStorage fallback)
   useEffect(() => {
     const checkSession = async () => {
       try {
+        const localToken = typeof window !== "undefined" ? localStorage.getItem("basecart_merchant_token") : null;
+        const headers: Record<string, string> = {};
+        if (localToken) {
+          headers["Authorization"] = `Bearer ${localToken}`;
+        }
+
         const res = await fetch(`${API_URL}/auth/merchant/me`, {
           credentials: "include",
+          headers,
         });
         if (res.ok) {
           const data = await res.json();
           setToken(data.accessToken);
           setTenantId(data.tenantId);
           setEmailVerified(data.emailVerified !== false);
+          
+          localStorage.setItem("basecart_merchant_token", data.accessToken);
+          localStorage.setItem("basecart_tenant_id", data.tenantId);
+        } else {
+          // Clear session if invalid/expired
+          localStorage.removeItem("basecart_merchant_token");
+          localStorage.removeItem("basecart_tenant_id");
+          setToken(null);
+          setTenantId(null);
         }
       } catch (err) {
         console.error("No active merchant session:", err);
@@ -736,6 +762,8 @@ export default function MerchantDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
+      localStorage.setItem("basecart_merchant_token", data.accessToken);
+      localStorage.setItem("basecart_tenant_id", data.tenantId);
       setToken(data.accessToken);
       setTenantId(data.tenantId);
       setEmailVerified(data.emailVerified !== false);
@@ -776,6 +804,8 @@ export default function MerchantDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Demo login failed");
 
+      localStorage.setItem("basecart_merchant_token", data.accessToken);
+      localStorage.setItem("basecart_tenant_id", data.tenantId);
       setToken(data.accessToken);
       setTenantId(data.tenantId);
       setEmail("");
@@ -821,6 +851,8 @@ export default function MerchantDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
+      localStorage.setItem("basecart_merchant_token", data.accessToken);
+      localStorage.setItem("basecart_tenant_id", data.tenantId);
       setToken(data.accessToken);
       setTenantId(data.tenantId);
       setEmailVerified(false);
@@ -844,6 +876,8 @@ export default function MerchantDashboard() {
     } catch (e) {
       console.error("Logout request failed", e);
     }
+    localStorage.removeItem("basecart_merchant_token");
+    localStorage.removeItem("basecart_tenant_id");
     setToken(null);
     setTenantId(null);
     setProducts([]);
