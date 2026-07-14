@@ -189,7 +189,7 @@ describe("Part 3: Orders & Discounts Routes", () => {
         },
         body: JSON.stringify(webhookPayload),
       },
-      env
+      { ...env, NODE_ENV: "test" }
     );
 
     if (webhookRes.status !== 200) {

@@ -38,6 +38,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
+import { getOptimizedImageUrl } from "../lib/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002";
@@ -1834,7 +1835,7 @@ export default function MerchantDashboard() {
               title={sidebarCollapsed ? settings.storeName || "Store" : undefined}
             >
               {settings.branding?.logoUrl ? (
-                <img src={settings.branding.logoUrl} className="h-full w-full object-cover" />
+                <img src={getOptimizedImageUrl(settings.branding.logoUrl, "thumbnail")} className="h-full w-full object-cover" />
               ) : (
                 <span className="text-xs uppercase">{(settings.storeName || "S").charAt(0)}</span>
               )}
@@ -2823,7 +2824,7 @@ export default function MerchantDashboard() {
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             {productForm.images.map((url, i) => (
                               <div key={i} className="relative group border rounded bg-slate-50 overflow-hidden aspect-square flex flex-col justify-between">
-                                <img src={url} alt={`product-${i}`} className="w-full h-full object-cover" />
+                                <img src={getOptimizedImageUrl(url, "thumbnail")} alt={`product-${i}`} className="w-full h-full object-cover" />
                                 
                                 {/* Badge for Primary */}
                                 {i === 0 && (
@@ -3519,7 +3520,7 @@ export default function MerchantDashboard() {
                                   <td className="px-4 py-4 flex items-center gap-3">
                                     <div className="h-10 w-10 border rounded bg-slate-50 flex items-center justify-center overflow-hidden">
                                       {prod.images && prod.images[0] ? (
-                                        <img src={prod.images[0]} alt={prod.name} className="w-full h-full object-cover" />
+                                        <img src={getOptimizedImageUrl(prod.images[0], "thumbnail")} alt={prod.name} className="w-full h-full object-cover" />
                                       ) : (
                                         <Package className="h-5 w-5 text-slate-400" />
                                       )}
@@ -4803,7 +4804,7 @@ export default function MerchantDashboard() {
                             </div>
 
                             {selectedTheme.logoUrl ? (
-                              <img src={selectedTheme.logoUrl} alt="Store logo" className="h-4 max-w-[80px] object-contain" />
+                              <img src={getOptimizedImageUrl(selectedTheme.logoUrl, "thumbnail")} alt="Store logo" className="h-4 max-w-[80px] object-contain" />
                             ) : (
                               <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{settings.storeName || "IRON FORGE"}</span>
                             )}
@@ -4998,7 +4999,7 @@ export default function MerchantDashboard() {
                           {/* Mobile Header Sim */}
                           <div className="flex items-center justify-between border-b border-slate-100 px-3 pt-4 pb-2 bg-slate-50/50">
                             {selectedTheme.logoUrl ? (
-                              <img src={selectedTheme.logoUrl} alt="Store logo" className="h-3 max-w-[50px] object-contain" />
+                              <img src={getOptimizedImageUrl(selectedTheme.logoUrl, "thumbnail")} alt="Store logo" className="h-3 max-w-[50px] object-contain" />
                             ) : (
                               <span className="text-[8px] font-black text-slate-800 uppercase tracking-widest">{settings.storeName || "IRON FORGE"}</span>
                             )}
@@ -5600,7 +5601,7 @@ export default function MerchantDashboard() {
                     ].map((theme) => (
                       <div key={theme.name} className="border border-slate-150 rounded-lg overflow-hidden flex flex-col justify-between group hover:border-[#4F46E5] transition-colors bg-white shadow-sm">
                         <div className="h-28 bg-slate-50 relative overflow-hidden">
-                          <img src={theme.preview} alt={theme.name} className="h-full w-full object-cover filter brightness-[0.9] group-hover:scale-105 transition-transform duration-300" />
+                          <img src={getOptimizedImageUrl(theme.preview, "medium")} alt={theme.name} className="h-full w-full object-cover filter brightness-[0.9] group-hover:scale-105 transition-transform duration-300" />
                           <div className="absolute top-2 right-2 bg-slate-900/60 backdrop-blur-sm text-white font-bold text-[8px] px-1.5 py-0.5 rounded">
                             {theme.price}
                           </div>

@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { getTenantDb } from "../lib/db";
 import { authenticateMerchant } from "../middleware/auth";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
  * GET /customers

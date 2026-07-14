@@ -1,34 +1,10 @@
 import { Hono } from "hono";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { getControlDb, getTenantDb } from "../lib/db";
-import { getStorageClient, getBucketName } from "../lib/storage";
 import { authenticateMerchant, resolveStorefrontTenant } from "../middleware/auth";
 import { ProductSchema } from "@basecart/shared";
+import { ImageService } from "../services/image";
 
-const app = new Hono();
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
-/**
- * Validates image magic bytes (file signature) to ensure true file type
- */
-function validateMagicBytes(headerHex: string, mimeType: string): boolean {
-  const hex = headerHex.toLowerCase().replace(/\s+/g, "");
-
-  if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
-    return hex.startsWith("ffd8ff");
-  }
-  if (mimeType === "image/png") {
-    return hex.startsWith("89504e470d0a1a0a");
-  }
-  if (mimeType === "image/gif") {
-    return hex.startsWith("47494638");
-  }
-  if (mimeType === "image/webp") {
-    return hex.startsWith("52494646") && hex.substring(16, 24) === "57454250";
-  }
-  return false;
-}
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
  * Validates SKU uniqueness across all products and variants in the tenant database
@@ -263,16 +239,16 @@ app.patch("/products/:id", authenticateMerchant, async (c) => {
 
   // 1. Verify the product exists
   const existing = await tenantDb
-    .prepare("SELECT productId FROM products WHERE productId = ?")
-    .bind(productId)
-    .first();
+    .prepare("SELECT productId, images FROM products WHERE productId = ?")
+    .bind(productId as string)
+    .first<{ productId: string; images: string }>();
 
   if (!existing) {
     return c.json({ error: "Product not found" }, 404);
   }
 
   // 2. Validate SKU uniqueness
-  const skuError = await validateSkuUniqueness(productId, productData, tenantDb);
+  const skuError = await validateSkuUniqueness(productId || null, productData, tenantDb);
   if (skuError) {
     return c.json({ error: skuError }, 400);
   }
@@ -307,6 +283,20 @@ app.patch("/products/:id", authenticateMerchant, async (c) => {
     )
     .run();
 
+  // Replacement logic: delete orphaned old images from R2 after successful database update
+  try {
+    const oldImages: string[] = JSON.parse(existing.images || "[]");
+    const newImages: string[] = productData.images || [];
+    const deletedImages = oldImages.filter((img) => !newImages.includes(img));
+    for (const imgKey of deletedImages) {
+      if (imgKey.startsWith("tenants/")) {
+        await ImageService.deleteImage(c.env, imgKey);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to clean up orphaned product images:", err);
+  }
+
   return c.json({ message: "Product updated successfully" });
 });
 
@@ -319,17 +309,29 @@ app.delete("/products/:id", authenticateMerchant, async (c) => {
   const tenantDb = await getTenantDb(tenantId, c.env);
 
   const existing = await tenantDb
-    .prepare("SELECT productId FROM products WHERE productId = ?")
-    .bind(productId)
-    .first();
+    .prepare("SELECT productId, images FROM products WHERE productId = ?")
+    .bind(productId as string)
+    .first<{ productId: string; images: string }>();
 
   if (!existing) {
     return c.json({ error: "Product not found" }, 404);
   }
 
+  // Delete product images from R2
+  try {
+    const imageKeys: string[] = JSON.parse(existing.images || "[]");
+    for (const key of imageKeys) {
+      if (key.startsWith("tenants/")) {
+        await ImageService.deleteImage(c.env, key);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to delete product images from R2 on delete:", err);
+  }
+
   await tenantDb
     .prepare("DELETE FROM products WHERE productId = ?")
-    .bind(productId)
+    .bind(productId as string)
     .run();
 
   return c.json({ message: "Product deleted successfully" });
@@ -351,55 +353,22 @@ app.post("/products/:id/upload-image", authenticateMerchant, async (c) => {
     }, 400);
   }
 
-  if (fileSize > MAX_FILE_SIZE) {
-    return c.json({
-      error: `File size exceeds the limit of ${MAX_FILE_SIZE / (1024 * 1024)}MB`,
-    }, 400);
-  }
-
-  const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
-  if (!allowedMimeTypes.includes(contentType)) {
-    return c.json({
-      error: "Invalid file type. Only JPEG, PNG, GIF, and WebP are allowed",
-    }, 400);
-  }
-
-  if (!validateMagicBytes(headerHex, contentType)) {
-    return c.json({
-      error: "Security Check Failed: File header does not match expected image magic bytes",
-    }, 400);
-  }
-
-  const fileId = crypto.randomBytes(8).toString("hex");
-  const cleanFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
-  const key = `tenants/${tenantId}/products/${productId}/${fileId}-${cleanFileName}`;
-
-  const bucketName = getBucketName(c.env);
-  const storageClient = getStorageClient(c.env);
-
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-    ContentType: contentType,
-  });
-
   try {
-    const uploadUrl = await getSignedUrl(storageClient, command, {
-      expiresIn: 300,
-    });
+    const { uploadUrl, key } = await ImageService.generateUploadUrl(
+      c.env,
+      tenantId,
+      "products",
+      productId,
+      fileName as string,
+      contentType as string,
+      fileSize as number,
+      headerHex as string
+    );
 
-    let imageUrl = "";
-    if (c.env.NODE_ENV === "development" || c.env.AWS_ENDPOINT_URL) {
-      const endpoint = c.env.AWS_ENDPOINT_URL || "http://localhost:4566";
-      imageUrl = `${endpoint}/${bucketName}/${key}`;
-    } else {
-      imageUrl = `https://${bucketName}.r2.cloudflarestorage.com/${key}`;
-    }
-
-    return c.json({ uploadUrl, imageUrl });
+    return c.json({ uploadUrl, imageUrl: key });
   } catch (err: any) {
     console.error("Failed to generate presigned upload credentials:", err);
-    return c.json({ error: "Failed to generate upload credentials" }, 500);
+    return c.json({ error: err.message || "Failed to generate upload credentials" }, 400);
   }
 });
 

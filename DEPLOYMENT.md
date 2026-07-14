@@ -85,9 +85,10 @@ npx wrangler secret put SHIPROCKET_WEBHOOK_TOKEN --env production
 
 For each of the three Next.js frontend applications, connect your GitHub repository to **Cloudflare Pages** and configure the build settings.
 
-### ⚠️ Next.js Edge Compatibility Guide
-- **Runtime Configuration**: Cloudflare Pages runs Next.js using the Edge Runtime. Ensure your layout/page routes specify `export const runtime = "edge";` if they require SSR.
-- **Image Optimization**: The default `next/image` component requires a Node.js runtime for processing. For Pages, disable image processing in `next.config.js` (`images: { unoptimized: true }`) or configure a custom loader (e.g. Cloudflare Images).
+### ⚠️ Image Optimization & Cloudflare R2 Architecture
+- **Storage**: All merchant assets (images, PDFs, ZIPs) are saved directly in Cloudflare R2 bucket. Database tables store only the relative key/path (e.g. `tenants/{id}/products/...`).
+- **Delivery (Image Transformations)**: Dynamic resizing and format conversion (WebP/AVIF) are handled on-the-fly using Cloudflare Image Transformations URL parameters (e.g. `/cdn-cgi/image/width=300,quality=auto,format=auto/<r2-key>`).
+- **Local Dev Fallback**: In local development, the backend Worker runs a `/media/*` proxy route that pulls files directly from LocalStack S3/R2 and serves them, ensuring 100% offline development.
 
 ### 1. Merchant Dashboard (`packages/merchant-dashboard`)
 - **Framework Preset**: `Next.js`
@@ -99,6 +100,7 @@ For each of the three Next.js frontend applications, connect your GitHub reposit
   - `NEXT_PUBLIC_API_URL`: `https://api.basecart.app` (Your custom backend domain or worker URL)
   - `NEXT_PUBLIC_STOREFRONT_DOMAIN`: `basecart.store` (Production parent domain for storefronts)
   - `NEXT_PUBLIC_STOREFRONT_PROTOCOL`: `https`
+  - `NEXT_PUBLIC_CLOUDFLARE_ZONE_URL`: `https://api.basecart.app` (Zone custom domain routing to Worker)
 
 ### 2. Super Admin Panel (`packages/admin-panel`)
 - **Framework Preset**: `Next.js`
@@ -118,6 +120,7 @@ For each of the three Next.js frontend applications, connect your GitHub reposit
 - **Environment Variables**:
   - `NODE_VERSION`: `20`
   - `NEXT_PUBLIC_API_URL`: `https://api.basecart.app`
+  - `NEXT_PUBLIC_CLOUDFLARE_ZONE_URL`: `https://api.basecart.app` (Zone custom domain routing to Worker)
 
 ---
 

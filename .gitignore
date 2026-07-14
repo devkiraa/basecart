@@ -52,4 +52,5 @@ Icon\r
 *.sql
 *.backup
 *.dump
-
+# TypeScript cache
+*.tsbuildinfo

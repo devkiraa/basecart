@@ -12,7 +12,7 @@ import {
 } from "@basecart/shared";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 function getMerchantCookieOptions(c: any, maxAge: number) {
   const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");

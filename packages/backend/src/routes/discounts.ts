@@ -3,7 +3,7 @@ import { getControlDb, getTenantDb } from "../lib/db";
 import { authenticateMerchant, resolveStorefrontTenant } from "../middleware/auth";
 import { DiscountCodeSchema } from "@basecart/shared";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
  * Validates a discount code against current rules and computes the discount amount.

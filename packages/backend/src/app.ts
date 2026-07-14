@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { getStorageClient, getBucketName } from "./lib/storage";
 import { getControlDb } from "./lib/db";
 import authRouter from "./routes/auth";
 import productsRouter from "./routes/products";
@@ -25,7 +27,7 @@ function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
 }
 
 export function buildApp() {
-  const app = new Hono();
+  const app = new Hono<{ Bindings: any; Variables: any }>();
 
   // Register CORS
   app.use(
@@ -42,7 +44,7 @@ export function buildApp() {
         }
 
         const allowedOriginsStr = (c.env && c.env.ALLOWED_ORIGINS) || "https://dashboard.basecart.app,https://admin.basecart.app,https://*.basecart.store";
-        const allowedOrigins = allowedOriginsStr.split(",").map((o) => o.trim());
+        const allowedOrigins = allowedOriginsStr.split(",").map((o: string) => o.trim());
 
         if (isOriginAllowed(origin, allowedOrigins)) {
           return origin;
@@ -121,6 +123,38 @@ export function buildApp() {
       return c.json({ status: "connected", database_time: row?.now });
     } catch (err: any) {
       return c.json({ status: "error", error: err.message }, 500);
+    }
+  });
+
+  // Local media proxy route (Step 2)
+  app.get("/media/*", async (c) => {
+    const key = c.req.path.replace(/^\/media\//, "");
+    if (!key) return c.text("Not Found", 404);
+
+    const bucketName = getBucketName(c.env);
+    const storageClient = getStorageClient(c.env);
+
+    try {
+      const response = await storageClient.send(
+        new GetObjectCommand({
+          Bucket: bucketName,
+          Key: key,
+        })
+      );
+
+      const contentType = response.ContentType || "application/octet-stream";
+      
+      if (response.Body) {
+        const bodyBytes = await response.Body.transformToByteArray();
+        return c.body(bodyBytes as any, 200, {
+          "Content-Type": contentType,
+          "Cache-Control": "public, max-age=31536000",
+        });
+      }
+      return c.text("Not Found", 404);
+    } catch (err: any) {
+      console.error(`Failed to serve media object ${key}:`, err);
+      return c.text("Not Found", 404);
     }
   });
 

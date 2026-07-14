@@ -22,6 +22,7 @@ ALLOWED_ORIGINS = "https://basecart.pages.dev,https://*.basecart.pages.dev,https
 COOKIE_DOMAIN_MERCHANT = "basecart.pages.dev"
 COOKIE_DOMAIN_CUSTOMER = ".basecart-storefront.pages.dev"
 COOKIE_DOMAIN_ADMIN = "basecart-admin-panel.pages.dev"
+CLOUDFLARE_ZONE_URL = "https://basecart-backend.devkiraa.workers.dev"
 
 [[d1_databases]]
 binding = "CONTROL_DB"
@@ -61,6 +62,7 @@ ALLOWED_ORIGINS = "https://dashboard.basecart.app,https://admin.basecart.app,htt
 COOKIE_DOMAIN_MERCHANT = ".basecart.app"
 COOKIE_DOMAIN_CUSTOMER = ".basecart.store"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
+CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
 
 [[env.production.d1_databases]]
 binding = "CONTROL_DB"
@@ -96,6 +98,7 @@ ALLOWED_ORIGINS = "https://dashboard-staging.basecart.app,https://admin-staging.
 COOKIE_DOMAIN_MERCHANT = ".basecart.app"
 COOKIE_DOMAIN_CUSTOMER = ".staging.basecart.store"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
+CLOUDFLARE_ZONE_URL = "https://api-staging.basecart.app"
 
 [[env.staging.d1_databases]]
 binding = "CONTROL_DB"

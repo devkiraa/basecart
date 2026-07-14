@@ -6,7 +6,7 @@ import { CheckoutSchema, OrderStatusUpdateSchema } from "@basecart/shared";
 import { createShiprocketShipment, verifyShiprocketSignature } from "../services/shiprocket";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
  * Recalculate cart totals server-side using isolated DB pricing to prevent client-side tampering

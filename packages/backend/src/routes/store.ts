@@ -5,7 +5,7 @@ import { encrypt, decrypt } from "../lib/crypto";
 import { StoreSettingsSchema } from "@basecart/shared";
 import { generateInvoicePdf } from "../lib/pdf";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 // Helper to format themes
 function formatTheme(theme: any) {
@@ -383,7 +383,7 @@ app.get("/store/billing/statement/:statementId", authenticateMerchant, async (c)
   const pdfBuffer = await generateInvoicePdf(invoiceData);
   c.header("Content-Type", "application/pdf");
   c.header("Content-Disposition", `attachment; filename=statement-${statementId}.pdf`);
-  return c.body(pdfBuffer);
+  return c.body(pdfBuffer as any);
 });
 
 /**

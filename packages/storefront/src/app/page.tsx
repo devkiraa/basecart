@@ -13,6 +13,7 @@ import {
   Trash2,
   Calendar,
 } from "lucide-react";
+import { getOptimizedImageUrl } from "../lib/image";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -645,7 +646,7 @@ export default function Storefront() {
         {/* Left Side: Logo/Name */}
         <div className="flex items-center gap-3 select-none cursor-pointer" onClick={() => setView("catalog")}>
           {logoUrl ? (
-            <img src={logoUrl} alt={storeInfo.storeName} className="h-8 max-w-[150px] object-contain" />
+            <img src={getOptimizedImageUrl(logoUrl, "thumbnail")} alt={storeInfo.storeName} className="h-8 max-w-[150px] object-contain" />
           ) : (
             <span className={`text-xl font-bold tracking-tight text-slate-900 uppercase ${
               templateBase === "Pulse" ? "tracking-widest font-black" : templateBase === "Origin" ? "font-serif font-bold italic" : ""
@@ -848,7 +849,7 @@ export default function Storefront() {
                   <div key={prod.productId} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors">
                     <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden">
                       {prod.images && prod.images[0] ? (
-                        <img src={prod.images[0]} alt={prod.name} className="w-full h-full object-cover" />
+                        <img src={getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
                       ) : (
                         <Package className="h-12 w-12 text-slate-300" />
                       )}
@@ -914,7 +915,7 @@ export default function Storefront() {
                         <div className="flex items-center gap-3">
                           <div className="h-12 w-12 border rounded bg-slate-50 overflow-hidden flex items-center justify-center">
                             {item.product.images?.[0] ? (
-                              <img src={item.product.images[0]} alt={item.product.name} className="w-full h-full object-cover" />
+                              <img src={getOptimizedImageUrl(item.product.images[0], "thumbnail")} alt={item.product.name} className="w-full h-full object-cover" />
                             ) : (
                               <Package className="h-6 w-6 text-slate-400" />
                             )}
@@ -1512,7 +1513,7 @@ export default function Storefront() {
             <div className="flex gap-4">
               <div className="h-20 w-20 border rounded bg-slate-50 overflow-hidden flex items-center justify-center">
                 {selectedProductDetails.images?.[0] ? (
-                  <img src={selectedProductDetails.images[0]} alt={selectedProductDetails.name} className="w-full h-full object-cover" />
+                  <img src={getOptimizedImageUrl(selectedProductDetails.images[0], "large")} alt={selectedProductDetails.name} className="w-full h-full object-cover" />
                 ) : (
                   <Package className="h-8 w-8 text-slate-400" />
                 )}

@@ -4,7 +4,7 @@ import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
 import { authenticateMerchant } from "../middleware/auth";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: any; Variables: any }>();
 
 function getAdminCookieOptions(c: any, maxAge: number) {
   const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
