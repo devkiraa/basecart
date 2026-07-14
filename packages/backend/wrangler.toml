@@ -68,3 +68,39 @@ queue = "basecart-jobs-queue-prod"
 queue = "basecart-jobs-queue-prod"
 max_batch_size = 10
 max_batch_timeout = 5
+
+# Staging Environment Settings
+[env.staging]
+name = "basecart-backend-staging"
+
+[env.staging.vars]
+NODE_ENV = "staging"
+API_URL = "https://api-staging.basecart.app"
+ALLOWED_ORIGINS = "https://dashboard-staging.basecart.app,https://admin-staging.basecart.app,https://*.staging.basecart.store"
+COOKIE_DOMAIN_MERCHANT = ".basecart.app"
+COOKIE_DOMAIN_CUSTOMER = ".staging.basecart.store"
+COOKIE_DOMAIN_ADMIN = ".basecart.app"
+
+[[env.staging.d1_databases]]
+binding = "CONTROL_DB"
+database_name = "basecart-control-staging"
+database_id = "94242e41-5fc6-43e2-9abf-ff7b45436522"
+
+[env.staging.durable_objects]
+bindings = [
+  { name = "TENANT_DO", class_name = "TenantDO" }
+]
+
+[[env.staging.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "basecart-media-staging"
+
+[[env.staging.queues.producers]]
+binding = "JOBS_QUEUE"
+queue = "basecart-jobs-queue-staging"
+
+[[env.staging.queues.consumers]]
+queue = "basecart-jobs-queue-staging"
+max_batch_size = 10
+max_batch_timeout = 5
+
