@@ -13,6 +13,7 @@ import {
   Unlock,
   Building2,
   ExternalLink,
+  Copy,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -32,6 +33,14 @@ export default function MerchantsListPage() {
   const [merchants, setMerchants] = useState<Merchant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState("");
@@ -229,7 +238,22 @@ export default function MerchantsListPage() {
                           </div>
                           <div>
                             <div className="font-semibold text-slate-900">{m.storeName}</div>
-                            <div className="text-xs text-slate-400">ID: {m.tenantId.substring(0, 8)}...</div>
+                            <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
+                              <span className="font-mono" title={m.tenantId}>
+                                ID: {m.tenantId.substring(0, 8)}...
+                              </span>
+                              <button
+                                onClick={(e) => handleCopyId(e, m.tenantId)}
+                                className="p-1 hover:text-indigo-600 rounded bg-slate-100/70 hover:bg-slate-200/80 transition-colors"
+                                title="Copy full Tenant ID"
+                              >
+                                {copiedId === m.tenantId ? (
+                                  <span className="text-[9px] text-emerald-600 font-bold px-1 py-0.5 bg-emerald-50 rounded">Copied!</span>
+                                ) : (
+                                  <Copy className="h-3 w-3 text-slate-400" />
+                                )}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </td>
