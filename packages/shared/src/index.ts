@@ -36,7 +36,7 @@ export const StoreSettingsSchema = z.object({
   registeredState: z.string().optional(),
   branding: z
     .object({
-      logoUrl: z.string().url().optional().or(z.literal("")),
+      logoUrl: z.string().optional().or(z.literal("")),
       primaryColor: z
         .string()
         .regex(/^#[0-9A-F]{6}$/i)
@@ -70,7 +70,7 @@ export const ProductSchema = z.object({
   price: z.number().positive(),
   stockQuantity: z.number().int().nonnegative(),
   status: z.enum(["active", "draft"]),
-  images: z.array(z.string().url()),
+  images: z.array(z.string()),
   compareAtPrice: z.number().positive().optional().nullable(),
   costPerItem: z.number().positive().optional().nullable(),
   sku: z.string().optional().nullable(),
