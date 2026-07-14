@@ -167,7 +167,16 @@ export default function AdminsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {adminsList.length > 0 ? (
+                      {loading ? (
+                        Array.from({ length: 3 }).map((_, idx) => (
+                          <tr key={idx} className="animate-pulse">
+                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-44" /></td>
+                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-52" /></td>
+                            <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-20" /></td>
+                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24" /></td>
+                          </tr>
+                        ))
+                      ) : adminsList.length > 0 ? (
                         adminsList.map((adminItem) => (
                           <tr key={adminItem.userId} className="hover:bg-slate-50/40 transition-colors">
                             <td className="px-6 py-4 font-semibold text-slate-800">{adminItem.email}</td>
