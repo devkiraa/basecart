@@ -18,7 +18,7 @@ simple = { limit = 100, period = 60 }
 [vars]
 API_URL = "https://basecart-backend.devkiraa.workers.dev"
 NODE_ENV = "staging"
-ALLOWED_ORIGINS = "https://basecart.pages.dev,https://basecart-admin-panel.pages.dev,https://*.basecart-storefront.pages.dev"
+ALLOWED_ORIGINS = "https://basecart.pages.dev,https://*.basecart.pages.dev,https://basecart-admin-panel.pages.dev,https://*.basecart-admin-panel.pages.dev,https://*.basecart-storefront.pages.dev"
 COOKIE_DOMAIN_MERCHANT = "basecart.pages.dev"
 COOKIE_DOMAIN_CUSTOMER = ".basecart-storefront.pages.dev"
 COOKIE_DOMAIN_ADMIN = "basecart-admin-panel.pages.dev"
