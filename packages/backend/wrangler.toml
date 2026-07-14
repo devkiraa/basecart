@@ -23,6 +23,7 @@ COOKIE_DOMAIN_MERCHANT = "basecart.pages.dev"
 COOKIE_DOMAIN_CUSTOMER = ".basecart-storefront.pages.dev"
 COOKIE_DOMAIN_ADMIN = "basecart-admin-panel.pages.dev"
 CLOUDFLARE_ZONE_URL = "https://basecart-backend.devkiraa.workers.dev"
+S3_BUCKET = "basecart-media-bucket"
 
 [[d1_databases]]
 binding = "CONTROL_DB"
@@ -40,7 +41,7 @@ new_sqlite_classes = ["TenantDO"]
 
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-staging"
+bucket_name = "basecart-media-bucket"
 
 [[queues.producers]]
 binding = "JOBS_QUEUE"
@@ -63,6 +64,7 @@ COOKIE_DOMAIN_MERCHANT = ".basecart.app"
 COOKIE_DOMAIN_CUSTOMER = ".basecart.store"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
 CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
+S3_BUCKET = "basecart-media-prod"
 
 [[env.production.d1_databases]]
 binding = "CONTROL_DB"
@@ -99,6 +101,7 @@ COOKIE_DOMAIN_MERCHANT = ".basecart.app"
 COOKIE_DOMAIN_CUSTOMER = ".staging.basecart.store"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
 CLOUDFLARE_ZONE_URL = "https://api-staging.basecart.app"
+S3_BUCKET = "basecart-media-bucket"
 
 [[env.staging.d1_databases]]
 binding = "CONTROL_DB"
@@ -112,7 +115,7 @@ bindings = [
 
 [[env.staging.r2_buckets]]
 binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-staging"
+bucket_name = "basecart-media-bucket"
 
 [[env.staging.queues.producers]]
 binding = "JOBS_QUEUE"
