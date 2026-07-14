@@ -36,8 +36,8 @@ export function buildApp() {
       origin: (origin, c) => {
         if (!origin) return "";
         
-        // Always allow localhost/127.0.0.1 in local dev/test environment
-        if (c.env && (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test")) {
+        // Always allow localhost/127.0.0.1 in local dev/test/staging environments
+        if (c.env && (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test" || c.env.NODE_ENV === "staging")) {
           if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
             return origin;
           }
