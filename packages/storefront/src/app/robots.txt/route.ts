@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 export async function GET(request: Request) {
   const host = request.headers.get("host") || "";
   const robotsTxt = `User-agent: *
