@@ -67,6 +67,11 @@ npx wrangler secret put RAZORPAY_KEY_SECRET --env production
 
 # Fulfillment Integrations (Shiprocket Webhook Verification Token)
 npx wrangler secret put SHIPROCKET_WEBHOOK_TOKEN --env production
+
+# R2 Storage API Credentials (needed for presigned upload URLs)
+npx wrangler secret put CLOUDFLARE_ACCOUNT_ID --env production
+npx wrangler secret put R2_ACCESS_KEY_ID --env production
+npx wrangler secret put R2_SECRET_ACCESS_KEY --env production
 ```
 
 ---
