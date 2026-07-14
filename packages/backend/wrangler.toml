@@ -3,6 +3,10 @@ main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = [ "nodejs_compat" ]
 
+[observability.logs]
+enabled = false
+invocation_logs = true
+
 [vars]
 API_URL = "https://basecart-backend.devkiraa.workers.dev"
 NODE_ENV = "staging"
