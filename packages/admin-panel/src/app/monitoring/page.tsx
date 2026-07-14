@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import React from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { Activity, Server, HeartPulse, RefreshCw } from "lucide-react";

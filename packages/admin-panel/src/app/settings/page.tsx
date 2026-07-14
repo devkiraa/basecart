@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import React, { useState } from "react";
 import AdminLayout from "../../components/AdminLayout";
 import { Settings, Save, Sparkles } from "lucide-react";

@@ -1,7 +1,5 @@
 "use client";
 
-export const runtime = "edge";
-
 import React, { useEffect, useState } from "react";
 import ClientLayout from "../../components/ClientLayout";
 import { ShieldCheck, Lock, Unlock, Loader2 } from "lucide-react";
