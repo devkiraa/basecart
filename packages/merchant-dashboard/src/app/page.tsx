@@ -1752,7 +1752,7 @@ export default function MerchantDashboard() {
           <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
             {[
               { id: "summary", name: "Dashboard", icon: LayoutDashboard },
-              { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : 32 },
+              { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
               { id: "products", name: "Products", icon: Package },
               { id: "customers", name: "Customers", icon: Users },
               { id: "catalog", name: "Catalog", icon: Globe },
