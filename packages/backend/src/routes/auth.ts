@@ -16,11 +16,12 @@ const app = new Hono();
 
 function getMerchantCookieOptions(c: any, maxAge: number) {
   const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
   return {
     path: "/",
     httpOnly: true,
-    secure: c.env && c.env.NODE_ENV === "production",
-    sameSite: "Lax" as const,
+    secure: isProdOrStaging,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };
@@ -36,11 +37,12 @@ function getMerchantDeleteOptions(c: any) {
 
 function getCustomerCookieOptions(c: any, maxAge: number) {
   const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
   return {
     path: "/",
     httpOnly: true,
-    secure: c.env && c.env.NODE_ENV === "production",
-    sameSite: "Lax" as const,
+    secure: isProdOrStaging,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };

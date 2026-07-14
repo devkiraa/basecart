@@ -4,13 +4,17 @@ compatibility_date = "2024-09-23"
 compatibility_flags = [ "nodejs_compat" ]
 
 [vars]
-API_URL = "http://localhost:3001"
-NODE_ENV = "development"
+API_URL = "https://basecart-backend.devkiraa.workers.dev"
+NODE_ENV = "staging"
+ALLOWED_ORIGINS = "https://basecart.pages.dev,https://basecart-admin-panel.pages.dev,https://*.basecart-storefront.pages.dev"
+COOKIE_DOMAIN_MERCHANT = "basecart.pages.dev"
+COOKIE_DOMAIN_CUSTOMER = ".basecart-storefront.pages.dev"
+COOKIE_DOMAIN_ADMIN = "basecart-admin-panel.pages.dev"
 
 [[d1_databases]]
 binding = "CONTROL_DB"
-database_name = "basecart-control"
-database_id = "control-db-id"
+database_name = "basecart-control-staging"
+database_id = "94242e41-5fc6-43e2-9abf-ff7b45436522"
 
 [durable_objects]
 bindings = [
@@ -23,14 +27,14 @@ new_sqlite_classes = ["TenantDO"]
 
 [[r2_buckets]]
 binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media"
+bucket_name = "basecart-media-staging"
 
 [[queues.producers]]
 binding = "JOBS_QUEUE"
-queue = "basecart-jobs-queue"
+queue = "basecart-jobs-queue-staging"
 
 [[queues.consumers]]
-queue = "basecart-jobs-queue"
+queue = "basecart-jobs-queue-staging"
 max_batch_size = 10
 max_batch_timeout = 5
 
