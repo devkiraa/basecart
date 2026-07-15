@@ -95,9 +95,10 @@ export function buildApp() {
     );
   });
 
-  // Auto-migrate CONTROL_DB in development on startup (gated to run once in development)
+  // Auto-migrate CONTROL_DB on startup when running locally
   app.use("*", async (c, next) => {
-    if (c.env && c.env.NODE_ENV === "development" && c.env.CONTROL_DB && !isDbMigrated) {
+    const isLocal = c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1") || c.req.url.includes("0.0.0.0");
+    if (c.env && isLocal && c.env.CONTROL_DB && !isDbMigrated) {
       try {
         const { controlSchema } = await import("./lib/control_schema");
         const { migrateDatabase } = await import("./lib/db");
