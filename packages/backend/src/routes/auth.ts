@@ -62,6 +62,59 @@ async function sendEmailSafely(to: string, subject: string, htmlContent: string,
 // -------------------------------------------------------------
 
 /**
+ * Check Subdomain Availability
+ */
+app.get("/auth/merchant/check-subdomain", async (c) => {
+  const subdomain = c.req.query("subdomain")?.trim().toLowerCase() || "";
+  if (!subdomain) {
+    return c.json({ error: "Subdomain is required" }, 400);
+  }
+
+  if (!/^[a-z0-9-]+$/.test(subdomain)) {
+    return c.json({
+      available: false,
+      error: "Subdomain must contain only lowercase letters, numbers, and hyphens.",
+      alternates: [],
+    });
+  }
+
+  const controlDb = getControlDb(c.env);
+
+  const existing = await controlDb
+    .prepare("SELECT tenantId FROM tenants WHERE subdomain = ?")
+    .bind(subdomain)
+    .first();
+
+  if (!existing) {
+    return c.json({ available: true, alternates: [] });
+  }
+
+  // Generate 3 available alternates
+  const suffixes = ["shop", "store", "official", "app", "online", "india", "outlet", "brands"];
+  const alternates: string[] = [];
+
+  for (const suffix of suffixes) {
+    const candidate = `${subdomain}-${suffix}`;
+    const candExisting = await controlDb
+      .prepare("SELECT tenantId FROM tenants WHERE subdomain = ?")
+      .bind(candidate)
+      .first();
+
+    if (!candExisting) {
+      alternates.push(candidate);
+      if (alternates.length >= 3) {
+        break;
+      }
+    }
+  }
+
+  return c.json({
+    available: false,
+    alternates,
+  });
+});
+
+/**
  * Merchant Signup
  * Creates a store (tenant) and the owner account atomically.
  */
@@ -76,7 +129,24 @@ app.post("/auth/merchant/signup", async (c) => {
     }, 400);
   }
 
-  const { email, password, storeName, subdomain } = parseResult.data;
+  const {
+    email,
+    password,
+    storeName,
+    subdomain,
+    businessCategory = null,
+    businessType = null,
+    country = "India",
+    state = null,
+    ownerName = null,
+    phone = null,
+    teamSize = null,
+    monthlyOrders = null,
+    currentPlatform = null,
+    hearAboutUs = null,
+    selectedPlan = "starter",
+    receiveUpdates = false,
+  } = parseResult.data;
   const lowerEmail = email.toLowerCase();
   const lowerSubdomain = subdomain.toLowerCase();
 
@@ -114,15 +184,38 @@ app.post("/auth/merchant/signup", async (c) => {
   // 5. Save registry details in the control database
   const tStmt = controlDb
     .prepare(
-      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding, businessCategory, businessType, country, state, ownerName, phone, teamSize, monthlyOrders, currentPlatform, hearAboutUs, receiveUpdates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
-    .bind(tenantId, storeName, lowerSubdomain, "starter", "active", createdAt, null, null, null, "[]", "{}");
+    .bind(
+      tenantId,
+      storeName,
+      lowerSubdomain,
+      selectedPlan,
+      "active",
+      createdAt,
+      null,
+      null,
+      null,
+      "[]",
+      "{}",
+      businessCategory,
+      businessType,
+      country,
+      state,
+      ownerName,
+      phone,
+      teamSize,
+      monthlyOrders,
+      currentPlatform,
+      hearAboutUs,
+      receiveUpdates ? 1 : 0
+    );
 
   const uStmt = controlDb
     .prepare(
       "INSERT INTO merchant_users (email, tenantId, userId, hashedPassword, role, emailVerified, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
-    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 0, createdAt);
+    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 1, createdAt);
 
   await controlDb.batch([tStmt, uStmt]);
 
@@ -510,7 +603,7 @@ app.post("/auth/customer/signup", resolveStorefrontTenant, async (c) => {
     .first<{ plan: string }>();
 
   const plan = tenant?.plan || "starter";
-  if (plan === "starter") {
+  if (plan === "free" || plan === "starter") {
     return c.json({
       error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
     }, 403);
@@ -591,7 +684,7 @@ app.post("/auth/customer/login", resolveStorefrontTenant, async (c) => {
     .first<{ plan: string }>();
 
   const plan = tenant?.plan || "starter";
-  if (plan === "starter") {
+  if (plan === "free" || plan === "starter") {
     return c.json({
       error: "Feature locked: Customer accounts require the Growth or Pro tier. Please upgrade.",
     }, 403);

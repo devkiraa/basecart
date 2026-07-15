@@ -26,7 +26,18 @@ CREATE TABLE IF NOT EXISTS tenants (
   gstin TEXT,
   termsOfService TEXT,
   privacyPolicy TEXT,
-  refundPolicy TEXT
+  refundPolicy TEXT,
+  businessCategory TEXT,
+  businessType TEXT,
+  country TEXT DEFAULT 'India',
+  state TEXT,
+  ownerName TEXT,
+  phone TEXT,
+  teamSize TEXT,
+  monthlyOrders TEXT,
+  currentPlatform TEXT,
+  hearAboutUs TEXT,
+  receiveUpdates INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS merchant_users (

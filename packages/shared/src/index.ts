@@ -12,6 +12,18 @@ export const MerchantSignupSchema = z.object({
       /^[a-z0-9-]+$/,
       "Subdomain must be lowercase alphanumeric or hyphens"
     ),
+  businessCategory: z.string().optional(),
+  businessType: z.string().optional(),
+  country: z.string().optional(),
+  state: z.string().optional(),
+  ownerName: z.string().optional(),
+  phone: z.string().optional(),
+  teamSize: z.string().optional(),
+  monthlyOrders: z.string().optional(),
+  currentPlatform: z.string().optional(),
+  hearAboutUs: z.string().optional(),
+  selectedPlan: z.string().optional(),
+  receiveUpdates: z.boolean().optional(),
 }).strict();
 
 export type MerchantSignupInput = z.infer<typeof MerchantSignupSchema>;

@@ -27,7 +27,18 @@ CREATE TABLE IF NOT EXISTS tenants (
   gstin TEXT,
   termsOfService TEXT,
   privacyPolicy TEXT,
-  refundPolicy TEXT
+  refundPolicy TEXT,
+  businessCategory TEXT,
+  businessType TEXT,
+  country TEXT DEFAULT 'India',
+  state TEXT,
+  ownerName TEXT,
+  phone TEXT,
+  teamSize TEXT,
+  monthlyOrders TEXT,
+  currentPlatform TEXT,
+  hearAboutUs TEXT,
+  receiveUpdates INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS merchant_users (
@@ -89,6 +100,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
 );
 
 -- B-Tree Performance Indexes
+CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants (subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
 CREATE INDEX IF NOT EXISTS idx_merchant_users_tenant ON merchant_users (tenantId);
 CREATE INDEX IF NOT EXISTS idx_verification_tokens_email ON verification_tokens (email);
