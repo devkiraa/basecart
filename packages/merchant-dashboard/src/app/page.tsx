@@ -517,8 +517,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto border-t border-slate-200/50 mt-12 pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-slate-400 font-bold select-none">
           <span>© {new Date().getFullYear()} Basecart Inc. All rights reserved.</span>
           <div className="flex gap-4">
-            <span className="hover:underline cursor-pointer">Terms of Service</span>
-            <span className="hover:underline cursor-pointer">Privacy Policy</span>
+            <a href="/legal/terms" className="hover:underline cursor-pointer">Terms of Service</a>
+            <a href="/legal/privacy" className="hover:underline cursor-pointer">Privacy Policy</a>
             <span className="hover:underline cursor-pointer">Refund Policy</span>
             <span className="hover:underline cursor-pointer">Security</span>
           </div>
