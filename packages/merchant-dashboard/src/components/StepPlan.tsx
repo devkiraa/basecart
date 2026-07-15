@@ -81,7 +81,7 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
                   <div className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                    active ? "border-indigo-650 bg-indigo-650 text-white" : "border-slate-300 bg-white"
+                    active ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-300 bg-white"
                   }`}>
                     {active && <Check className="h-2.5 w-2.5 stroke-[4]" />}
                   </div>
