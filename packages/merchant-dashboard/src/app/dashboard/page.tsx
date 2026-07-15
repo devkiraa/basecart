@@ -41,6 +41,10 @@ import {
   Download,
   PanelLeftClose,
   PanelLeftOpen,
+  Monitor,
+  Smartphone,
+  Eye,
+  SlidersHorizontal,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -48,6 +52,7 @@ import StepStore from "../../components/StepStore";
 import StepBusiness from "../../components/StepBusiness";
 import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
+import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002").replace(/^(https?:\/\/)/, "");
@@ -312,7 +317,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "catalog" | "marketing" | "store-design" | "payments"
+    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "catalog" | "marketing" | "store-design" | "payments" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Sidebar collapse state
@@ -325,6 +330,13 @@ export default function MerchantDashboard() {
   const [isStoreSwitcherOpen, setIsStoreSwitcherOpen] = useState(false);
   const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState<"Today" | "Yesterday" | "Last 7 Days" | "Last 30 Days" | "All Time">("Last 7 Days");
+  const [selectedCategory, setSelectedCategory] = useState("All Themes");
+  const [visibleThemeCount, setVisibleThemeCount] = useState(6);
+  const [customizerOpen, setCustomizerOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop");
+  const [previewThemeModalOpen, setPreviewThemeModalOpen] = useState(false);
+  const [themeToPreview, setThemeToPreview] = useState<any>(null);
+  const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   
   const [notifications, setNotifications] = useState([
     { id: 1, title: "Welcome to Basecart! 🎉", desc: "Start by adding your first product to list it on your storefront.", read: false },
@@ -1705,11 +1717,11 @@ export default function MerchantDashboard() {
             <div className="px-4 pb-3 text-center">
               <span className="text-[10px] text-slate-400">Basecart © 2026</span>
               <div className="flex justify-center gap-2 text-[9px] text-slate-400 mt-0.5 select-none">
-                <a href="#tos" onClick={(e) => { e.preventDefault(); alert("Basecart Platform Terms of Service\n\n1. Use of the Service: You must keep your credentials secure.\n2. Payment: You agree to active subscription pricing.\n3. Content: You own all catalog content published."); }} className="hover:text-slate-600 underline">Terms</a>
+                <button onClick={() => setActiveTab("terms-of-service")} className="hover:text-slate-650 hover:text-slate-600 underline">Terms</button>
                 <span>•</span>
-                <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("Basecart Platform Privacy Policy\n\n1. Data Collection: We collect store catalog, emails, and transaction history.\n2. Security: We protect transaction data with standard encryption protocols.\n3. Third Parties: Payment records are securely shared with gateway processors."); }} className="hover:text-slate-600 underline">Privacy</a>
+                <button onClick={() => setActiveTab("privacy-policy")} className="hover:text-slate-650 hover:text-slate-600 underline">Privacy</button>
                 <span>•</span>
-                <a href="#refund" onClick={(e) => { e.preventDefault(); alert("Basecart Platform Subscription Refund Policy\n\n1. Period: All subscriptions have a 14-day refund window.\n2. Invoices: Any paid invoices can be disputed for review.\n3. Refund Method: Approved refund credits are sent back to initial card payment sources."); }} className="hover:text-slate-600 underline">Refunds</a>
+                <button onClick={() => alert("Basecart Platform Subscription Refund Policy\n\n1. Period: All subscriptions have a 14-day refund window.\n2. Invoices: Any paid invoices can be disputed for review.\n3. Refund Method: Approved refund credits are sent back to initial card payment sources.")} className="hover:text-slate-650 hover:text-slate-600 underline">Refunds</button>
               </div>
             </div>
           )}
@@ -4526,945 +4538,362 @@ export default function MerchantDashboard() {
 
           {/* 12. Store Design Tab */}
           {activeTab === "store-design" && (() => {
-            // Setup dynamic metrics
-            const salesVal = summary.totalRevenue || 0;
-            const ordersCount = summary.totalOrders || 0;
-            const hasData = summary.totalOrders > 0;
-            const conversionRate = hasData
-              ? ((summary.paidOrders / summary.totalOrders) * 100).toFixed(2) + "%"
-              : "0.00%";
+            const activeTheme = themes.find((t: any) => t.status === "published") || selectedTheme || themes[0];
 
-            const getHeroTitle = () => selectedTheme?.pageContent?.home?.heroTitle || "BUILT FOR PERFORMANCE";
-            const getHeroSubtext = () => selectedTheme?.pageContent?.home?.heroSubtext || "Premium active gear for those who never compromise.";
-            const getCtaText = () => selectedTheme?.pageContent?.home?.ctaText || "SHOP NOW";
-
-            const getCatalogTitle = () => selectedTheme?.pageContent?.catalog?.pageTitle || "Latest Catalog Arrivals";
-            const getCatalogSubtext = () => selectedTheme?.pageContent?.catalog?.pageSubtext || "Discover our premium selection of sports goods and apparel.";
-
-            const getCheckoutTitle = () => selectedTheme?.pageContent?.checkout?.pageTitle || "Secure Stripe & Razorpay Checkout";
-            const getCheckoutInstructions = () => selectedTheme?.pageContent?.checkout?.instructions || "All transactions are fully encrypted. Enter details to complete purchase.";
-
-            const updatePageContent = (page: string, key: string, value: string) => {
+            const updateThemeSetting = (fieldId: string, value: any) => {
               if (!selectedTheme) return;
-              const pageContent = selectedTheme.pageContent || { home: {}, catalog: {}, checkout: {} };
+              const pageContent = selectedTheme.pageContent || {};
+              const settings = pageContent.settings || {};
               setSelectedTheme({
                 ...selectedTheme,
                 pageContent: {
                   ...pageContent,
-                  [page]: {
-                    ...(pageContent[page] || {}),
-                    [key]: value
-                  }
+                  settings: { ...settings, [fieldId]: value }
                 }
               });
+              // Send live update to iframe
+              const iframe = document.getElementById("storefront-preview-iframe") as HTMLIFrameElement;
+              if (iframe && iframe.contentWindow) {
+                iframe.contentWindow.postMessage({ type: "theme-update", settings: { ...settings, [fieldId]: value } }, "*");
+              }
             };
 
-            return (
-              <div className="space-y-6 animate-fade-in">
-                {/* Header Actions */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-xl font-bold tracking-tight mb-1 flex items-center gap-2">
-                      <ShoppingBag className="h-5 w-5 text-[#4F46E5]" />
-                      <span>Online Store</span>
-                    </h2>
-                    <p className="text-xs text-slate-500">Manage themes, templates, and active branding designs</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <a 
-                      href={getStorefrontLink(settings.subdomain || "demo")} 
-                      target="_blank" 
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-semibold rounded-lg shadow-sm"
-                    >
-                      <span>View Store</span>
-                      <ExternalLink className="h-3 w-3 text-slate-400" />
-                    </a>
-                    <div className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-lg shadow-sm">
-                      <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full"></span>
-                      <span>Public</span>
-                    </div>
-                  </div>
-                </div>
+            const handlePublishTheme = async (themeId: string) => {
+              setLoading(true);
+              try {
+                const res = await fetch(`${API_URL}/store/themes/${themeId}/publish`, {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.ok) {
+                  const promoted = await res.json();
+                  setActionSuccess(`Theme "${promoted.name}" is now active!`);
+                  await fetchThemes(promoted.themeId);
+                } else {
+                  alert("Failed to publish theme.");
+                }
+              } catch (e) { console.error(e); }
+              finally { setLoading(false); }
+            };
 
-                {/* 30 Days Mini KPI Bar */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 select-none">
-                  {[
-                    { label: "Total Sales", value: formatINR(salesVal), color: "text-blue-600 bg-blue-50/50 border-blue-100/50" },
-                    { label: "Orders", value: ordersCount.toLocaleString(), color: "text-emerald-600 bg-emerald-50/50 border-emerald-100/50" },
-                    { label: "Conversion Rate", value: conversionRate, color: "text-indigo-600 bg-indigo-50/50 border-indigo-100/50" },
-                    { label: "Sessions", value: "10,234", color: "text-violet-600 bg-violet-50/50 border-violet-100/50" },
-                  ].map((stat, idx) => (
-                    <div key={idx} className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:shadow-md hover:border-slate-300/80">
+            const handleSelectThemeFromLibrary = async (libTheme: any) => {
+              const existing = themes.find((t: any) => t.name.toLowerCase() === libTheme.name.toLowerCase());
+              if (existing) { await handlePublishTheme(existing.themeId); return; }
+              setLoading(true);
+              try {
+                const res = await fetch(`${API_URL}/store/themes`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                  body: JSON.stringify({
+                    name: libTheme.name,
+                    templateBase: libTheme.templateBase,
+                    colors: { primary: libTheme.defaults.colorPrimary, accent: libTheme.defaults.colorSecondary },
+                    logoUrl: "",
+                    pageContent: {
+                      home: { heroTitle: "BUILT FOR PERFORMANCE", heroSubtext: "Premium collections for modern shoppers.", ctaText: "SHOP NOW" },
+                      catalog: { pageTitle: "Latest Catalog Arrivals", pageSubtext: "Discover our premium selection." },
+                      checkout: { pageTitle: "Secure Checkout", instructions: "All transactions are fully encrypted." },
+                      settings: libTheme.defaults
+                    }
+                  })
+                });
+                if (res.ok) {
+                  const newTheme = await res.json();
+                  await handlePublishTheme(newTheme.themeId);
+                } else { alert("Failed to install theme."); }
+              } catch (e) { console.error(e); }
+              finally { setLoading(false); }
+            };
+
+            // ─── CUSTOMIZER VIEW ───
+            if (customizerOpen) {
+              const themeSettings = selectedTheme?.pageContent?.settings || {};
+              return (
+                <div className="space-y-6 animate-fade-in select-none">
+                  {/* Header Bar */}
+                  <div className="flex items-center justify-between bg-white border border-slate-200/80 p-4 rounded-2xl shadow-xs">
+                    <div className="flex items-center gap-3">
+                      <button onClick={() => setCustomizerOpen(false)} className="px-3.5 py-1.5 border border-slate-200 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 rounded-lg shadow-sm">← Back</button>
                       <div>
-                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{stat.label}</span>
-                        <span className="block text-lg font-extrabold text-slate-900 mt-1 font-mono">{stat.value}</span>
+                        <span className="text-[10px] font-extrabold text-[#4F46E5] uppercase tracking-wider block">Theme Customizer</span>
+                        <h3 className="text-sm font-bold text-slate-800 leading-none mt-0.5">{selectedTheme ? selectedTheme.name : "Active Theme"}</h3>
                       </div>
-                      <span className={`px-2 py-1 text-[9px] font-bold uppercase rounded-lg border ${stat.color}`}>30d</span>
                     </div>
-                  ))}
-                </div>
-
-                {/* Previews & Customizer Layout Grid */}
-                <div id="header-top" className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                  {/* Left Column: Previews (takes 2/3 width) */}
-                  <div className="xl:col-span-2 bg-gradient-to-tr from-slate-50 via-slate-100/50 to-slate-50 border border-slate-200/60 rounded-2xl p-6 flex flex-col md:flex-row items-center md:items-end justify-center gap-8 min-h-[450px] relative overflow-hidden select-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.015)]">
-                    {/* Page selector buttons */}
-                    <div className="absolute top-3 right-3 bg-slate-200/65 backdrop-blur-md p-1 rounded-xl flex gap-1 z-10 border border-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
-                      {(["home", "catalog", "checkout"] as const).map((pg) => (
-                        <button
-                          key={pg}
-                          onClick={() => {
-                            setPreviewPage(pg);
-                            setCustomizerSection(pg === "home" ? "home" : pg === "catalog" ? "catalog" : pg === "checkout" ? "checkout" : "style");
-                          }}
-                          className={`px-3 py-1.5 text-[9px] font-extrabold uppercase rounded-lg transition-all duration-200 ${
-                            previewPage === pg
-                              ? "bg-white text-slate-800 shadow-sm scale-105"
-                              : "text-slate-500 hover:text-slate-850 hover:bg-white/40"
-                          }`}
-                        >
-                          {pg} Page
-                        </button>
-                      ))}
-                    </div>
-
-                    {selectedTheme ? (
-                      <>
-                        {/* Desktop simulated window */}
-                        <div className="flex-1 w-full h-[360px] bg-white rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.06)] border border-slate-200/80 flex flex-col justify-between overflow-hidden relative transition-all duration-300 hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)]">
-                          {/* Desktop Top Header Sim */}
-                          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/70 select-none">
-                            {/* Window controls */}
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                              <span className="w-2 h-2 rounded-full bg-yellow-400"></span>
-                              <span className="w-2 h-2 rounded-full bg-green-400"></span>
-                            </div>
-                            
-                            {/* URL Bar */}
-                            <div className="bg-slate-200/50 border border-slate-300/30 rounded-md px-3 py-0.5 text-[8px] text-slate-400 font-mono w-40 text-center truncate mx-auto select-none">
-                              {settings.subdomain || "demo"}.basecart.io
-                            </div>
-
-                            {selectedTheme.logoUrl ? (
-                              <img src={getOptimizedImageUrl(selectedTheme.logoUrl, "thumbnail")} alt="Store logo" className="h-4 max-w-[80px] object-contain" />
-                            ) : (
-                              <span className="text-[10px] font-black text-slate-800 uppercase tracking-widest">{settings.storeName || "IRON FORGE"}</span>
-                            )}
-                            {selectedTheme.templateBase === "Origin" ? (
-                              <div className="flex flex-col items-center gap-1 mx-auto">
-                                <div className="flex gap-3 text-[8px] text-slate-400 font-bold uppercase">
-                                  <span>Home</span>
-                                  <span>Catalog</span>
-                                  <span>About</span>
-                                </div>
-                              </div>
-                            ) : selectedTheme.templateBase === "Pulse" ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-slate-400 font-bold">🔍 Search</span>
-                                <span className="text-[8px] text-slate-400 font-bold">🛒 Cart (0)</span>
-                              </div>
-                            ) : (
-                              <div className="flex gap-3 text-[8px] text-slate-400 font-bold uppercase">
-                                <span>Home</span>
-                                <span>Collections</span>
-                                <span>Shop</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Desktop Main Content Area Sim */}
-                          <div className="flex-1 p-6 flex flex-col justify-center relative overflow-hidden bg-slate-50/20">
-                            {previewPage === "home" && (
-                              <>
-                                {selectedTheme.templateBase === "Pulse" ? (
-                                  <div className="text-center mx-auto max-w-[200px] space-y-2.5 my-auto">
-                                    <span className="text-[8px] tracking-widest font-extrabold uppercase" style={{ color: selectedTheme.colors?.primary || "#4F46E5" }}>New Season</span>
-                                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-tight">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <button
-                                      className="text-[8px] text-white font-bold px-4 py-1.5 rounded-full shadow-md uppercase transition-transform hover:scale-105"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                ) : selectedTheme.templateBase === "Stride" ? (
-                                  <div className="space-y-3 my-auto">
-                                    <h4 className="text-sm font-extrabold text-slate-950 uppercase tracking-wide max-w-[140px]">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <p className="text-[7px] text-slate-400 leading-normal max-w-[150px]">
-                                      {getHeroSubtext()}
-                                    </p>
-                                    <div className="flex gap-1.5">
-                                      {["Running", "Gym", "Outdoor"].map(cat => (
-                                        <span key={cat} className="text-[6px] font-bold px-2 py-0.5 border border-slate-200 rounded-full text-slate-600 bg-white">
-                                          {cat}
-                                        </span>
-                                      ))}
-                                    </div>
-                                    <button
-                                      className="text-[8px] text-white font-bold px-3 py-1 rounded shadow-sm"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                ) : selectedTheme.templateBase === "Origin" ? (
-                                  <div className="grid grid-cols-2 gap-4 items-center my-auto">
-                                    <div className="space-y-2">
-                                      <h4 className="text-xs font-serif font-bold text-slate-900 leading-tight">
-                                        {getHeroTitle()}
-                                      </h4>
-                                      <p className="text-[7px] text-slate-400 leading-normal">
-                                        {getHeroSubtext()}
-                                      </p>
-                                      <button
-                                        className="text-[7px] text-white font-bold px-3 py-1 rounded shadow-sm"
-                                        style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                      >
-                                        {getCtaText()}
-                                      </button>
-                                    </div>
-                                    <div className="h-16 bg-slate-100 rounded border border-slate-200/50 flex items-center justify-center text-[7px] font-bold text-slate-300">
-                                      PRODUCT PREVIEW
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="my-auto space-y-2">
-                                    <h4 className="text-xs font-black text-slate-950 uppercase tracking-wide leading-tight max-w-[120px]">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <p className="text-[7px] text-slate-400 leading-normal max-w-[140px]">
-                                      {getHeroSubtext()}
-                                    </p>
-                                    <button
-                                      className="text-[7px] text-white font-bold px-3 py-1 rounded shadow-sm"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-
-                            {previewPage === "catalog" && (
-                              <div className="space-y-2.5 my-auto">
-                                <div className="text-center">
-                                  <h4 className="text-[10px] font-bold text-slate-950 uppercase tracking-wide">{getCatalogTitle()}</h4>
-                                  <p className="text-[6px] text-slate-400 mt-0.5 max-w-[180px] mx-auto leading-normal">{getCatalogSubtext()}</p>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {[
-                                    { name: "Apex Runner", price: "₹4,999" },
-                                    { name: "Pro Grip Jacket", price: "₹2,499" },
-                                    { name: "Sport Flask 1L", price: "₹799" },
-                                  ].map((p, idx) => (
-                                    <div key={idx} className="border border-slate-150 rounded p-1.5 bg-white text-left flex flex-col justify-between h-20 shadow-sm">
-                                      <div className="h-6 bg-slate-100 rounded-sm"></div>
-                                      <div>
-                                        <div className="text-[5.5px] font-extrabold text-slate-800 truncate">{p.name}</div>
-                                        <div className="text-[5px] text-slate-500 font-mono mt-0.5">{p.price}</div>
-                                      </div>
-                                      <button 
-                                        className="text-[5px] text-white font-bold py-0.5 rounded-sm w-full block text-center"
-                                        style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                      >
-                                        Add
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {previewPage === "checkout" && (
-                              <div className="space-y-2 my-auto">
-                                <div className="border-b border-slate-100 pb-1">
-                                  <h4 className="text-[9px] font-bold text-slate-900">{getCheckoutTitle()}</h4>
-                                  <p className="text-[5.5px] text-slate-400 mt-0.5 leading-normal">{getCheckoutInstructions()}</p>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 items-start">
-                                  {/* Dummy billing fields */}
-                                  <div className="space-y-1">
-                                    <div className="h-4 bg-slate-50 border border-slate-150 rounded-sm text-[5px] text-slate-400 px-1.5 flex items-center">Customer Name</div>
-                                    <div className="h-4 bg-slate-50 border border-slate-150 rounded-sm text-[5px] text-slate-400 px-1.5 flex items-center">email@example.com</div>
-                                    <div className="h-4 bg-slate-50 border border-slate-150 rounded-sm text-[5px] text-slate-400 px-1.5 flex items-center">123 Street Address</div>
-                                  </div>
-                                  {/* Summary Box */}
-                                  <div className="p-2 border border-slate-150 rounded bg-slate-50/50 space-y-1.5">
-                                    <div className="flex justify-between text-[5px] text-slate-500 font-bold">
-                                      <span>Subtotal</span>
-                                      <span>₹4,999.00</span>
-                                    </div>
-                                    <div className="flex justify-between text-[5.5px] text-slate-800 font-extrabold border-t border-slate-100 pt-1">
-                                      <span>Total INR</span>
-                                      <span>₹4,999.00</span>
-                                    </div>
-                                    <button 
-                                      className="w-full py-1 text-white font-bold text-[5.5px] rounded shadow-sm flex items-center justify-center gap-1"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      <CreditCard className="h-1.5 w-1.5" /> Pay Now via Razorpay
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Desktop Footer Sim */}
-                          <div className="border-t border-slate-100 px-4 py-2 bg-slate-50 flex items-center justify-between text-[6px] text-slate-400 font-bold">
-                            <span>© {settings.storeName || "IRON FORGE"}</span>
-                            <div className="flex gap-2">
-                              <span>Privacy</span>
-                              <span>Terms</span>
-                            </div>
-                          </div>
-                          
-                          {/* Live color highlight stripe */}
-                          <div 
-                            className="absolute bottom-0 left-0 right-0 h-1.5" 
-                            style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                          ></div>
-                        </div>
-
-                        {/* Mobile simulated phone */}
-                        <div className="w-48 h-[320px] bg-white rounded-[24px] shadow-[0_10px_35px_rgba(0,0,0,0.1)] border-[6px] border-slate-900 flex flex-col justify-between overflow-hidden relative shrink-0 transition-all duration-300 hover:shadow-[0_15px_45px_rgba(0,0,0,0.16)]">
-                          {/* Phone Dynamic Island */}
-                          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 bg-slate-900 w-14 h-2.5 rounded-full z-30 flex items-center justify-end px-1.5 gap-0.5 select-none">
-                            <span className="w-1 h-1 rounded-full bg-slate-850"></span>
-                            <span className="w-0.5 h-0.5 rounded-full bg-blue-500/80"></span>
-                          </div>
-                          {/* Mobile Header Sim */}
-                          <div className="flex items-center justify-between border-b border-slate-100 px-3 pt-4 pb-2 bg-slate-50/50">
-                            {selectedTheme.logoUrl ? (
-                              <img src={getOptimizedImageUrl(selectedTheme.logoUrl, "thumbnail")} alt="Store logo" className="h-3 max-w-[50px] object-contain" />
-                            ) : (
-                              <span className="text-[8px] font-black text-slate-800 uppercase tracking-widest">{settings.storeName || "IRON FORGE"}</span>
-                            )}
-                            <span className="text-[10px] text-slate-500 font-bold">☰</span>
-                          </div>
-
-                          {/* Mobile Main Content Sim */}
-                          <div className="flex-1 p-4 flex flex-col justify-center relative overflow-hidden bg-slate-50/20">
-                            {previewPage === "home" && (
-                              <>
-                                {selectedTheme.templateBase === "Pulse" ? (
-                                  <div className="text-center space-y-2">
-                                    <span className="text-[6px] tracking-widest font-extrabold uppercase" style={{ color: selectedTheme.colors?.primary || "#4F46E5" }}>New Season</span>
-                                    <h4 className="text-[10px] font-black text-slate-900 leading-tight">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <button
-                                      className="text-[6px] text-white font-bold px-3 py-1.5 rounded-full shadow uppercase scale-90 inline-block"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                ) : selectedTheme.templateBase === "Stride" ? (
-                                  <div className="space-y-2">
-                                    <h4 className="text-[9px] font-extrabold text-slate-950 uppercase tracking-wide leading-none">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <div className="h-10 bg-slate-100 rounded text-[5px] text-slate-400 font-bold flex items-center justify-center border border-slate-200/50">
-                                      NEW ARRIVALS
-                                    </div>
-                                    <button
-                                      className="text-[6px] text-white font-bold px-2 py-0.5 rounded shadow-sm scale-90 origin-left"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                ) : selectedTheme.templateBase === "Origin" ? (
-                                  <div className="space-y-2 text-center">
-                                    <h4 className="text-[9px] font-serif font-bold text-slate-900 leading-tight">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <div className="h-8 bg-slate-100 rounded text-[5px] text-slate-300 font-bold flex items-center justify-center border border-slate-200/50">
-                                      HERITAGE SELECTION
-                                    </div>
-                                    <button
-                                      className="text-[6px] text-white font-bold px-2.5 py-0.5 rounded shadow-sm scale-90"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                  </div>
-                                ) : (
-                                  // Aura Mobile
-                                  <div className="space-y-2">
-                                    <h4 className="text-[9px] font-black text-slate-900 leading-none">
-                                      {getHeroTitle()}
-                                    </h4>
-                                    <button
-                                      className="text-[6px] text-white font-semibold px-2.5 py-0.5 rounded scale-90 origin-left"
-                                      style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                    >
-                                      {getCtaText()}
-                                    </button>
-                                    <div className="h-8 bg-slate-100 rounded text-[5px] text-slate-400 font-bold flex items-center justify-center">
-                                      NEW ARRIVALS
-                                    </div>
-                                  </div>
-                                )}
-                              </>
-                            )}
-
-                            {previewPage === "catalog" && (
-                              <div className="space-y-2.5 my-auto">
-                                <div className="text-center">
-                                  <h4 className="text-[8px] font-bold text-slate-950 uppercase">{getCatalogTitle()}</h4>
-                                </div>
-                                <div className="grid grid-cols-2 gap-1.5">
-                                  {[
-                                    { name: "Apex Runner", price: "₹4,999" },
-                                    { name: "Pro Jacket", price: "₹2,499" },
-                                  ].map((p, idx) => (
-                                    <div key={idx} className="border border-slate-150 rounded p-1 bg-white text-left flex flex-col justify-between h-16 shadow-xs">
-                                      <div className="h-4 bg-slate-50 rounded-xs"></div>
-                                      <div>
-                                        <div className="text-[5px] font-extrabold text-slate-800 truncate">{p.name}</div>
-                                      </div>
-                                      <button 
-                                        className="text-[4.5px] text-white font-bold py-0.5 rounded-sm w-full block text-center"
-                                        style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                      >
-                                        Add
-                                      </button>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {previewPage === "checkout" && (
-                              <div className="space-y-2 my-auto text-left">
-                                <div>
-                                  <h4 className="text-[7.5px] font-bold text-slate-900 leading-tight">{getCheckoutTitle()}</h4>
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="h-3.5 bg-slate-50 border border-slate-150 rounded-sm text-[4.5px] text-slate-400 px-1 flex items-center">Customer Name</div>
-                                  <div className="h-3.5 bg-slate-50 border border-slate-150 rounded-sm text-[4.5px] text-slate-400 px-1 flex items-center">email@example.com</div>
-                                </div>
-                                <div className="p-1 border border-slate-150 rounded bg-slate-50/50 flex items-center justify-between text-[5px] text-slate-800 font-extrabold">
-                                  <span>Total: ₹4,999.00</span>
-                                  <button 
-                                    className="px-2 py-0.5 text-white font-bold text-[5px] rounded shadow-xs"
-                                    style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                                  >
-                                    Pay Now
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Mobile Footer Sim */}
-                          <div className="border-t border-slate-100 px-3 py-1.5 bg-slate-50 text-[5px] text-slate-400 text-center font-bold">
-                            <span>© {settings.storeName || "IRON FORGE"}</span>
-                          </div>
-
-                          {/* Live color highlight stripe */}
-                          <div 
-                            className="absolute bottom-0 left-0 right-0 h-1.5" 
-                            style={{ backgroundColor: selectedTheme.colors?.primary || "#4F46E5" }}
-                          ></div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="text-slate-400 text-sm font-semibold flex flex-col items-center gap-2">
-                        <Loader2 className="h-5 w-5 animate-spin text-[#4F46E5]" />
-                        <span>Loading active preview...</span>
-                      </div>
-                    )}
-
-                    {/* Preview Live Update Overlay Badge */}
-                    <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-sm px-2.5 py-1.5 rounded-lg text-[9px] font-extrabold text-white uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
-                      <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full animate-ping"></span>
-                      <span>Live Preview {selectedTheme && `— ${selectedTheme.name}`}</span>
-                    </div>
+                    <button onClick={() => setCustomizerOpen(false)} className="px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-lg shadow-sm">Save & Close</button>
                   </div>
 
-                  {/* Right Column: Customizer Panel */}
-                  <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-6 flex flex-col justify-between h-[450px]">
-                    <div className="space-y-4">
-                      <div className="flex flex-col border-b border-slate-100 pb-3">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Theme customizer</h3>
-                            <h4 className="text-sm font-bold text-slate-800 mt-0.5 truncate max-w-[150px]">{selectedTheme ? selectedTheme.name : "Select a theme"}</h4>
-                          </div>
-                          {selectedTheme && (
-                            <div className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 rounded-full text-slate-500 flex items-center gap-1">
-                              {(() => {
-                                const original = themes.find(t => t.themeId === selectedTheme.themeId);
-                                const hasChanges = original && (
-                                  selectedTheme.name !== original.name ||
-                                  selectedTheme.templateBase !== original.templateBase ||
-                                  selectedTheme.logoUrl !== original.logoUrl ||
-                                  JSON.stringify(selectedTheme.colors) !== JSON.stringify(original.colors) ||
-                                  JSON.stringify(selectedTheme.pageContent) !== JSON.stringify(original.pageContent)
-                                );
-                                return hasChanges ? (
-                                  <>
-                                    <span className="h-1.5 w-1.5 bg-amber-400 rounded-full animate-pulse"></span>
-                                    <span>Unsaved changes</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span className="h-1.5 w-1.5 bg-emerald-400 rounded-full"></span>
-                                    <span>Auto-saved</span>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Editor sub-tabs */}
-                        {selectedTheme && (
-                          <div className="flex gap-2 mt-3 overflow-x-auto select-none no-scrollbar">
-                            {(["style", "home", "catalog", "checkout"] as const).map((sec) => (
-                              <button
-                                key={sec}
-                                onClick={() => {
-                                  setCustomizerSection(sec);
-                                  if (sec !== "style") {
-                                    setPreviewPage(sec);
-                                  }
-                                }}
-                                className={`pb-1 text-[9px] font-extrabold uppercase border-b-2 transition-all whitespace-nowrap ${
-                                  customizerSection === sec
-                                    ? "border-[#4F46E5] text-[#4F46E5]"
-                                    : "border-transparent text-slate-400 hover:text-slate-650"
-                                }`}
-                              >
-                                {sec === "style" ? "Branding/Layout" : `${sec} page`}
-                              </button>
-                            ))}
-                          </div>
-                        )}
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+                    {/* Left 2/3: Live Previewer */}
+                    <div className="xl:col-span-2 bg-gradient-to-tr from-slate-50 via-slate-100/50 to-slate-50 border border-slate-200/60 rounded-2xl p-6 flex flex-col items-center justify-center gap-6 min-h-[520px] relative overflow-hidden select-none">
+                      <div className="flex gap-1 bg-slate-200/60 p-0.5 rounded-lg border border-slate-300/40 z-10 shadow-sm">
+                        <button onClick={() => setPreviewMode("desktop")} className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "desktop" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
+                          <Monitor className="h-3 w-3" /><span>Desktop</span>
+                        </button>
+                        <button onClick={() => setPreviewMode("mobile")} className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "mobile" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
+                          <Smartphone className="h-3 w-3" /><span>Mobile</span>
+                        </button>
                       </div>
 
-                      {selectedTheme ? (
-                        <div className="space-y-4 overflow-y-auto max-h-[250px] pr-1">
-                          {customizerSection === "style" && (
-                            <>
-                              {/* Template Base selector */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Template Base Layout
-                                </label>
-                                <select
-                                  value={selectedTheme.templateBase || "Aura"}
-                                  onChange={(e) => setSelectedTheme({ ...selectedTheme, templateBase: e.target.value })}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none bg-white font-semibold shadow-sm"
-                                >
-                                  <option value="Aura">Aura (Default clean single-page)</option>
-                                  <option value="Pulse">Pulse (Vibrant hero, centered branding)</option>
-                                  <option value="Stride">Stride (Category-first active layout)</option>
-                                  <option value="Origin">Origin (Classic double-border editorial)</option>
-                                </select>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-4">
-                                {/* Primary color */}
-                                <div>
-                                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                    Brand Primary Color
-                                  </label>
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      type="color"
-                                      value={selectedTheme.colors?.primary || "#2563EB"}
-                                      onChange={(e) => setSelectedTheme({
-                                        ...selectedTheme,
-                                        colors: { ...selectedTheme.colors, primary: e.target.value }
-                                      })}
-                                      className="h-8 w-8 rounded border border-slate-200 cursor-pointer shrink-0"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={selectedTheme.colors?.primary || "#2563EB"}
-                                      onChange={(e) => setSelectedTheme({
-                                        ...selectedTheme,
-                                        colors: { ...selectedTheme.colors, primary: e.target.value }
-                                      })}
-                                      className="px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-mono w-full text-slate-800 focus:outline-none"
-                                    />
-                                  </div>
-                                </div>
-
-                                {/* Accent/Hover color */}
-                                <div>
-                                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                    Accent/Hover Color
-                                  </label>
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      type="color"
-                                      value={selectedTheme.colors?.accent || "#1D4ED8"}
-                                      onChange={(e) => setSelectedTheme({
-                                        ...selectedTheme,
-                                        colors: { ...selectedTheme.colors, accent: e.target.value }
-                                      })}
-                                      className="h-8 w-8 rounded border border-slate-200 cursor-pointer shrink-0"
-                                    />
-                                    <input
-                                      type="text"
-                                      value={selectedTheme.colors?.accent || "#1D4ED8"}
-                                      onChange={(e) => setSelectedTheme({
-                                        ...selectedTheme,
-                                        colors: { ...selectedTheme.colors, accent: e.target.value }
-                                      })}
-                                      className="px-2 py-1.5 border border-slate-200 rounded-lg text-xs font-mono w-full text-slate-800 focus:outline-none"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Logo URL */}
-                              <div className="border-t border-slate-100 pt-3">
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Store Branding Logo URL
-                                </label>
-                                <input
-                                  type="text"
-                                  value={selectedTheme.logoUrl || ""}
-                                  onChange={(e) => setSelectedTheme({
-                                    ...selectedTheme,
-                                    logoUrl: e.target.value
-                                  })}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium placeholder-slate-400"
-                                  placeholder="https://example.com/logo.png"
-                                />
-                                <p className="text-[9px] text-slate-400 mt-1 leading-normal">Logo will render inside the live storefront header bar, scaled to fit.</p>
-                              </div>
-                            </>
-                          )}
-
-                          {customizerSection === "home" && (
-                            <>
-                              {/* Hero Title */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Hero Headline Text
-                                </label>
-                                <input
-                                  type="text"
-                                  value={getHeroTitle()}
-                                  onChange={(e) => updatePageContent("home", "heroTitle", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium"
-                                />
-                              </div>
-
-                              {/* Hero Subtext */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Hero Subtitle Text
-                                </label>
-                                <textarea
-                                  value={getHeroSubtext()}
-                                  onChange={(e) => updatePageContent("home", "heroSubtext", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium h-16 resize-none"
-                                />
-                              </div>
-
-                              {/* Hero CTA Button Text */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  CTA Button Label
-                                </label>
-                                <input
-                                  type="text"
-                                  value={getCtaText()}
-                                  onChange={(e) => updatePageContent("home", "ctaText", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium"
-                                />
-                              </div>
-                            </>
-                          )}
-
-                          {customizerSection === "catalog" && (
-                            <>
-                              {/* Catalog Title */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Catalog Main Heading
-                                </label>
-                                <input
-                                  type="text"
-                                  value={getCatalogTitle()}
-                                  onChange={(e) => updatePageContent("catalog", "pageTitle", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium"
-                                />
-                              </div>
-
-                              {/* Catalog Subtext */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Catalog Subtext Description
-                                </label>
-                                <textarea
-                                  value={getCatalogSubtext()}
-                                  onChange={(e) => updatePageContent("catalog", "pageSubtext", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium h-20 resize-none"
-                                />
-                              </div>
-                            </>
-                          )}
-
-                          {customizerSection === "checkout" && (
-                            <>
-                              {/* Checkout Title */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Checkout Page Header
-                                </label>
-                                <input
-                                  type="text"
-                                  value={getCheckoutTitle()}
-                                  onChange={(e) => updatePageContent("checkout", "pageTitle", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium"
-                                />
-                              </div>
-
-                              {/* Checkout Instructions */}
-                              <div>
-                                <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1">
-                                  Checkout Instructions
-                                </label>
-                                <textarea
-                                  value={getCheckoutInstructions()}
-                                  onChange={(e) => updatePageContent("checkout", "instructions", e.target.value)}
-                                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none font-medium h-20 resize-none"
-                                />
-                              </div>
-                            </>
-                          )}
+                      {previewMode === "desktop" ? (
+                        <div className="w-full h-[420px] bg-white rounded-2xl shadow-xl border border-slate-200/70 overflow-hidden flex flex-col relative animate-fade-in">
+                          <div className="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50/75 select-none text-[10px] text-slate-400">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                              <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                              <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                            </div>
+                            <div className="bg-slate-200/50 border border-slate-300/30 rounded px-4 py-0.5 text-[9px] font-mono w-60 text-center truncate">{settings.subdomain || "demo"}.basecart.app</div>
+                            <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider">Live Preview</span>
+                          </div>
+                          <iframe id="storefront-preview-iframe" src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${selectedTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(selectedTheme?.pageContent?.settings?.colorPrimary || selectedTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50" />
                         </div>
                       ) : (
-                        <div className="h-48 flex items-center justify-center text-slate-400 text-xs font-semibold">
-                          Select a theme below to begin customizing.
+                        <div className="w-64 h-[420px] bg-white rounded-[32px] shadow-2xl border-8 border-slate-900 overflow-hidden flex flex-col relative animate-fade-in">
+                          <div className="absolute top-1.5 left-1/2 -translate-x-1/2 bg-slate-900 w-16 h-3 rounded-full z-10 flex items-center justify-end px-2"><span className="w-1 h-1 rounded-full bg-blue-500"></span></div>
+                          <iframe id="storefront-preview-iframe" src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${selectedTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(selectedTheme?.pageContent?.settings?.colorPrimary || selectedTheme?.colors?.primary || "#2563EB")}`} className="w-full h-full border-none bg-slate-50 pt-5" />
                         </div>
                       )}
                     </div>
 
-                    <div className="border-t border-slate-100 pt-3 text-[10px] text-slate-400 leading-normal font-semibold">
-                      💡 Modifications autosave debounced in the background. Simply edit colors/layouts, and changes will be persisted.
+                    {/* Right 1/3: Settings Panel */}
+                    <div className="bg-white border border-slate-200 shadow-sm rounded-2xl p-5 flex flex-col h-[520px]">
+                      <div className="border-b border-slate-100 pb-3 mb-4 text-left">
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">Theme Settings</span>
+                        <h4 className="text-sm font-black text-slate-800 leading-tight mt-0.5">{selectedTheme?.name} Configuration</h4>
+                      </div>
+                      <div className="flex-1 overflow-y-auto space-y-5 pr-1 text-left no-scrollbar">
+                        {THEME_SETTINGS_SCHEMA.map((group) => (
+                          <div key={group.id} className="space-y-3">
+                            <h5 className="text-[10px] font-black text-[#4F46E5] uppercase tracking-wider border-b border-slate-100 pb-1">{group.title}</h5>
+                            <div className="space-y-3 pt-1">
+                              {group.fields.map((field) => {
+                                const val = themeSettings[field.id] !== undefined ? themeSettings[field.id] : field.default;
+                                return (
+                                  <div key={field.id} className="space-y-1">
+                                    <label className="block text-[10px] font-bold text-slate-600">{field.label}</label>
+                                    {field.type === "text" && (
+                                      <input type="text" value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none" />
+                                    )}
+                                    {field.type === "color" && (
+                                      <div className="flex items-center gap-2">
+                                        <input type="color" value={val || "#000000"} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer shrink-0" />
+                                        <input type="text" value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono w-full text-slate-800 focus:outline-none" />
+                                      </div>
+                                    )}
+                                    {field.type === "select" && (
+                                      <select value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:outline-none">
+                                        {field.options?.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                                      </select>
+                                    )}
+                                    {field.type === "checkbox" && (
+                                      <label className="flex items-center gap-2 cursor-pointer pt-0.5 select-none">
+                                        <input type="checkbox" checked={!!val} onChange={(e) => updateThemeSetting(field.id, e.target.checked)} className="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5] h-3.5 w-3.5" />
+                                        <span className="text-[11px] font-semibold text-slate-500">Enable</span>
+                                      </label>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
+              );
+            }
 
-                {/* Current Published Theme Section */}
-                {themes.filter(t => t.status === "published").map((theme) => (
-                  <div key={theme.themeId} className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:shadow-md transition-shadow">
-                    <div className="flex items-center gap-4">
-                      {/* Simulated Mini Thumbnail */}
-                      <div 
-                        className="h-14 w-20 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between p-1.5 overflow-hidden shrink-0 relative"
-                        style={{ borderBottomWidth: "3px", borderBottomColor: theme.colors?.primary || "#4F46E5" }}
-                      >
-                        <div className="h-1.5 bg-slate-200 rounded-sm w-[40%]"></div>
-                        <div className="space-y-1">
-                          <div className="h-1 bg-slate-100 rounded-sm w-[70%]"></div>
-                          <div className="h-1 bg-slate-100 rounded-sm w-[50%]"></div>
-                        </div>
-                        <div className="h-2 bg-slate-900/10 rounded-sm flex items-center justify-center text-[4px] text-slate-400 font-bold uppercase">
-                          {theme.templateBase}
+            // ─── MARKETPLACE VIEW ───
+            return (
+              <div className="space-y-6 animate-fade-in select-none">
+
+                {/* 1. Selected Theme Hero */}
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col xl:flex-row gap-6 p-6">
+                  <div className="flex-1 flex flex-col justify-between pr-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Active Store Layout</span>
+                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-extrabold rounded-full uppercase tracking-wider shadow-xs">
+                          <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping"></span>
+                          <span>Active</span>
                         </div>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-sm font-bold text-slate-800">{theme.name}</h3>
-                          <span className="bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
-                        </div>
-                        <p className="text-[10px] text-slate-400 mt-1 font-semibold">
-                          Last saved: {new Date(theme.lastSavedAt).toLocaleString()} | Version {theme.version || 1}
-                        </p>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">{activeTheme ? activeTheme.name : "Vogue"}</h2>
+                        <span className="text-[9px] font-extrabold bg-[#4F46E5]/10 text-[#4F46E5] px-1.5 py-0.5 rounded uppercase tracking-wide">v{activeTheme?.version || 1}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 leading-relaxed max-w-md">Clean and modern fashion theme built for conversion rates and merchant trust.</p>
+                      <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 font-bold pt-2">
+                        {["Mobile Responsive", "SEO Optimized", "Fast Loading", "Accessibility Ready"].map((item) => (
+                          <div key={item} className="flex items-center gap-2">
+                            <span className="h-4 w-4 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#4F46E5] font-extrabold text-[10px]">✓</span>
+                            <span>{item}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                    <div className="flex gap-2 shrink-0">
-                      <button
-                        onClick={() => {
-                          setSelectedTheme(theme);
-                          document.getElementById("header-top")?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className={`px-4 py-1.5 border rounded-lg text-xs font-bold shadow-sm transition-colors ${
-                          selectedTheme?.themeId === theme.themeId
-                            ? "bg-slate-100 border-slate-200 text-slate-500 cursor-default"
-                            : "bg-[#4F46E5] border-[#4F46E5] text-white hover:bg-[#4338CA]"
-                        }`}
-                      >
-                        {selectedTheme?.themeId === theme.themeId ? "Editing Theme" : "Edit Theme"}
-                      </button>
+                    <div className="flex flex-wrap gap-3 pt-8">
+                      <button onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }} className="px-4 py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all">Customize Theme</button>
+                      <button onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }} className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-extrabold text-xs rounded-xl shadow-sm transition-all">Theme Settings</button>
+                      <a href={getStorefrontLink(settings.subdomain || "demo")} target="_blank" rel="noreferrer" className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1">
+                        <span>Preview Store</span><ExternalLink className="h-3 w-3 text-slate-400" />
+                      </a>
                     </div>
                   </div>
-                ))}
 
-                {/* Draft Themes Section */}
-                <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-6 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">Draft themes</h3>
-                      <p className="text-[10px] text-slate-400">Themes that are saved but not visible on the live storefront.</p>
+                  {/* Right Column live preview */}
+                  <div className="flex-1 bg-slate-50 border border-slate-200/60 rounded-xl p-5 flex flex-col justify-between items-center gap-4 relative min-h-[340px]">
+                    <div className="w-full flex justify-between items-center border-b border-slate-200 pb-2">
+                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Storefront Simulator</span>
+                      <div className="flex gap-1 bg-slate-200/60 p-0.5 rounded-lg border border-slate-300/30 shadow-xs">
+                        <button onClick={() => setPreviewMode("desktop")} className={`flex items-center gap-1 px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "desktop" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
+                          <Monitor className="h-3 w-3" /><span>Desktop</span>
+                        </button>
+                        <button onClick={() => setPreviewMode("mobile")} className={`flex items-center gap-1 px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "mobile" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
+                          <Smartphone className="h-3 w-3" /><span>Mobile</span>
+                        </button>
+                      </div>
                     </div>
-                    <button
-                      onClick={createNewDraft}
-                      className="px-3 py-1.5 bg-[#4F46E5] text-white hover:bg-[#4338CA] font-bold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1"
-                    >
-                      <Plus className="h-3 w-3" /> Create new draft
-                    </button>
+
+                    {previewMode === "desktop" ? (
+                      <div className="w-full h-[220px] bg-white rounded-lg shadow-md border border-slate-200 flex flex-col overflow-hidden relative animate-fade-in">
+                        <div className="flex items-center justify-between border-b border-slate-100 px-3 py-1 bg-slate-50/70 text-[8px] text-slate-400 font-medium">
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                          </div>
+                          <span className="truncate w-32 font-mono text-center mx-auto">{settings.subdomain || "demo"}.basecart.app</span>
+                        </div>
+                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50 pointer-events-none scale-90 origin-top" />
+                      </div>
+                    ) : (
+                      <div className="w-36 h-[220px] bg-white rounded-2xl shadow-md border-4 border-slate-800 flex flex-col overflow-hidden relative animate-fade-in">
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 w-10 h-1.5 rounded-full z-10 flex items-center justify-end px-1"><span className="w-0.5 h-0.5 rounded-full bg-blue-500"></span></div>
+                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`} className="w-full h-full border-none bg-slate-50 pt-3 pointer-events-none scale-90 origin-top" />
+                      </div>
+                    )}
                   </div>
+                </div>
 
-                  {themes.filter(t => t.status === "draft").length === 0 ? (
-                    <div className="py-8 text-center text-slate-400 text-xs font-semibold">
-                      No draft themes available. Create a new draft or add one from the template library below.
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {themes.filter(t => t.status === "draft").map((theme) => (
-                        <div key={theme.themeId} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-4 min-w-0">
-                            {/* Simulated Mini Thumbnail */}
-                            <div 
-                              className="h-12 w-16 bg-slate-50 border border-slate-200 rounded-lg flex flex-col justify-between p-1 overflow-hidden shrink-0 relative"
-                              style={{ borderBottomWidth: "3.5px", borderBottomColor: theme.colors?.primary || "#2563EB" }}
-                            >
-                              <div className="h-1 bg-slate-200 rounded-sm w-[35%]"></div>
-                              <div className="space-y-0.5">
-                                <div className="h-0.5 bg-slate-100 rounded-sm w-[60%]"></div>
-                                <div className="h-0.5 bg-slate-100 rounded-sm w-[40%]"></div>
-                              </div>
-                              <div className="h-1.5 bg-slate-900/10 rounded-sm flex items-center justify-center text-[3.5px] text-slate-400 font-bold uppercase">
-                                {theme.templateBase}
-                              </div>
-                            </div>
+                {/* 2. Theme Categories */}
+                <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 select-none">
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 pr-2">
+                    {["All Themes", "Fashion", "Electronics", "Home & Living", "Beauty", "Food", "Minimal", "Sports", "Books"].map((cat) => (
+                      <button key={cat} onClick={() => { setSelectedCategory(cat); setVisibleThemeCount(6); }} className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${selectedCategory === cat ? "bg-indigo-50 text-[#4F46E5]" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"}`}>{cat}</button>
+                    ))}
+                  </div>
+                  <button onClick={() => alert("Advanced filtering tools are preconfigured in Basecart Pro.")} className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-bold rounded-lg shadow-sm shrink-0">
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" /><span>Filter</span>
+                  </button>
+                </div>
 
-                            <div className="min-w-0">
-                              <h4 className="text-xs font-bold text-slate-800 truncate">{theme.name}</h4>
-                              <p className="text-[9px] text-slate-400 font-semibold mt-0.5">
-                                Added: {new Date(theme.lastSavedAt).toLocaleDateString()} | Version {theme.version || 1}
-                              </p>
+                {/* 3. Theme Marketplace */}
+                <div className="space-y-1 text-left">
+                  <h3 className="text-base font-black text-slate-800 tracking-tight">Theme Marketplace</h3>
+                  <p className="text-xs text-slate-500">Choose from professionally-crafted layouts optimized for sales conversion.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {THEME_LIBRARY.filter((t: any) => selectedCategory === "All Themes" || t.category === selectedCategory)
+                    .slice(0, visibleThemeCount)
+                    .map((theme: any) => {
+                      const isCurrentActive = activeTheme?.name?.toLowerCase() === theme.name.toLowerCase();
+                      return (
+                        <div key={theme.name} className={`bg-white border rounded-2xl overflow-hidden flex flex-col justify-between group transition-all duration-300 shadow-sm hover:shadow-md ${isCurrentActive ? "border-[#4F46E5] ring-1 ring-[#4F46E5]/40" : "border-slate-200 hover:border-slate-300"}`}>
+                          <div className="h-44 bg-slate-100 relative overflow-hidden select-none border-b border-slate-100">
+                            <img src={theme.previewImage} alt={theme.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300 filter brightness-95" loading="lazy" />
+                            <div className="absolute top-3 right-3 bg-slate-900/60 backdrop-blur-sm text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-xs uppercase">{theme.price}</div>
+                            {theme.isNew && (<div className="absolute top-3 left-3 bg-[#4F46E5] text-white font-black text-[9px] px-2 py-0.5 rounded shadow-xs uppercase tracking-wider">New</div>)}
+                            <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button onClick={() => { setThemeToPreview(theme); setPreviewThemeModalOpen(true); }} className="px-3.5 py-2 bg-white text-slate-800 text-xs font-bold rounded-lg shadow-lg hover:bg-slate-50 flex items-center gap-1.5 transform translate-y-1.5 group-hover:translate-y-0 transition-all duration-200">
+                                <Eye className="h-3.5 w-3.5 text-slate-500" /><span>Preview</span>
+                              </button>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2 shrink-0">
-                            <button
-                              onClick={() => publishTheme(theme)}
-                              className="border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 shadow-sm"
-                            >
-                              Publish
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedTheme(theme);
-                                document.getElementById("header-top")?.scrollIntoView({ behavior: "smooth" });
-                              }}
-                              className={`border rounded-lg px-3 py-1.5 text-xs font-bold shadow-sm transition-colors ${
-                                selectedTheme?.themeId === theme.themeId
-                                  ? "bg-slate-100 border-slate-200 text-slate-500 cursor-default"
-                                  : "border-slate-200 text-slate-700 bg-white hover:bg-slate-50"
-                              }`}
-                            >
-                              {selectedTheme?.themeId === theme.themeId ? "Editing" : "Customize"}
-                            </button>
-
-                            {/* Dropdown Overflow Menu */}
-                            <div className="relative">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenuThemeId(activeMenuThemeId === theme.themeId ? null : theme.themeId);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-50"
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </button>
-                              {activeMenuThemeId === theme.themeId && (
+                          <div className="p-4 space-y-3">
+                            <div className="text-left">
+                              <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-bold text-slate-800">{theme.name}</h4>
+                                <span className="text-[9px] text-[#4F46E5] bg-indigo-50 border border-indigo-100/30 px-1.5 py-0.5 rounded font-extrabold uppercase">{theme.category}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 mt-1 leading-normal line-clamp-2 min-h-[32px] font-medium">{theme.description}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              {isCurrentActive ? (
+                                <div className="w-full text-center bg-indigo-50 border border-indigo-100 text-[#4F46E5] font-extrabold py-1.5 rounded-lg text-xs flex items-center justify-center gap-1"><span>✓</span><span>Active theme in use</span></div>
+                              ) : (
                                 <>
-                                  <div className="fixed inset-0 z-10" onClick={() => setActiveMenuThemeId(null)}></div>
-                                  <div className="absolute right-0 mt-1 w-32 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20">
-                                    <button
-                                      onClick={() => renameTheme(theme)}
-                                      className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 font-bold"
-                                    >
-                                      Rename
-                                    </button>
-                                    <button
-                                      onClick={() => duplicateTheme(theme)}
-                                      className="w-full text-left px-3 py-1.5 text-xs text-slate-700 hover:bg-slate-50 font-bold"
-                                    >
-                                      Duplicate
-                                    </button>
-                                    <button
-                                      onClick={() => deleteTheme(theme)}
-                                      className="w-full text-left px-3 py-1.5 text-xs text-red-600 hover:bg-slate-50 font-bold"
-                                    >
-                                      Delete
-                                    </button>
-                                  </div>
+                                  <button onClick={() => handleSelectThemeFromLibrary(theme)} className="flex-1 py-1.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold rounded-lg text-xs shadow-sm transition-colors">Apply Theme</button>
+                                  <button onClick={() => { setThemeToPreview(theme); setPreviewThemeModalOpen(true); }} className="p-1.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 shadow-sm shrink-0" title="Quick Preview"><Eye className="h-4 w-4" /></button>
                                 </>
                               )}
                             </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      );
+                    })}
                 </div>
 
-                {/* Theme Library Section */}
-                <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-6">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800">Theme library</h3>
-                      <p className="text-[10px] text-slate-400">Explore layout templates for your storefront design.</p>
-                    </div>
-                    <button 
-                      onClick={() => setActionSuccess("Redirecting to theme store...")}
-                      className="text-xs text-[#4F46E5] font-bold hover:underline"
-                    >
-                      Visit Theme Store
-                    </button>
+                {/* Load More */}
+                {THEME_LIBRARY.filter((t: any) => selectedCategory === "All Themes" || t.category === selectedCategory).length > visibleThemeCount && (
+                  <div className="text-center pt-2 select-none">
+                    <button onClick={() => setVisibleThemeCount((prev: number) => prev + 3)} className="px-5 py-2 border border-slate-300 text-slate-700 font-bold rounded-lg text-xs shadow-xs hover:bg-slate-50 transition-colors">Load More Themes</button>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {[
-                      { name: "Aura", price: "Free", templateBase: "Aura", preview: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=400&q=80" },
-                      { name: "Pulse", price: "Free", templateBase: "Pulse", preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=400&q=80" },
-                      { name: "Stride", price: "₹2,999", templateBase: "Stride", preview: "https://images.unsplash.com/photo-1460353581641-37baddab0fa2?auto=format&fit=crop&w=400&q=80" },
-                      { name: "Origin", price: "₹2,499", templateBase: "Origin", preview: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=400&q=80" },
-                    ].map((theme) => (
-                      <div key={theme.name} className="border border-slate-150 rounded-lg overflow-hidden flex flex-col justify-between group hover:border-[#4F46E5] transition-colors bg-white shadow-sm">
-                        <div className="h-28 bg-slate-50 relative overflow-hidden">
-                          <img src={getOptimizedImageUrl(theme.preview, "medium")} alt={theme.name} className="h-full w-full object-cover filter brightness-[0.9] group-hover:scale-105 transition-transform duration-300" />
-                          <div className="absolute top-2 right-2 bg-slate-900/60 backdrop-blur-sm text-white font-bold text-[8px] px-1.5 py-0.5 rounded">
-                            {theme.price}
-                          </div>
-                        </div>
-                        <div className="p-3 flex items-center justify-between border-t border-slate-50">
-                          <div>
-                            <span className="text-xs font-bold text-slate-800">{theme.name}</span>
-                          </div>
-                          <button 
-                            type="button"
-                            onClick={() => addFromLibrary(theme)}
-                            className="text-[10px] bg-slate-50 border border-slate-200 text-slate-600 px-2.5 py-1 rounded font-bold hover:bg-slate-100"
-                          >
-                            Add
-                          </button>
-                        </div>
+                {/* 4. Fullscreen Theme Preview Modal */}
+                {previewThemeModalOpen && themeToPreview && (
+                  <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex flex-col z-[9999] animate-fade-in">
+                    <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between shadow-sm select-none">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">Preview</span>
+                        <h3 className="text-sm font-black text-slate-800 leading-none">{themeToPreview.name}</h3>
+                        <span className="text-[9px] font-extrabold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full uppercase tracking-wider">{themeToPreview.price}</span>
                       </div>
-                    ))}
+                      <div className="flex gap-1 bg-slate-200/50 p-0.5 rounded-lg border border-slate-300/30">
+                        {(["desktop", "tablet", "mobile"] as const).map((d) => (
+                          <button key={d} onClick={() => setPreviewDevice(d)} className={`flex items-center gap-1.5 px-3 py-1.5 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewDevice === d ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
+                            {d === "tablet" ? <Smartphone className="h-3 w-3 rotate-90" /> : d === "mobile" ? <Smartphone className="h-3 w-3" /> : <Monitor className="h-3 w-3" />}
+                            <span>{d}</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={async () => { setPreviewThemeModalOpen(false); await handleSelectThemeFromLibrary(themeToPreview); }} className="px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-lg shadow-sm">Apply Theme</button>
+                        <button onClick={() => setPreviewThemeModalOpen(false)} className="px-4 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs rounded-lg shadow-sm">Close</button>
+                      </div>
+                    </div>
+                    <div className="flex-1 bg-slate-100 flex items-center justify-center p-6 overflow-hidden">
+                      <div className={`bg-white shadow-2xl overflow-hidden flex flex-col relative animate-fade-in ${previewDevice === "desktop" ? "w-full h-full rounded-2xl border border-slate-200" : previewDevice === "tablet" ? "w-[768px] h-full rounded-[32px] border-[12px] border-slate-900" : "w-[375px] h-[550px] rounded-[36px] border-8 border-slate-900"}`}>
+                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${themeToPreview.templateBase}&previewPrimaryColor=${encodeURIComponent(themeToPreview.defaults.colorPrimary)}`} className="w-full h-full border-none bg-slate-50" />
+                      </div>
+                    </div>
                   </div>
+                )}
+
+                {/* Bottom Feature Indicators */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 select-none pt-4 text-left">
+                  {[
+                    { label: "Mobile Responsive", desc: "Pixel-perfect mobile shopping experience." },
+                    { label: "No Code Customization", desc: "No coding or Liquid templates required." },
+                    { label: "High Speed Performance", desc: "95+ Lighthouse speed scores pre-tuned." },
+                    { label: "Regular Upgrades", desc: "Free feature updates and fixes automatically." }
+                  ].map((feat) => (
+                    <div key={feat.label} className="bg-white border border-slate-200/80 p-4 rounded-xl shadow-xs space-y-1">
+                      <h4 className="text-xs font-black text-slate-800 leading-tight">{feat.label}</h4>
+                      <p className="text-[10px] text-slate-500 leading-normal font-medium">{feat.desc}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* CTA Banner */}
+                <div className="bg-slate-50 border border-slate-200/50 p-6 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 text-left select-none">
+                  <div>
+                    <h4 className="text-sm font-black text-slate-800">{"Can't find the perfect theme?"}</h4>
+                    <p className="text-xs text-slate-500 mt-1 font-medium">Our design team can create a custom brand-specific storefront for your store.</p>
+                  </div>
+                  <button onClick={() => alert("Please open a ticket in settings to contact our designers.")} className="px-4 py-2 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-extrabold rounded-lg shadow-sm shrink-0">Contact Our Team</button>
                 </div>
               </div>
             );

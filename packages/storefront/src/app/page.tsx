@@ -12,6 +12,11 @@ import {
   Loader2,
   Trash2,
   Calendar,
+  Heart,
+  ArrowUp,
+  Search,
+  ChevronRight,
+  Globe,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../lib/image";
 
@@ -144,6 +149,57 @@ export default function Storefront() {
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingStore, setLoadingStore] = useState(true);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Load wishlist from local storage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("basecart_wishlist");
+      if (saved) setWishlist(JSON.parse(saved));
+    } catch (e) {}
+  }, []);
+
+  const toggleWishlist = (id: string) => {
+    setWishlist(prev => {
+      const updated = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      try {
+        localStorage.setItem("basecart_wishlist", JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  // Back to top scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Theme Live Preview message listener
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data && e.data.type === "theme-update") {
+        const themeSettings = e.data.settings;
+        setStoreInfo((prev: any) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            theme: {
+              ...prev.theme,
+              ...themeSettings
+            }
+          };
+        });
+      }
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   // Cart state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -830,10 +886,26 @@ export default function Storefront() {
   }
 
   const theme = storeInfo?.theme;
-  const templateBase = theme?.templateBase || "Aura";
-  const primaryColor = theme?.colors?.primary || storeInfo?.branding?.primaryColor || "#2563EB";
-  const logoUrl = theme?.logoUrl || storeInfo?.branding?.logoUrl || "";
+  const customSettings = theme?.pageContent?.settings || {};
+
+  // Read URL query parameters for unapplied theme fullscreen previewing
+  const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+  const previewThemeBase = params?.get("previewThemeBase");
+  const previewPrimaryColor = params?.get("previewPrimaryColor");
+
+  const templateBase = previewThemeBase || theme?.templateBase || "Aura";
+  const primaryColor = previewPrimaryColor || customSettings.colorPrimary || theme?.colors?.primary || storeInfo?.branding?.primaryColor || "#2563EB";
+  const secondaryColor = customSettings.colorSecondary || theme?.colors?.secondary || storeInfo?.branding?.accentColor || "#1D4ED8";
+  const accentColor = customSettings.colorAccent || "#F59E0B";
+  const bgColor = customSettings.colorBg || "#FFFFFF";
+  const textColor = customSettings.colorText || "#1F2937";
+
+  const logoUrl = customSettings.logoUrl || theme?.logoUrl || storeInfo?.branding?.logoUrl || "";
   const displayProducts = products.length > 0 ? products : MOCK_WATCH_PRODUCTS;
+  const filteredProducts = displayProducts.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const getHeroTitle = () => theme?.pageContent?.home?.heroTitle || "BUILT FOR PERFORMANCE";
   const getHeroSubtext = () => theme?.pageContent?.home?.heroSubtext || "Premium active gear for those who never compromise.";
@@ -846,10 +918,37 @@ export default function Storefront() {
   const getCheckoutInstructions = () => theme?.pageContent?.checkout?.instructions || "Enter billing details to complete checkout.";
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+    <div 
+      className="min-h-screen bg-slate-50 flex flex-col text-slate-800"
+      style={{ backgroundColor: bgColor, color: textColor }}
+    >
+      <style>{`
+        h1, h2, h3, h4, h5, h6, .store-title {
+          font-family: ${customSettings.fontHeading === "serif" ? "Georgia, serif" : customSettings.fontHeading === "mono" ? "Courier New, monospace" : "Inter, sans-serif"} !important;
+        }
+        body, p, span, div, a, button, input, select {
+          font-family: ${customSettings.fontBody === "serif" ? "Georgia, serif" : customSettings.fontBody === "mono" ? "Courier New, monospace" : "Inter, sans-serif"};
+        }
+        .btn-theme, button {
+          border-radius: ${customSettings.buttonRadius || "8px"} !important;
+        }
+      `}</style>
+
+      {/* Announcement Bar */}
+      {customSettings.enableAnnouncement !== false && (
+        <div 
+          className="text-white py-2 px-4 text-center text-[10px] font-extrabold tracking-wider transition-all select-none uppercase"
+          style={{ backgroundColor: primaryColor }}
+        >
+          {customSettings.announcementText || "Free shipping on orders over ₹999! 🚚"}
+        </div>
+      )}
+
       {/* Store Header */}
       <header 
-        className={`bg-white border-b sticky top-0 z-20 px-8 flex items-center justify-between shadow-sm h-16 ${
+        className={`bg-white border-b px-8 flex items-center justify-between shadow-sm h-16 ${
+          customSettings.stickyHeader !== false ? "sticky top-0 z-20" : "relative"
+        } ${
           templateBase === "Origin" 
             ? "border-double border-b-4 border-slate-300 font-serif" 
             : "border-slate-200"
@@ -902,6 +1001,19 @@ export default function Storefront() {
 
         {/* Right Side: Local Subdomain Swapper + Customer Actions */}
         <div className="flex items-center gap-6">
+          {customSettings.enableSearch !== false && (
+            <div className="hidden sm:flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 w-44">
+              <Search className="h-3.5 w-3.5 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="bg-transparent border-none text-[11px] w-full focus:outline-none text-slate-650 font-sans"
+              />
+            </div>
+          )}
+
           {/* Local Sandbox Subdomain Switcher */}
           <div className="hidden lg:flex items-center gap-1 bg-slate-55 border border-slate-200 rounded-full px-2.5 py-1">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Subdomain:</span>
@@ -1083,8 +1195,18 @@ export default function Storefront() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-                  {displayProducts.map((prod) => (
-                    <div key={prod.productId} className="flex flex-col justify-between text-left group cursor-pointer" onClick={() => addToCart(prod)}>
+                  {filteredProducts.map((prod) => (
+                    <div 
+                      key={prod.productId} 
+                      className="flex flex-col justify-between text-left group cursor-pointer relative animate-fade-in" 
+                      onClick={() => {
+                        if (customSettings.enableQuickView !== false) {
+                          setSelectedProductDetails(prod);
+                        } else {
+                          addToCart(prod);
+                        }
+                      }}
+                    >
                       {/* Product Image Card */}
                       <div className="aspect-square w-full bg-[#f5f5f4] flex items-center justify-center p-8 overflow-hidden relative">
                         {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
@@ -1092,6 +1214,20 @@ export default function Storefront() {
                             Bestseller
                           </span>
                         )}
+
+                        {/* Wishlist Button */}
+                        {customSettings.enableWishlist !== false && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWishlist(prod.productId);
+                            }}
+                            className="absolute top-4 right-4 bg-white/80 backdrop-blur-sm p-1.5 rounded-full shadow-sm hover:scale-110 transition-transform z-10 text-slate-500 hover:text-rose-500 font-bold"
+                          >
+                            <Heart className={`h-4 w-4 ${wishlist.includes(prod.productId) ? "fill-rose-500 text-rose-500" : ""}`} />
+                          </button>
+                        )}
+
                         {prod.images && prod.images[0] ? (
                           <img 
                             src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "medium")} 
@@ -1100,6 +1236,15 @@ export default function Storefront() {
                           />
                         ) : (
                           <Package className="h-16 w-16 text-slate-300" />
+                        )}
+
+                        {/* Quick View Hover overlay */}
+                        {customSettings.enableQuickView !== false && (
+                          <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                            <span className="bg-white/95 backdrop-blur-sm text-[10px] font-extrabold uppercase px-3 py-1.5 rounded-lg shadow-md tracking-wider text-slate-800 pointer-events-auto transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                              Quick View
+                            </span>
+                          </div>
                         )}
                       </div>
                       
@@ -1220,16 +1365,37 @@ export default function Storefront() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {displayProducts.map((prod) => (
-                    <div key={prod.productId} className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors">
-                      <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden">
+                  {filteredProducts.map((prod) => (
+                    <div 
+                      key={prod.productId} 
+                      onClick={() => {
+                        if (customSettings.enableQuickView !== false) {
+                          setSelectedProductDetails(prod);
+                        }
+                      }}
+                      className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors cursor-pointer relative"
+                    >
+                      <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden relative">
+                        {/* Wishlist Button */}
+                        {customSettings.enableWishlist !== false && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWishlist(prod.productId);
+                            }}
+                            className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-sm hover:scale-110 transition-transform z-10 text-slate-500 hover:text-rose-500 font-bold"
+                          >
+                            <Heart className={`h-3.5 w-3.5 ${wishlist.includes(prod.productId) ? "fill-rose-500 text-rose-500" : ""}`} />
+                          </button>
+                        )}
+
                         {prod.images && prod.images[0] ? (
                           <img src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
                         ) : (
                           <Package className="h-12 w-12 text-slate-300" />
                         )}
                       </div>
-                      <div className="p-5 flex-1 flex flex-col justify-between">
+                      <div className="p-5 flex-1 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
                         <div>
                           <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
                           <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
@@ -1969,6 +2135,15 @@ export default function Storefront() {
                 )}
               </div>
               <div className="flex-1">
+                {customSettings.breadcrumbs !== false && (
+                  <div className="flex items-center gap-1 text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 select-none">
+                    <span>Home</span>
+                    <ChevronRight className="h-2 w-2" />
+                    <span>Catalog</span>
+                    <ChevronRight className="h-2 w-2" />
+                    <span className="text-slate-650 truncate max-w-[120px]">{selectedProductDetails.name}</span>
+                  </div>
+                )}
                 <h3 className="text-lg font-bold text-slate-900">{selectedProductDetails.name}</h3>
                 <div className="flex items-baseline gap-2 mt-1">
                   <span className="text-xl font-extrabold text-slate-900">
@@ -2064,6 +2239,43 @@ export default function Storefront() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Sticky Bottom Cart bar */}
+      {customSettings.stickyCart !== false && cart.length > 0 && view !== "checkout" && view !== "cart" && (
+        <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-2xl px-5 py-3 flex items-center justify-between gap-6 z-40 select-none animate-fade-in w-full max-w-sm sm:max-w-md">
+          <div className="flex items-center gap-3">
+            <div className="relative p-2 rounded-xl" style={{ backgroundColor: `${primaryColor}15`, color: primaryColor }}>
+              <ShoppingCart className="h-4 w-4" />
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-extrabold w-4 h-4 rounded-full flex items-center justify-center">
+                {cart.reduce((acc, curr) => acc + curr.quantity, 0)}
+              </span>
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Shopping Cart</p>
+              <p className="text-xs font-black text-slate-800">
+                Subtotal: ₹{cart.reduce((acc, item) => acc + (item.selectedVariant?.price !== undefined && item.selectedVariant?.price !== null ? item.selectedVariant.price : item.product.price) * item.quantity, 0)}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setView("cart")}
+            className="px-4 py-2 text-white font-extrabold text-xs rounded-xl shadow-md transition-all hover:scale-102 hover:opacity-95"
+            style={{ backgroundColor: primaryColor }}
+          >
+            Checkout Now
+          </button>
+        </div>
+      )}
+
+      {/* Back to Top Floating Button */}
+      {customSettings.backToTop !== false && showBackToTop && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-24 right-6 p-2.5 bg-white border border-slate-200 rounded-full shadow-lg text-slate-650 hover:text-slate-900 z-40 hover:scale-110 transition-transform active:scale-95 animate-fade-in"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
       )}
     </div>
   );
