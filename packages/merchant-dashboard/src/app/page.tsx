@@ -269,6 +269,12 @@ export default function MerchantDashboard() {
     { id: 3, title: "Store launch ready", desc: "Your store design is ready! Share your subdomain URL with customers.", read: false }
   ]);
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
@@ -1423,6 +1429,20 @@ export default function MerchantDashboard() {
       setLoading(false);
     }
   };
+
+  // --- Loading / Hydration Splash ---
+  if (!isHydrated) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3 animate-pulse">
+          <div className="h-12 w-12 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-indigo-600 shadow-sm">
+            <ShoppingBag className="h-6 w-6" />
+          </div>
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Loading Console...</span>
+        </div>
+      </div>
+    );
+  }
 
   // --- Auth View Layout ---
   if (!token) {
