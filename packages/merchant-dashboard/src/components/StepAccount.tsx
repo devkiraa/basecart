@@ -16,6 +16,8 @@ export default function StepAccount({ data, onChange, onNext, loading }: StepAcc
   const hasMinLength = password.length >= 8;
   const hasNumber = /\d/.test(password);
   const hasUppercase = /[A-Z]/.test(password);
+  const isSatisfied = hasMinLength && hasNumber && hasUppercase;
+  const showRequirements = password.length > 0 && !isSatisfied;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,17 +100,43 @@ export default function StepAccount({ data, onChange, onNext, loading }: StepAcc
             </button>
           </div>
 
-          {/* Minimal inline checklist indicator */}
-          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-slate-400 font-bold select-none leading-normal">
-            <span className={hasMinLength ? "text-emerald-650 text-emerald-600" : ""}>
-              {hasMinLength ? "✓" : "○"} At least 8 chars
-            </span>
-            <span className={hasNumber ? "text-emerald-655 text-emerald-600" : ""}>
-              {hasNumber ? "✓" : "○"} 1 number
-            </span>
-            <span className={hasUppercase ? "text-emerald-655 text-emerald-600" : ""}>
-              {hasUppercase ? "✓" : "○"} 1 uppercase letter
-            </span>
+          {/* Animated Checklist Indicator */}
+          <div 
+            className={`transition-all duration-300 ease-out overflow-hidden ${
+              showRequirements 
+                ? "max-h-[140px] opacity-100 mt-2.5 transform translate-y-0" 
+                : "max-h-0 opacity-0 mt-0 transform -translate-y-1.5 pointer-events-none"
+            }`}
+          >
+            <div className="bg-slate-50 border border-slate-200/60 p-2.5 rounded-lg space-y-1.5 select-none text-[10px] font-bold text-slate-500">
+              <p className="text-[9px] uppercase tracking-wider text-slate-400 mb-1 font-extrabold">Password Requirements</p>
+              <div className="flex flex-col gap-1">
+                <div className={`flex items-center gap-1.5 transition-colors ${hasMinLength ? "text-emerald-600" : "text-slate-400"}`}>
+                  <span className={`inline-flex items-center justify-center h-3.5 w-3.5 rounded-full text-[8px] border transition-all ${
+                    hasMinLength ? "bg-emerald-50 border-emerald-500 text-emerald-600" : "border-slate-300"
+                  }`}>
+                    {hasMinLength ? "✓" : "○"}
+                  </span>
+                  <span>At least 8 characters</span>
+                </div>
+                <div className={`flex items-center gap-1.5 transition-colors ${hasNumber ? "text-emerald-600" : "text-slate-400"}`}>
+                  <span className={`inline-flex items-center justify-center h-3.5 w-3.5 rounded-full text-[8px] border transition-all ${
+                    hasNumber ? "bg-emerald-50 border-emerald-500 text-emerald-600" : "border-slate-300"
+                  }`}>
+                    {hasNumber ? "✓" : "○"}
+                  </span>
+                  <span>At least 1 number</span>
+                </div>
+                <div className={`flex items-center gap-1.5 transition-colors ${hasUppercase ? "text-emerald-600" : "text-slate-400"}`}>
+                  <span className={`inline-flex items-center justify-center h-3.5 w-3.5 rounded-full text-[8px] border transition-all ${
+                    hasUppercase ? "bg-emerald-50 border-emerald-500 text-emerald-600" : "border-slate-300"
+                  }`}>
+                    {hasUppercase ? "✓" : "○"}
+                  </span>
+                  <span>At least 1 uppercase letter</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -123,11 +151,11 @@ export default function StepAccount({ data, onChange, onNext, loading }: StepAcc
             />
             <label htmlFor="acceptTerms" className="text-xs text-slate-500 leading-normal font-sans">
               I agree to the{" "}
-              <a href="#tos" onClick={(e) => { e.preventDefault(); alert("Basecart Platform Terms of Service\n\n1. Use of the Service: You must keep your credentials secure.\n2. Payment: You agree to active subscription pricing.\n3. Content: You own all catalog content published."); }} className="text-blue-600 hover:underline font-semibold">
+              <a href="/legal/terms" target="_blank" className="text-blue-600 hover:underline font-semibold">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a href="#privacy" onClick={(e) => { e.preventDefault(); alert("Basecart Platform Privacy Policy\n\n1. Data Collection: We collect store catalog, emails, and transaction history.\n2. Security: We protect transaction data with standard encryption protocols.\n3. Third Parties: Payment records are securely shared with gateway processors."); }} className="text-blue-600 hover:underline font-semibold">
+              <a href="/legal/privacy" target="_blank" className="text-blue-600 hover:underline font-semibold">
                 Privacy Policy
               </a>
             </label>
