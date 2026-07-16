@@ -55,6 +55,7 @@ import StepBusiness from "../../components/StepBusiness";
 import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
+import EmailsTab from "../../components/EmailsTab";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
@@ -319,7 +320,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "catalog" | "marketing" | "store-design" | "payments" | "terms-of-service" | "privacy-policy"
+    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "catalog" | "marketing" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Sidebar collapse state
@@ -421,6 +422,13 @@ export default function MerchantDashboard() {
     productsLimit: 50,
     ordersUsed: 0,
     ordersLimit: 100,
+  });
+
+  // Email template settings
+  const [emailSettings, setEmailSettings] = useState<any>({
+    email_color_primary: "",
+    email_logo_url: "",
+    email_signature: "",
   });
 
   // UI status
@@ -851,6 +859,11 @@ export default function MerchantDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setBillingInfo(await res.json());
+      } else if (activeTab === "emails") {
+        const res = await fetch(`${API_URL}/store/email-settings`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setEmailSettings(await res.json());
       }
     } catch (err) {
       console.error(err);
@@ -1577,6 +1590,7 @@ export default function MerchantDashboard() {
               { id: "discounts", name: "Discounts", icon: Tag },
               { id: "marketing", name: "Marketing", icon: Megaphone },
               { id: "store-design", name: "Store Design", icon: Palette },
+              { id: "emails", name: "Email Settings", icon: Mail },
               { id: "addons", name: "Apps & Integrations", icon: Puzzle },
               { id: "payments", name: "Payments", icon: CreditCard },
               { id: "finances", name: "Analytics", icon: TrendingUp },
@@ -5283,12 +5297,23 @@ export default function MerchantDashboard() {
                 <p className="text-sm text-slate-500">Configure Indian Payment gateways, link API secret keys, and manage checkout options</p>
               </div>
 
-              <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm max-w-2xl">
                 <form onSubmit={saveSettings} className="space-y-6">
                   <div>
                     <h3 className="font-bold text-slate-800 text-sm mb-1">Razorpay API Integration</h3>
-                    <p className="text-[10px] text-slate-400 leading-relaxed mb-4">Keys are encrypted at rest with AWS KMS. We never share secrets in customer-facing storefront calls.</p>
-                    
+                    <p className="text-[10px] text-slate-400 leading-relaxed mb-4">Keys are encrypted at rest. We never share secrets in customer-facing storefront calls.</p>
+
+                    <div className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/20 mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-lg select-none">RP</div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800">Razorpay India Checkout</h4>
+                          <p className="text-[10px] text-slate-500 font-medium leading-normal mt-0.5">Collect credit cards, UPI, netbanking, and popular wallets instantly.</p>
+                        </div>
+                        <span className="ml-auto bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-200 px-2 py-0.5 rounded-full select-none">Installed</span>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
@@ -5317,7 +5342,7 @@ export default function MerchantDashboard() {
                     </div>
                   </div>
 
-                  <div className="border-t border-[#F1F5F9] pt-6">
+                  <div className="border-t border-slate-100 pt-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Accepted Payment Options</span>
                     </div>
@@ -5330,11 +5355,11 @@ export default function MerchantDashboard() {
                     </div>
                   </div>
 
-                  <div className="border-t border-[#F1F5F9] pt-6 flex justify-end">
+                  <div className="border-t border-slate-100 pt-4 flex justify-end">
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm flex items-center gap-1.5"
                     >
                       {loading && <Loader2 className="h-3 w-3 animate-spin" />}
                       Save Payment Configurations
@@ -5344,6 +5369,11 @@ export default function MerchantDashboard() {
               </div>
             </div>
           )}
+
+          {activeTab === "emails" && (
+            <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
+          )}
+
         </div>
       </main>
 
@@ -5383,6 +5413,7 @@ export default function MerchantDashboard() {
                 { id: "discounts", name: "Discounts", icon: Tag },
                 { id: "marketing", name: "Marketing", icon: Megaphone },
                 { id: "store-design", name: "Store Design", icon: Palette },
+                { id: "emails", name: "Email Settings", icon: Mail },
                 { id: "addons", name: "Apps & Integrations", icon: Puzzle },
                 { id: "payments", name: "Payments", icon: CreditCard },
                 { id: "finances", name: "Analytics", icon: TrendingUp },

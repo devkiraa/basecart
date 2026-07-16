@@ -10,6 +10,9 @@ export function renderInvoice({
   paymentDueDate,
   downloadUrl,
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   invoiceNumber: string;
   billingMonth: string;
@@ -17,6 +20,9 @@ export function renderInvoice({
   paymentDueDate?: string;
   downloadUrl?: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const subject = `Your Basecart Invoice: ${invoiceNumber}`;
 
@@ -67,7 +73,7 @@ export function renderInvoice({
       ${Text({
         content: "You can download the full PDF format statement details using the link below:",
       })}
-      ${Button({ text: "Download Invoice PDF", url: downloadUrl })}
+      ${Button({ text: "Download Invoice PDF", url: downloadUrl, primaryColor: colorPrimary })}
     `
         : ""
     }
@@ -80,7 +86,7 @@ export function renderInvoice({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hello,
 

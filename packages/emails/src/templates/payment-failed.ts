@@ -9,11 +9,17 @@ export function renderPaymentFailed({
   amount,
   retryUrl,
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   invoiceNumber?: string;
   amount: number;
   retryUrl: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const subject = "Payment Processing Failed";
 
@@ -54,7 +60,7 @@ export function renderPaymentFailed({
     ${Text({
       content: "Please click the button below to update your billing details and complete payment processing:",
     })}
-    ${Button({ text: "Update Payment Method", url: retryUrl })}
+    ${Button({ text: "Update Payment Method", url: retryUrl, primaryColor: colorPrimary })}
 
     ${Divider()}
     ${Text({
@@ -64,7 +70,7 @@ export function renderPaymentFailed({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hello,
 

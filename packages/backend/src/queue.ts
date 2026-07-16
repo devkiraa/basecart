@@ -209,6 +209,28 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
             ]
           : undefined;
 
+        // Query custom email branding settings & active theme falls from tenantDb
+        const settingsRes = await tenantDb.prepare("SELECT * FROM store_settings WHERE key IN ('email_color_primary', 'email_logo_url', 'email_signature')").all<any>();
+        const storeSettings: Record<string, string> = {};
+        settingsRes.results?.forEach((row: any) => {
+          storeSettings[row.key] = row.value;
+        });
+
+        const theme = await tenantDb.prepare("SELECT * FROM themes WHERE status = 'published'").first<any>();
+        let themePrimary = "#2563EB";
+        let themeLogo = "";
+        if (theme) {
+          try {
+            const parsedColors = typeof theme.colors === "string" ? JSON.parse(theme.colors) : theme.colors;
+            if (parsedColors?.primary) themePrimary = parsedColors.primary;
+          } catch(e) {}
+          if (theme.logoUrl) themeLogo = theme.logoUrl;
+        }
+
+        const colorPrimary = storeSettings.email_color_primary || themePrimary;
+        const logoUrl = storeSettings.email_logo_url || themeLogo;
+        const emailSignature = storeSettings.email_signature || "";
+
         await sendEmail(
           {
             type: "order-confirmation",
@@ -220,6 +242,9 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
               invoiceNumber,
               attachments,
               storeName: store?.storeName || "Basecart",
+              colorPrimary,
+              logoUrl,
+              emailSignature,
             },
           },
           env

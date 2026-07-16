@@ -10,6 +10,9 @@ export function renderOrderShipped({
   trackingNumber = "N/A",
   trackingUrl,
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   orderId: string;
   customerName?: string;
@@ -17,6 +20,9 @@ export function renderOrderShipped({
   trackingNumber?: string;
   trackingUrl?: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const shortOrderId = orderId.substring(0, 8).toUpperCase();
   const subject = `Your order #${shortOrderId} has shipped!`;
@@ -54,7 +60,7 @@ export function renderOrderShipped({
       ${Text({
         content: "You can track the shipment status of your order by clicking the button below:",
       })}
-      ${Button({ text: "Track Order Status", url: trackingUrl })}
+      ${Button({ text: "Track Order Status", url: trackingUrl, primaryColor: colorPrimary })}
     `
         : ""
     }
@@ -67,7 +73,7 @@ export function renderOrderShipped({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hi ${customerName},
 

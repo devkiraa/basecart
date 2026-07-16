@@ -8,12 +8,18 @@ export function renderOrderConfirmation({
   total,
   invoiceNumber,
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   orderId: string;
   customerName?: string;
   total: number;
   invoiceNumber?: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const shortOrderId = orderId.substring(0, 8).toUpperCase();
   const subject = `Order Confirmation - #${shortOrderId}`;
@@ -75,7 +81,7 @@ export function renderOrderConfirmation({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hi ${customerName},
 

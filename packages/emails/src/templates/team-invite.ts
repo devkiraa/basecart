@@ -8,11 +8,17 @@ export function renderTeamInvite({
   inviterName = "A team member",
   role = "member",
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   inviteLink: string;
   inviterName?: string;
   role?: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const subject = `Join the ${storeName} team on Basecart`;
 
@@ -29,7 +35,7 @@ export function renderTeamInvite({
       content: "By joining the team, you will collaborate, edit theme layouts, list products, track customer fulfillment, and manage settings.",
     })}
     
-    ${Button({ text: "Accept Invitation", url: inviteLink })}
+    ${Button({ text: "Accept Invitation", url: inviteLink, primaryColor: colorPrimary })}
 
     ${Divider()}
     ${Text({
@@ -39,7 +45,7 @@ export function renderTeamInvite({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hello,
 

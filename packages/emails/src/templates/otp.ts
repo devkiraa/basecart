@@ -7,10 +7,16 @@ export function renderOTP({
   code,
   expiresMinutes = 10,
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   code: string;
   expiresMinutes?: number;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const subject = `Your Verification Code: ${code}`;
 
@@ -30,7 +36,7 @@ export function renderOTP({
     })}
   `;
 
-  const html = MinimalLayout({ title: subject, body, storeName });
+  const html = MinimalLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hello,
 

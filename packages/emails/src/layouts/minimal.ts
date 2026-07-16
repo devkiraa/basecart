@@ -5,10 +5,16 @@ export function MinimalLayout({
   title,
   body,
   storeName = "Basecart",
+  colorPrimary = "#2563EB",
+  logoUrl,
+  emailSignature,
 }: {
   title?: string;
   body: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }): string {
   return `
     <!DOCTYPE html>
@@ -28,7 +34,7 @@ export function MinimalLayout({
             <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%" style="max-width: 500px;">
               <tr>
                 <td style="padding: 20px 10px;">
-                  ${Header({ storeName })}
+                  ${Header({ storeName, logoUrl, colorPrimary })}
                   <table border="0" cellpadding="0" cellspacing="0" role="presentation" width="100%">
                     <tr>
                       <td style="font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
@@ -36,7 +42,7 @@ export function MinimalLayout({
                       </td>
                     </tr>
                   </table>
-                  ${Footer({ storeName })}
+                  ${Footer({ storeName, emailSignature })}
                 </td>
               </tr>
             </table>

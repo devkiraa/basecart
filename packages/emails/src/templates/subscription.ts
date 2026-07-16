@@ -10,6 +10,9 @@ export function renderSubscription({
   status = "active",
   consoleUrl = "https://basecart.app",
   storeName = "Basecart",
+  colorPrimary,
+  logoUrl,
+  emailSignature,
 }: {
   planName: string;
   amount: number;
@@ -17,6 +20,9 @@ export function renderSubscription({
   status?: string;
   consoleUrl?: string;
   storeName?: string;
+  colorPrimary?: string;
+  logoUrl?: string;
+  emailSignature?: string;
 }) {
   const subject = `Basecart Subscription Update: ${planName} Plan`;
 
@@ -58,7 +64,7 @@ export function renderSubscription({
     ${Text({
       content: "You can manage your subscription settings, view your invoices, and update your business details in your console dashboard:",
     })}
-    ${Button({ text: "Access Dashboard", url: consoleUrl })}
+    ${Button({ text: "Access Dashboard", url: consoleUrl, primaryColor: colorPrimary })}
 
     ${Divider()}
     ${Text({
@@ -68,7 +74,7 @@ export function renderSubscription({
     })}
   `;
 
-  const html = DefaultLayout({ title: subject, body, storeName });
+  const html = DefaultLayout({ title: subject, body, storeName, colorPrimary, logoUrl, emailSignature });
   const text = `
 Hello,
 
@@ -88,3 +94,5 @@ This is an automated billing email from ${storeName}.
 
   return { subject, html, text };
 }
+
+

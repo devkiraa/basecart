@@ -4,6 +4,7 @@ import { authenticateMerchant, resolveStorefrontTenant } from "../middleware/aut
 import { encrypt, decrypt } from "../lib/crypto";
 import { StoreSettingsSchema } from "@basecart/shared";
 import { generateInvoicePdf } from "../lib/pdf";
+import { renderEmail, sendEmail } from "@basecart/emails";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -743,6 +744,244 @@ app.get("/store/:subdomain/info", resolveStorefrontTenant, async (c) => {
     privacyPolicy: store.privacyPolicy || "",
     refundPolicy: store.refundPolicy || "",
   });
+});
+
+/**
+ * Get store custom email branding settings
+ */
+app.get("/store/email-settings", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const settingsRes = await tenantDb.prepare("SELECT * FROM store_settings WHERE key IN ('email_color_primary', 'email_logo_url', 'email_signature')").all<any>();
+  
+  const settings: Record<string, string | null> = {
+    email_color_primary: null,
+    email_logo_url: null,
+    email_signature: null,
+  };
+
+  settingsRes.results?.forEach((row) => {
+    settings[row.key] = row.value;
+  });
+
+  return c.json(settings);
+});
+
+/**
+ * Save store custom email branding settings
+ */
+app.patch("/store/email-settings", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+
+  const { email_color_primary, email_logo_url, email_signature } = body;
+
+  const statements = [];
+  if (email_color_primary !== undefined) {
+    statements.push(tenantDb.prepare("INSERT OR REPLACE INTO store_settings (key, value) VALUES ('email_color_primary', ?)").bind(email_color_primary));
+  }
+  if (email_logo_url !== undefined) {
+    statements.push(tenantDb.prepare("INSERT OR REPLACE INTO store_settings (key, value) VALUES ('email_logo_url', ?)").bind(email_logo_url));
+  }
+  if (email_signature !== undefined) {
+    statements.push(tenantDb.prepare("INSERT OR REPLACE INTO store_settings (key, value) VALUES ('email_signature', ?)").bind(email_signature));
+  }
+
+  if (statements.length > 0) {
+    await tenantDb.batch(statements);
+  }
+
+  return c.json({ success: true, message: "Email settings saved successfully" });
+});
+
+/**
+ * Get and render merchant-level email templates with customizations
+ */
+app.get("/store/email-templates", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const store = await controlDb
+    .prepare("SELECT storeName FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<any>();
+
+  if (!store) {
+    return c.json({ error: "Store not found" }, 404);
+  }
+
+  // Load custom settings
+  const settingsRes = await tenantDb.prepare("SELECT * FROM store_settings WHERE key IN ('email_color_primary', 'email_logo_url', 'email_signature')").all<any>();
+  const storeSettings: Record<string, string> = {};
+  settingsRes.results?.forEach((row) => {
+    storeSettings[row.key] = row.value;
+  });
+
+  // Load active theme fallback
+  const theme = await tenantDb.prepare("SELECT * FROM themes WHERE status = 'published'").first<any>();
+  let themePrimary = "#2563EB";
+  let themeLogo = "";
+  if (theme) {
+    try {
+      const parsedColors = typeof theme.colors === "string" ? JSON.parse(theme.colors) : theme.colors;
+      if (parsedColors?.primary) themePrimary = parsedColors.primary;
+    } catch(e) {}
+    if (theme.logoUrl) themeLogo = theme.logoUrl;
+  }
+
+  // Final config overrides
+  const colorPrimary = c.req.query("email_color_primary") || storeSettings.email_color_primary || themePrimary;
+  const logoUrl = c.req.query("email_logo_url") || storeSettings.email_logo_url || themeLogo;
+  const emailSignature = c.req.query("email_signature") || storeSettings.email_signature || "";
+
+  const mockPayloads: Record<string, any> = {
+    "order-confirmation": {
+      orderId: "ord_e4892c",
+      customerName: "Rohan K",
+      total: 1450,
+      invoiceNumber: "INV-2026-0089",
+      storeName: store.storeName,
+      colorPrimary,
+      logoUrl,
+      emailSignature,
+    },
+    "order-shipped": {
+      orderId: "ord_e4892c",
+      customerName: "Rohan K",
+      trackingNumber: "TRK-DELHIVERY-99881",
+      carrier: "Delhivery",
+      trackingUrl: "https://delhivery.com/track/TRK-DELHIVERY-99881",
+      storeName: store.storeName,
+      colorPrimary,
+      logoUrl,
+      emailSignature,
+    },
+    invoice: {
+      invoiceNumber: "INV-2026-0089",
+      billingMonth: "July 2026",
+      amount: 1450,
+      paymentDueDate: "2026-08-01",
+      downloadUrl: "https://basecart.app/invoice/download",
+      storeName: store.storeName,
+      colorPrimary,
+      logoUrl,
+      emailSignature,
+    },
+  };
+
+  const typeParam = c.req.query("type");
+  const types = Object.keys(mockPayloads);
+
+  if (typeParam) {
+    if (!types.includes(typeParam)) {
+      return c.json({ error: `Invalid store template type: ${typeParam}` }, 400);
+    }
+
+    const customData = { ...mockPayloads[typeParam] };
+    const queryParams = c.req.query();
+    for (const key in queryParams) {
+      if (key !== "type" && key !== "email_color_primary" && key !== "email_logo_url" && key !== "email_signature") {
+        if (key === "total" || key === "amount") {
+          customData[key] = parseFloat(queryParams[key]);
+        } else {
+          customData[key] = queryParams[key];
+        }
+      }
+    }
+
+    const { subject, html, text } = renderEmail(typeParam as any, customData);
+    return c.json({
+      type: typeParam,
+      subject,
+      html,
+      text,
+      mockData: customData,
+    });
+  }
+
+  const results = types.map((type) => {
+    const { subject, html, text } = renderEmail(type as any, mockPayloads[type]);
+    return {
+      type,
+      subject,
+      html,
+      text,
+      mockData: mockPayloads[type],
+    };
+  });
+
+  return c.json(results);
+});
+
+/**
+ * Dispatch a store test email to the merchant owner
+ */
+app.post("/store/email-templates/test", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const body = await c.req.json().catch(() => ({}));
+  const { type, to, mockData } = body;
+
+  if (!type || !to || !mockData) {
+    return c.json({ error: "type, to, and mockData are required parameters" }, 400);
+  }
+
+  const store = await controlDb
+    .prepare("SELECT storeName FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<any>();
+
+  if (!store) {
+    return c.json({ error: "Store not found" }, 404);
+  }
+
+  // Load active configurations
+  const settingsRes = await tenantDb.prepare("SELECT * FROM store_settings WHERE key IN ('email_color_primary', 'email_logo_url', 'email_signature')").all<any>();
+  const storeSettings: Record<string, string> = {};
+  settingsRes.results?.forEach((row) => {
+    storeSettings[row.key] = row.value;
+  });
+
+  const theme = await tenantDb.prepare("SELECT * FROM themes WHERE status = 'published'").first<any>();
+  let themePrimary = "#2563EB";
+  let themeLogo = "";
+  if (theme) {
+    try {
+      const parsedColors = typeof theme.colors === "string" ? JSON.parse(theme.colors) : theme.colors;
+      if (parsedColors?.primary) themePrimary = parsedColors.primary;
+    } catch(e) {}
+    if (theme.logoUrl) themeLogo = theme.logoUrl;
+  }
+
+  const colorPrimary = storeSettings.email_color_primary || themePrimary;
+  const logoUrl = storeSettings.email_logo_url || themeLogo;
+  const emailSignature = storeSettings.email_signature || "";
+
+  // Merge brand details into mockData
+  const finalizedData = {
+    ...mockData,
+    storeName: store.storeName,
+    colorPrimary,
+    logoUrl,
+    emailSignature,
+  };
+
+  try {
+    await sendEmail({
+      type,
+      to,
+      data: finalizedData,
+    }, c.env);
+
+    return c.json({ success: true, message: `Test email of type '${type}' successfully sent/enqueued to ${to}` });
+  } catch (err: any) {
+    return c.json({ error: err.message || String(err) }, 500);
+  }
 });
 
 export default app;
