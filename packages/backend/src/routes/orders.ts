@@ -282,6 +282,31 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     }
   }
 
+  // Queue transactional order-shipped email to customer
+  if (status === "shipped" && order.customerEmail && c.env.JOBS_QUEUE) {
+    try {
+      await c.env.JOBS_QUEUE.send({
+        type: "TRANSACTIONAL_EMAIL",
+        tenantId,
+        orderId,
+        emailPayload: {
+          type: "order-shipped",
+          to: order.customerEmail,
+          data: {
+            orderId,
+            customerName: order.customerName,
+            trackingNumber: trackingNumber || "N/A",
+            carrier: carrier || "Our Delivery Partner",
+            trackingUrl: trackingNumber ? `https://shiprocket.co/tracking/${trackingNumber}` : "",
+            storeName: store?.storeName || "Basecart",
+          },
+        },
+      });
+    } catch (queueErr) {
+      console.error("Failed to push order-shipped email to Queue:", queueErr);
+    }
+  }
+
   return c.json({ message: `Order status updated to ${status}` });
 });
 
@@ -764,12 +789,12 @@ app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async
 
   // Queue WhatsApp status update
   const controlDb = getControlDb(c.env);
-  const store = await controlDb
-    .prepare("SELECT addOns FROM tenants WHERE tenantId = ?")
+  const storeData = await controlDb
+    .prepare("SELECT storeName, addOns FROM tenants WHERE tenantId = ?")
     .bind(tenantId)
-    .first<{ addOns: string }>();
+    .first<{ storeName: string; addOns: string }>();
 
-  const addOns = store?.addOns ? JSON.parse(store.addOns) : [];
+  const addOns = storeData?.addOns ? JSON.parse(storeData.addOns) : [];
 
   if (addOns.includes("whatsapp") && c.env.JOBS_QUEUE) {
     try {
@@ -783,6 +808,31 @@ app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async
       });
     } catch (queueErr) {
       console.error("Failed to push WhatsApp status update to Queue:", queueErr);
+    }
+  }
+
+  // Queue transactional order-shipped email to customer
+  if (newStatus === "shipped" && order.customerEmail && c.env.JOBS_QUEUE) {
+    try {
+      await c.env.JOBS_QUEUE.send({
+        type: "TRANSACTIONAL_EMAIL",
+        tenantId,
+        orderId: order_id,
+        emailPayload: {
+          type: "order-shipped",
+          to: order.customerEmail,
+          data: {
+            orderId: order_id,
+            customerName: order.customerName,
+            trackingNumber: awb || order.trackingNumber || "N/A",
+            carrier: order.carrier || "Our Delivery Partner",
+            trackingUrl: awb ? `https://shiprocket.co/tracking/${awb}` : "",
+            storeName: storeData?.storeName || "Basecart",
+          },
+        },
+      });
+    } catch (queueErr) {
+      console.error("Failed to push order-shipped email to Queue:", queueErr);
     }
   }
 

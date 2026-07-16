@@ -349,30 +349,61 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
         const { type: emailType, to, data, from } = emailPayload;
 
         const startTime = Date.now();
-        let status = "success";
+        let emailStatus = "success";
         let providerResponse = "";
         let errorMessage = "";
 
         try {
-          const { subject, html, text } = renderEmail(emailType, data);
+          // Merge per-tenant branding into email data if tenantId is present in the job
+          let enrichedData = { ...data };
+          if (tenantId) {
+            try {
+              const tenantDb = await getTenantDb(tenantId, env);
+              const settingsRes = await tenantDb.prepare("SELECT * FROM store_settings WHERE key IN ('email_color_primary', 'email_logo_url', 'email_signature')").all<any>();
+              const storeSettings: Record<string, string> = {};
+              settingsRes.results?.forEach((row: any) => { storeSettings[row.key] = row.value; });
+
+              const theme = await tenantDb.prepare("SELECT * FROM themes WHERE status = 'published'").first<any>();
+              let themePrimary = "#2563EB";
+              let themeLogo = "";
+              if (theme) {
+                try {
+                  const parsedColors = typeof theme.colors === "string" ? JSON.parse(theme.colors) : theme.colors;
+                  if (parsedColors?.primary) themePrimary = parsedColors.primary;
+                } catch(e) {}
+                if (theme.logoUrl) themeLogo = theme.logoUrl;
+              }
+
+              enrichedData = {
+                ...enrichedData,
+                colorPrimary: enrichedData.colorPrimary || storeSettings.email_color_primary || themePrimary,
+                logoUrl: enrichedData.logoUrl || storeSettings.email_logo_url || themeLogo,
+                emailSignature: enrichedData.emailSignature || storeSettings.email_signature || "",
+              };
+            } catch(brandErr) {
+              console.warn("⚠️ Could not load tenant branding for email, using defaults:", brandErr);
+            }
+          }
+
+          const { subject, html, text } = renderEmail(emailType, enrichedData);
           const provider = getEmailProvider(env);
           const res = await provider.send(
             to,
             subject,
             html,
             text,
-            data.attachments,
+            enrichedData.attachments,
             from
           );
 
           if (!res.success) {
-            status = "failed";
+            emailStatus = "failed";
             errorMessage = res.error || "Unknown error";
           } else {
             providerResponse = res.messageId || "success";
           }
         } catch (err: any) {
-          status = "error";
+          emailStatus = "error";
           errorMessage = err.message || String(err);
           console.error("❌ Email processing threw exception:", err);
         } finally {
@@ -387,7 +418,7 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
                 crypto.randomUUID(),
                 to,
                 emailType,
-                status,
+                emailStatus,
                 providerResponse,
                 new Date().toISOString(),
                 duration,

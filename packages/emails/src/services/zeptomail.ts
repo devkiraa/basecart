@@ -81,8 +81,9 @@ export class ZeptoMailProvider implements EmailProvider {
         const res = await fetch(this.apiUrl, {
           method: "POST",
           headers: {
-            "Authorization": this.token.startsWith("Main ") ? this.token : `Main ${this.token}`,
+            "Authorization": this.token.startsWith("Zoho-enczapikey ") ? this.token : `Zoho-enczapikey ${this.token}`,
             "Content-Type": "application/json",
+            "Accept": "application/json",
           },
           body: JSON.stringify(payload),
         });
@@ -96,13 +97,15 @@ export class ZeptoMailProvider implements EmailProvider {
         }
 
         const errText = await res.text();
-        console.error(`❌ ZeptoMail API returned error (Attempt ${attempt}/${maxAttempts}): ${res.statusText} - ${errText}`);
+        console.error(`❌ ZeptoMail API error (${attempt}/${maxAttempts}): HTTP ${res.status} ${res.statusText}`);
+        console.error(`❌ ZeptoMail response body: ${errText}`);
+        console.error(`❌ ZeptoMail request URL: ${this.apiUrl} | From: ${fromAddress} | To: ${to}`);
         
         // If it's a client error (e.g. 400 Bad Request, 401 Unauthorized), do not retry
         if (res.status >= 400 && res.status < 500 && res.status !== 429) {
           return {
             success: false,
-            error: `Client error: ${res.statusText} (${errText})`,
+            error: `ZeptoMail client error ${res.status}: ${errText}`,
           };
         }
       } catch (err: any) {
