@@ -1,7 +1,8 @@
 import { getControlDb, getTenantDb } from "./lib/db";
 import { generateInvoicePdf } from "./lib/pdf";
 import { sendWhatsAppMessage } from "./services/whatsapp";
-import { sendEmail, sendEmailWithAttachment } from "./services/email";
+import { sendEmail } from "./services/email";
+import { renderEmail, getEmailProvider } from "@basecart/emails";
 
 export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<void> {
   console.log(`📥 Cloudflare Queue Job Processor triggered. Records count: ${batch.messages.length}`);
@@ -199,79 +200,30 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
           }
         }
 
-        // Email dispatch with attachment (if pdfBuffer is present)
-        if (pdfBuffer) {
-          console.log(`Sending receipt with PDF invoice attachment to ${email}`);
-          const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="color: #2563EB; margin: 0;">${store?.storeName || "Basecart"}</h1>
-                <p style="color: #64748B; margin: 5px 0 0 0;">Your Order is Confirmed</p>
-              </div>
-              <div style="background-color: #F8FAFC; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px 0;">Hi ${order.customerName},</p>
-                <p style="margin: 0;">Thank you for shopping with us! Your payment has been successfully processed. Please find your GST tax invoice (PDF) attached to this email.</p>
-              </div>
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #E2E8F0;">Order ID</td>
-                  <td style="padding: 8px 0; text-align: right; border-bottom: 1px solid #E2E8F0;">${orderId}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #E2E8F0;">Invoice Number</td>
-                  <td style="padding: 8px 0; text-align: right; border-bottom: 1px solid #E2E8F0;">${invoiceNumber}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #E2E8F0;">Amount Paid</td>
-                  <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10B981; border-bottom: 1px solid #E2E8F0;">₹${total}</td>
-                </tr>
-              </table>
-              <div style="font-size: 12px; color: #94A3B8; text-align: center;">
-                This is an automated email from ${store?.storeName || "Basecart"}. Please do not reply directly.
-              </div>
-            </div>
-          `;
+        const attachments = pdfBuffer
+          ? [
+              {
+                content: pdfBuffer.toString("base64"),
+                filename: `invoice-${invoiceNumber}.pdf`,
+              },
+            ]
+          : undefined;
 
-          const base64Content = pdfBuffer.toString("base64");
-          const attachments = [
-            {
-              content: base64Content,
-              filename: `invoice-${invoiceNumber}.pdf`,
+        await sendEmail(
+          {
+            type: "order-confirmation",
+            to: email,
+            data: {
+              orderId,
+              customerName: order.customerName,
+              total,
+              invoiceNumber,
+              attachments,
+              storeName: store?.storeName || "Basecart",
             },
-          ];
-
-          await sendEmailWithAttachment(email, `Order Confirmation & GST Invoice - #${orderId.substring(0, 8).toUpperCase()}`, html, attachments, env);
-        } else {
-          // Standard confirmation email
-          console.log(`Sending standard receipt email to ${email}`);
-          const html = `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-              <div style="text-align: center; margin-bottom: 20px;">
-                <h1 style="color: #2563EB; margin: 0;">${store?.storeName || "Basecart"}</h1>
-                <p style="color: #64748B; margin: 5px 0 0 0;">Your Order is Confirmed</p>
-              </div>
-              <div style="background-color: #F8FAFC; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
-                <p style="margin: 0 0 10px 0;">Hi,</p>
-                <p style="margin: 0;">Thank you for shopping with us! Your payment has been successfully processed.</p>
-              </div>
-              <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #E2E8F0;">Order ID</td>
-                  <td style="padding: 8px 0; text-align: right; border-bottom: 1px solid #E2E8F0;">${orderId}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; font-weight: bold; border-bottom: 1px solid #E2E8F0;">Amount Paid</td>
-                  <td style="padding: 8px 0; text-align: right; font-weight: bold; color: #10B981; border-bottom: 1px solid #E2E8F0;">₹${total}</td>
-                </tr>
-              </table>
-              <div style="font-size: 12px; color: #94A3B8; text-align: center;">
-                This is an automated email. Please do not reply directly.
-              </div>
-            </div>
-          `;
-
-          await sendEmail(email, `Order Confirmation - #${orderId.substring(0, 8).toUpperCase()}`, html, env);
-        }
+          },
+          env
+        );
       }
 
       if (type === "WHATSAPP_NOTIFICATION") {
@@ -365,6 +317,60 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
             parameters,
             fallbackText,
           });
+        }
+      }
+      if (type === "TRANSACTIONAL_EMAIL") {
+        const { emailPayload } = body;
+        const { type: emailType, to, data } = emailPayload;
+
+        const startTime = Date.now();
+        let status = "success";
+        let providerResponse = "";
+        let errorMessage = "";
+
+        try {
+          const { subject, html, text } = renderEmail(emailType, data);
+          const provider = getEmailProvider(env);
+          const res = await provider.send(
+            to,
+            subject,
+            html,
+            text,
+            data.attachments
+          );
+
+          if (!res.success) {
+            status = "failed";
+            errorMessage = res.error || "Unknown error";
+          } else {
+            providerResponse = res.messageId || "success";
+          }
+        } catch (err: any) {
+          status = "error";
+          errorMessage = err.message || String(err);
+          console.error("❌ Email processing threw exception:", err);
+        } finally {
+          const duration = Date.now() - startTime;
+          try {
+            const controlDb = getControlDb(env);
+            await controlDb
+              .prepare(
+                "INSERT INTO email_logs (logId, recipient, template, status, providerResponse, timestamp, duration, errorMessage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+              )
+              .bind(
+                crypto.randomUUID(),
+                to,
+                emailType,
+                status,
+                providerResponse,
+                new Date().toISOString(),
+                duration,
+                errorMessage || null
+              )
+              .run();
+          } catch (logErr) {
+            console.error("❌ Failed to write email log to D1:", logErr);
+          }
         }
       }
 

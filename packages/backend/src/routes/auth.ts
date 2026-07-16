@@ -49,11 +49,11 @@ function getCustomerDeleteOptions(c: any) {
 }
 
 // --- Helper: Send verification/reset emails safely ---
-async function sendEmailSafely(to: string, subject: string, htmlContent: string, env: any) {
+async function sendEmailSafely(payload: any, env: any) {
   try {
-    await sendEmail(to, subject, htmlContent, env);
+    await sendEmail(payload, env);
   } catch (error) {
-    console.error(`Failed to send email to ${to}:`, error);
+    console.error(`Failed to send email to ${payload.to}:`, error);
   }
 }
 
@@ -236,18 +236,15 @@ app.post("/auth/merchant/signup", async (c) => {
 
   const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
   await sendEmailSafely(
-    lowerEmail,
-    "Verify Your Basecart Store Account",
-    `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #2563EB;">Welcome to Basecart!</h2>
-        <p>Thank you for signing up for ${storeName}. Please click the button below to verify your email address and unlock complete account access:</p>
-        <div style="margin: 24px 0;">
-          <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
-        </div>
-        <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
-      </div>
-    `,
+    {
+      type: "welcome",
+      to: lowerEmail,
+      data: {
+        userName: storeName,
+        verifyLink,
+        storeName: "Basecart",
+      },
+    },
     c.env
   );
 
@@ -432,18 +429,15 @@ app.post("/auth/merchant/forgot-password", async (c) => {
 
     const resetLink = `https://basecart.app/reset-password?token=${token}`;
     await sendEmailSafely(
-      lowerEmail,
-      "Reset Your Basecart Password",
-      `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Reset Your Password</h2>
-          <p>You requested a password reset for your Basecart store account. Click the link below to set a new password:</p>
-          <div style="margin: 24px 0;">
-            <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-          </div>
-          <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes. If you did not request this, you can safely ignore this email.</p>
-        </div>
-      `,
+      {
+        type: "password-reset",
+        to: lowerEmail,
+        data: {
+          resetLink,
+          expiresMinutes: 30,
+          storeName: "Basecart",
+        },
+      },
       c.env
     );
   }
@@ -530,18 +524,14 @@ app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) =
 
   const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
   await sendEmailSafely(
-    email,
-    "Verify Your Basecart Store Account",
-    `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #2563EB;">Verify Your Basecart Email</h2>
-        <p>Please click the button below to verify your email address:</p>
-        <div style="margin: 24px 0;">
-          <a href="${verifyLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Verify Email Address</a>
-        </div>
-        <p style="font-size: 12px; color: #64748B;">This verification link will expire in 24 hours.</p>
-      </div>
-    `,
+    {
+      type: "welcome",
+      to: email,
+      data: {
+        verifyLink,
+        storeName: "Basecart",
+      },
+    },
     c.env
   );
 
@@ -825,18 +815,15 @@ app.post("/auth/customer/forgot-password", resolveStorefrontTenant, async (c) =>
     const resetLink = `https://${subdomain}.basecart.app/reset-password?token=${token}`;
 
     await sendEmailSafely(
-      lowerEmail,
-      "Reset Your Storefront Password",
-      `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-          <h2>Reset Your Storefront Password</h2>
-          <p>You requested a password reset for your account. Click the link below to set a new password:</p>
-          <div style="margin: 24px 0;">
-            <a href="${resetLink}" style="background-color: #2563EB; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold;">Reset Password</a>
-          </div>
-          <p style="font-size: 12px; color: #64748B;">This password reset link will expire in 30 minutes.</p>
-        </div>
-      `,
+      {
+        type: "password-reset",
+        to: lowerEmail,
+        data: {
+          resetLink,
+          expiresMinutes: 30,
+          storeName: tenant?.storeName || subdomain,
+        },
+      },
       c.env
     );
   }

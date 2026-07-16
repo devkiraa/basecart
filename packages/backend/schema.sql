@@ -98,6 +98,17 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   createdAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS email_logs (
+  logId TEXT PRIMARY KEY,
+  recipient TEXT NOT NULL,
+  template TEXT NOT NULL,
+  status TEXT NOT NULL,
+  providerResponse TEXT,
+  timestamp TEXT NOT NULL,
+  duration INTEGER NOT NULL,
+  errorMessage TEXT
+);
+
 -- B-Tree Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants (subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
@@ -110,3 +121,5 @@ CREATE INDEX IF NOT EXISTS idx_support_tickets_tenant ON support_tickets (tenant
 CREATE INDEX IF NOT EXISTS idx_support_tickets_status ON support_tickets (status);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (userId);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens (expiresAt);
+CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs (recipient);
+CREATE INDEX IF NOT EXISTS idx_email_logs_template ON email_logs (template);
