@@ -3,7 +3,7 @@ import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
 import { authenticateMerchant } from "../middleware/auth";
-import { renderEmail, getEmailProvider, sendEmail } from "@basecart/emails";
+import { renderEmail, getEmailProvider, sendEmail, PLATFORM_EMAIL_ALIASES } from "@basecart/emails";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -615,16 +615,23 @@ app.get("/admin/billing/overview", authenticateAdmin, async (c) => {
  * Get current system mail configuration settings
  */
 app.get("/admin/emails/settings", authenticateAdmin, async (c) => {
+  // Merge hardcoded platform aliases with any env-level overrides
+  let aliases: any = { ...PLATFORM_EMAIL_ALIASES };
+  if (c.env.EMAIL_ALIASES) {
+    try {
+      const envAliases = typeof c.env.EMAIL_ALIASES === "string"
+        ? JSON.parse(c.env.EMAIL_ALIASES)
+        : c.env.EMAIL_ALIASES;
+      aliases = { ...aliases, ...envAliases };
+    } catch (e) {
+      console.error("Failed to parse EMAIL_ALIASES env override:", e);
+    }
+  }
+
   return c.json({
-    EMAIL_ALIASES: c.env.EMAIL_ALIASES || null,
-    MAIL_FROM_ADDRESS: c.env.MAIL_FROM_ADDRESS || null,
-    MAIL_FROM_NAME: c.env.MAIL_FROM_NAME || null,
-    MAIL_FROM_OTP: c.env.MAIL_FROM_OTP || null,
-    MAIL_FROM_WELCOME: c.env.MAIL_FROM_WELCOME || null,
-    MAIL_FROM_SECURITY: c.env.MAIL_FROM_SECURITY || null,
-    MAIL_FROM_ORDERS: c.env.MAIL_FROM_ORDERS || null,
-    MAIL_FROM_BILLING: c.env.MAIL_FROM_BILLING || null,
-    MAIL_FROM_NOREPLY: c.env.MAIL_FROM_NOREPLY || null,
+    EMAIL_ALIASES: aliases,
+    MAIL_FROM_ADDRESS: c.env.MAIL_FROM_ADDRESS || "noreply@basecart.app",
+    MAIL_FROM_NAME: c.env.MAIL_FROM_NAME || "Basecart",
   });
 });
 

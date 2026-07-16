@@ -9,17 +9,17 @@ const DEFAULT_MOCKS: Record<string, Record<string, any>> = {
   otp: {
     code: "887722",
     expiresMinutes: 15,
-    storeName: "Fashion Hub",
+    storeName: "Basecart",
   },
   welcome: {
     userName: "Kiran G",
     verifyLink: "https://basecart.app/verify?token=example-token",
-    storeName: "Fashion Hub",
+    storeName: "Basecart",
   },
   "password-reset": {
     userName: "Kiran G",
     resetLink: "https://basecart.app/reset-password?token=example-token",
-    storeName: "Fashion Hub",
+    storeName: "Basecart",
   },
   "order-confirmation": {
     orderId: "ord_d8a29a",
@@ -56,13 +56,13 @@ const DEFAULT_MOCKS: Record<string, Record<string, any>> = {
     customerName: "Kiran G",
     renewalDate: "2026-09-16",
     amount: 4999,
-    storeName: "Fashion Hub",
+    storeName: "Basecart",
   },
   "team-invite": {
     inviteLink: "https://basecart.app/accept-invite?token=invite-token",
     inviterName: "Admin",
     role: "Manager",
-    storeName: "Fashion Hub",
+    storeName: "Basecart",
   },
 };
 
