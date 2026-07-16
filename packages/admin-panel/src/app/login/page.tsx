@@ -118,11 +118,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="mt-6 pt-6 border-t border-slate-100 text-center">
-          <Link href="/signup" className="text-xs text-blue-600 hover:underline">
-            Bootstrap initial super-admin account &rarr;
-          </Link>
-        </div>
       </div>
     </div>
   );
