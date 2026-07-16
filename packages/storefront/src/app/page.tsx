@@ -145,7 +145,7 @@ const MOCK_WATCH_PRODUCTS: Product[] = [
 
 export default function Storefront() {
   // Storefront lookup state
-  const [subdomain, setSubdomain] = useState("mystore");
+  const [subdomain, setSubdomain] = useState("");
   const [storeInfo, setStoreInfo] = useState<any>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loadingStore, setLoadingStore] = useState(true);
@@ -302,6 +302,9 @@ export default function Storefront() {
         setSubdomain(querySubdomain);
       } else if (parts.length >= 2 && parts[0] !== "localhost" && parts[0] !== "www") {
         setSubdomain(parts[0]);
+      } else {
+        // No subdomain found — direct visit to pages.dev or root, show marketing page
+        setLoadingStore(false);
       }
 
       // Check customer reset password token in query params
@@ -314,9 +317,10 @@ export default function Storefront() {
     }
   }, []);
 
-  // Fetch store details & products on subdomain load
   useEffect(() => {
-    loadStoreDetails();
+    if (subdomain) {
+      loadStoreDetails();
+    }
   }, [subdomain]);
 
   // Load customer session (via httpOnly cookie check)
