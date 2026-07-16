@@ -731,163 +731,29 @@ export default function Storefront() {
     );
   }
 
-  // --- Storefront Not Found / Platform Landing Page ---
+
+  // --- Store Not Found ---
   if (!storeInfo) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white font-sans selection:bg-indigo-500 selection:text-white overflow-x-hidden">
-        {/* Navigation */}
-        <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50 px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-9 w-9 bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-lg shadow-md shadow-indigo-500/20">
-              B
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white uppercase tracking-wider">Basecart</span>
-            <span className="bg-indigo-900/50 text-indigo-300 border border-indigo-800 text-[10px] px-2 py-0.5 rounded-full font-bold">
-              Edge SaaS
-            </span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-widest text-slate-400">
-            <a href="#features" className="hover:text-white transition-colors">Features</a>
-            <a href="#sandbox" className="hover:text-white transition-colors">Preview Sandbox</a>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <a 
-              href="https://basecart.app"
-              target="_blank" 
-              rel="noreferrer"
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold tracking-wider rounded transition-all uppercase shadow-md shadow-indigo-600/20"
-            >
-              Launch Console
-            </a>
-          </div>
-        </header>
-
-        {/* Hero Section */}
-        <section className="relative py-24 md:py-32 px-6 flex flex-col items-center text-center max-w-5xl mx-auto space-y-8">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.08)_0,transparent_100%)] -z-10"></div>
-          
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-indigo-500/30 bg-indigo-500/10 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
-            <span>✨ Version 2.0 now live on Cloudflare Edge</span>
-          </div>
-
-          <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight leading-tight text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-400">
-            Deploy Isolated Headless Stores at the Edge
-          </h1>
-
-          <p className="text-slate-400 text-base md:text-xl max-w-3xl leading-relaxed">
-            Basecart gives Indian merchants their own dedicated SQL databases at the edge via Cloudflare Durable Objects. 
-            Enjoy complete privacy, lightning-fast dynamic checkouts, and pre-integrated Stripe & Razorpay.
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-sans px-6">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-6xl mb-2">🏪</div>
+          <h1 className="text-2xl font-bold text-slate-800">Store not found</h1>
+          <p className="text-slate-500 text-sm leading-relaxed">
+            This store doesn&apos;t exist or hasn&apos;t been set up yet.
+            Check the URL and try again.
           </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full justify-center">
-            <a
-              href="https://basecart.app"
-              target="_blank"
-              rel="noreferrer"
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-550 text-white text-sm font-bold tracking-wider rounded transition-colors uppercase shadow-lg shadow-indigo-600/30 text-center"
-            >
-              Start Your Free Store
-            </a>
-            <button
-              onClick={() => { setSubdomain("demo"); }}
-              className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold tracking-wider rounded transition-colors uppercase border border-slate-700 text-center"
-            >
-              Explore Live Demo
-            </button>
-          </div>
-        </section>
-
-        {/* Interactive Sandbox Section */}
-        <section id="sandbox" className="py-16 px-6 max-w-4xl mx-auto text-center border-t border-slate-800">
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Storefront Sandbox</h2>
-          <p className="text-slate-400 text-sm max-w-lg mx-auto mb-8 leading-relaxed">
-            Enter a registered merchant subdomain (like <strong className="text-indigo-400">demo</strong> or <strong className="text-indigo-400">test</strong>) to instantly load their custom headless storefront.
-          </p>
-          
-          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 md:p-8 max-w-md mx-auto space-y-4 shadow-xl">
-            <div className="space-y-2 text-left">
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Subdomain Prefix
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={subdomain === "mystore" ? "" : subdomain}
-                  onChange={(e) => setSubdomain(e.target.value.toLowerCase())}
-                  className="flex-1 px-4 py-2.5 bg-slate-900 border border-slate-800 rounded text-sm text-white focus:outline-none focus:border-indigo-500 font-mono"
-                  placeholder="demo"
-                />
-                <button
-                  onClick={loadStoreDetails}
-                  className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-sm font-bold uppercase tracking-wider transition-colors"
-                >
-                  Preview
-                </button>
-              </div>
-            </div>
-            <div className="text-left text-[11px] text-slate-500 font-sans leading-normal">
-              💡 Tip: Type <span className="text-indigo-400 font-mono font-bold">demo</span> and click preview to view the fully configured Watchroom storefront!
-            </div>
-          </div>
-        </section>
-
-        {/* Features Section */}
-        <section id="features" className="py-24 px-6 bg-slate-950 border-t border-slate-800">
-          <div className="max-w-6xl mx-auto space-y-16">
-            <div className="text-center space-y-4">
-              <h2 className="text-xs font-bold text-indigo-400 uppercase tracking-widest">Platform capabilities</h2>
-              <p className="text-3xl md:text-4xl font-extrabold tracking-tight">Everything you need to sell globally</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Feature 1 */}
-              <div className="bg-slate-900 border border-slate-800/80 p-8 rounded-xl space-y-4 text-left">
-                <div className="h-10 w-10 bg-indigo-950 border border-indigo-800 rounded-lg flex items-center justify-center text-indigo-450">
-                  <span className="text-lg">💾</span>
-                </div>
-                <h3 className="text-lg font-bold">Isolated Databases</h3>
-                <p className="text-slate-400 text-sm leading-relaxed font-sans">
-                  Each store has its own D1 SQLite database backed by Cloudflare Durable Objects. Safe, secure, and isolated from other merchants.
-                </p>
-              </div>
-
-              {/* Feature 2 */}
-              <div className="bg-slate-900 border border-slate-800/80 p-8 rounded-xl space-y-4 text-left">
-                <div className="h-10 w-10 bg-indigo-950 border border-indigo-800 rounded-lg flex items-center justify-center text-indigo-455">
-                  <span className="text-lg">⚡</span>
-                </div>
-                <h3 className="text-lg font-bold">Infinite Scalability</h3>
-                <p className="text-slate-400 text-sm leading-relaxed font-sans">
-                  Built natively on Cloudflare Workers and Cloudflare Pages. Storefronts load with zero cold start times and scale to millions of hits.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="bg-slate-900 border border-slate-800/80 p-8 rounded-xl space-y-4 text-left">
-                <div className="h-10 w-10 bg-indigo-950 border border-indigo-800 rounded-lg flex items-center justify-center text-indigo-460">
-                  <span className="text-lg">💳</span>
-                </div>
-                <h3 className="text-lg font-bold">Payment Gateways</h3>
-                <p className="text-slate-400 text-sm leading-relaxed font-sans">
-                  Accept payments domestic and international. Out-of-the-box support for Razorpay and Stripe checkouts pre-integrated.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Footer */}
-        <footer className="border-t border-slate-800 py-12 text-center text-xs text-slate-500 bg-slate-950 select-none">
-          <p className="max-w-md mx-auto mb-2 leading-relaxed">
-            &copy; {new Date().getFullYear()} <strong>Basecart</strong>. Built for modern merchants.
-          </p>
-          <p className="text-slate-600">All rights reserved.</p>
-        </footer>
+          <a
+            href="https://basecart.app"
+            className="inline-block mt-4 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold rounded-lg transition-colors"
+          >
+            Go to Basecart
+          </a>
+        </div>
       </div>
     );
   }
+
 
   const theme = storeInfo?.theme;
   const customSettings = theme?.pageContent?.settings || {};
