@@ -348,6 +348,9 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
         const { emailPayload } = body;
         const { type: emailType, to, data, from } = emailPayload;
 
+        // Debug: log which env vars are available to the queue consumer
+        console.log(`📧 ZeptoMail env check — API_URL: ${env?.ZEPTOMAIL_API_URL ? "✅ SET" : "❌ MISSING"} | TOKEN: ${env?.ZEPTOMAIL_TOKEN ? "✅ SET" : "❌ MISSING"}`);
+
         const startTime = Date.now();
         let emailStatus = "success";
         let providerResponse = "";
@@ -399,8 +402,10 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
           if (!res.success) {
             emailStatus = "failed";
             errorMessage = res.error || "Unknown error";
+            console.error(`❌ ZeptoMail delivery failed for ${to}: ${errorMessage}`);
           } else {
             providerResponse = res.messageId || "success";
+            console.log(`✅ Email delivered to ${to} | template: ${emailType} | messageId: ${providerResponse}`);
           }
         } catch (err: any) {
           emailStatus = "error";
@@ -410,6 +415,19 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
           const duration = Date.now() - startTime;
           try {
             const controlDb = getControlDb(env);
+            // Auto-create table if missing (safety net — schema.sql should normally handle this)
+            await controlDb.prepare(
+              `CREATE TABLE IF NOT EXISTS email_logs (
+                logId TEXT PRIMARY KEY,
+                recipient TEXT NOT NULL,
+                template TEXT NOT NULL,
+                status TEXT NOT NULL,
+                providerResponse TEXT,
+                timestamp TEXT NOT NULL,
+                duration INTEGER NOT NULL,
+                errorMessage TEXT
+              )`
+            ).run();
             await controlDb
               .prepare(
                 "INSERT INTO email_logs (logId, recipient, template, status, providerResponse, timestamp, duration, errorMessage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
