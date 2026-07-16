@@ -22,6 +22,10 @@ export interface EmailPayload {
   data: TemplateData & {
     attachments?: EmailAttachment[];
   };
+  from?: {
+    address?: string;
+    name?: string;
+  };
 }
 
 export interface EmailResponse {
@@ -36,6 +40,7 @@ export interface EmailProvider {
     subject: string,
     html: string,
     text: string,
-    attachments?: EmailAttachment[]
+    attachments?: EmailAttachment[],
+    from?: { address?: string; name?: string }
   ): Promise<EmailResponse>;
 }

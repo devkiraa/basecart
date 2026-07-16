@@ -3,6 +3,7 @@ import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
 import { authenticateMerchant } from "../middleware/auth";
+import { renderEmail, getEmailProvider, sendEmail } from "@basecart/emails";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -608,6 +609,160 @@ app.get("/admin/billing/overview", authenticateAdmin, async (c) => {
     },
     totalInvoices: tenants.results?.length || 0,
   });
+});
+
+/**
+ * Get current system mail configuration settings
+ */
+app.get("/admin/emails/settings", authenticateAdmin, async (c) => {
+  return c.json({
+    EMAIL_ALIASES: c.env.EMAIL_ALIASES || null,
+    MAIL_FROM_ADDRESS: c.env.MAIL_FROM_ADDRESS || null,
+    MAIL_FROM_NAME: c.env.MAIL_FROM_NAME || null,
+    MAIL_FROM_OTP: c.env.MAIL_FROM_OTP || null,
+    MAIL_FROM_WELCOME: c.env.MAIL_FROM_WELCOME || null,
+    MAIL_FROM_SECURITY: c.env.MAIL_FROM_SECURITY || null,
+    MAIL_FROM_ORDERS: c.env.MAIL_FROM_ORDERS || null,
+    MAIL_FROM_BILLING: c.env.MAIL_FROM_BILLING || null,
+    MAIL_FROM_NOREPLY: c.env.MAIL_FROM_NOREPLY || null,
+  });
+});
+
+/**
+ * Render all or specific email templates with mock/dynamic data.
+ */
+app.get("/admin/emails/templates", authenticateAdmin, async (c) => {
+  const typeParam = c.req.query("type");
+  
+  const mockPayloads: Record<string, any> = {
+    otp: {
+      code: "887722",
+      expiresMinutes: 15,
+      storeName: "Fashion Hub",
+    },
+    welcome: {
+      userName: "Kiran G",
+      verifyLink: "https://basecart.app/verify?token=example-token",
+      storeName: "Fashion Hub",
+    },
+    "password-reset": {
+      userName: "Kiran G",
+      resetLink: "https://basecart.app/reset-password?token=example-token",
+      storeName: "Fashion Hub",
+    },
+    "order-confirmation": {
+      orderId: "ord_d8a29a",
+      customerName: "Kiran G",
+      total: 1299,
+      invoiceNumber: "INV-2026-0001",
+      storeName: "Fashion Hub",
+    },
+    "order-shipped": {
+      orderId: "ord_d8a29a",
+      customerName: "Kiran G",
+      trackingNumber: "TRK-BLUEDART-88912",
+      carrier: "BlueDart",
+      trackingLink: "https://track.bluedart.com/TRK-BLUEDART-88912",
+      storeName: "Fashion Hub",
+    },
+    invoice: {
+      invoiceNumber: "INV-2026-0001",
+      customerName: "Kiran G",
+      total: 1299,
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      paymentLink: "https://basecart.app/pay/INV-2026-0001",
+      storeName: "Fashion Hub",
+    },
+    "payment-failed": {
+      orderId: "ord_d8a29a",
+      customerName: "Kiran G",
+      total: 1299,
+      retryLink: "https://basecart.app/checkout/ord_d8a29a",
+      storeName: "Fashion Hub",
+    },
+    subscription: {
+      planName: "Growth Plan",
+      customerName: "Kiran G",
+      renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+      amount: 4999,
+      storeName: "Fashion Hub",
+    },
+    "team-invite": {
+      inviteLink: "https://basecart.app/accept-invite?token=invite-token",
+      inviterName: "Admin",
+      role: "Manager",
+      storeName: "Fashion Hub",
+    },
+  };
+
+  const types = Object.keys(mockPayloads);
+
+  if (typeParam) {
+    if (!types.includes(typeParam)) {
+      return c.json({ error: `Invalid template type: ${typeParam}` }, 400);
+    }
+
+    // Get any query parameter overrides passed from customizer
+    const customData = { ...mockPayloads[typeParam] };
+    const queryParams = c.req.query();
+    for (const key in queryParams) {
+      if (key !== "type") {
+        // Support number conversion for specific fields if needed
+        if (key === "total" || key === "amount" || key === "expiresMinutes") {
+          customData[key] = parseFloat(queryParams[key]);
+        } else {
+          customData[key] = queryParams[key];
+        }
+      }
+    }
+
+    const { subject, html, text } = renderEmail(typeParam as any, customData);
+    return c.json({
+      type: typeParam,
+      subject,
+      html,
+      text,
+      mockData: customData,
+    });
+  }
+
+  // Render all templates
+  const results = types.map((type) => {
+    const { subject, html, text } = renderEmail(type as any, mockPayloads[type]);
+    return {
+      type,
+      subject,
+      html,
+      text,
+      mockData: mockPayloads[type],
+    };
+  });
+
+  return c.json(results);
+});
+
+/**
+ * Send a test email for any template to a specific email
+ */
+app.post("/admin/emails/test", authenticateAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { type, to, mockData } = body;
+
+  if (!type || !to || !mockData) {
+    return c.json({ error: "type, to, and mockData are required parameters" }, 400);
+  }
+
+  try {
+    await sendEmail({
+      type,
+      to,
+      data: mockData,
+    }, c.env);
+    
+    return c.json({ success: true, message: `Test email of type '${type}' successfully sent/enqueued to ${to}` });
+  } catch (err: any) {
+    return c.json({ error: err.message || String(err) }, 500);
+  }
 });
 
 export default app;

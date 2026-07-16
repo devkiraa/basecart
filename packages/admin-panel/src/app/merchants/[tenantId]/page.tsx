@@ -436,7 +436,7 @@ export default function MerchantDetailPage() {
               <div className="p-6 border-b border-slate-200">
                 <h2 className="text-base font-bold text-slate-800">Paid Invoices & Billing Statements</h2>
               </div>
-              <div className="overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-slate-100 text-left text-sm">
                   <thead className="bg-slate-50 font-semibold text-slate-500 text-xs uppercase tracking-wider">
                     <tr>
@@ -489,6 +489,60 @@ export default function MerchantDetailPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Invoices Mobile Cards View */}
+              <div className="md:hidden p-6 divide-y divide-slate-100 bg-white">
+                {details.statements && details.statements.length > 0 ? (
+                  details.statements.map((stmt: any) => (
+                    <div key={stmt.invoiceId} className="py-4 first:pt-0 last:pb-0 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="font-semibold text-slate-800 text-sm block">{stmt.billingPeriod}</span>
+                          <span className="font-mono text-[10px] text-slate-500 mt-0.5 block">{stmt.invoiceId}</span>
+                        </div>
+                        <span className="font-extrabold text-slate-900 text-sm font-mono">₹{stmt.amount}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[10px]">
+                        <div>
+                          <span className="text-slate-400 font-bold uppercase tracking-wider block">Paid Date</span>
+                          <span className="text-slate-700 font-semibold mt-0.5 block">{stmt.date}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-bold uppercase tracking-wider block">Plan & Add-ons</span>
+                          <div className="flex flex-wrap gap-1 mt-0.5 justify-end">
+                            <span className="text-[8px] bg-slate-100 text-slate-650 px-1.5 py-0.5 rounded font-bold border border-slate-200 uppercase tracking-wide">
+                              {stmt.plan}
+                            </span>
+                            {stmt.addOns && stmt.addOns.length > 0 && (
+                              stmt.addOns.map((a: string) => (
+                                <span key={a} className="text-[8px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-bold border border-blue-100 uppercase tracking-wide">
+                                  {a}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex justify-end">
+                        <a
+                          href={`${API_URL}/store/billing/statement/${stmt.invoiceId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-semibold py-1.5 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm"
+                        >
+                          Download PDF
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-slate-400 text-xs py-4">
+                    No billing history statements tracked for this store.
+                  </div>
+                )}
               </div>
             </div>
           </div>

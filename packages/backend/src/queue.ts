@@ -321,7 +321,7 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
       }
       if (type === "TRANSACTIONAL_EMAIL") {
         const { emailPayload } = body;
-        const { type: emailType, to, data } = emailPayload;
+        const { type: emailType, to, data, from } = emailPayload;
 
         const startTime = Date.now();
         let status = "success";
@@ -336,7 +336,8 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
             subject,
             html,
             text,
-            data.attachments
+            data.attachments,
+            from
           );
 
           if (!res.success) {

@@ -61,4 +61,49 @@ describe("Part 6: Transactional Email Templates & Renderer", () => {
     // We verify it calls successfully without throwing exceptions.
     await expect(sendEmail(payload, {})).resolves.not.toThrow();
   });
+
+  it("should resolve sender aliases correctly using resolveSender utility", () => {
+    const { resolveSender } = require("@basecart/emails");
+
+    // 1. Fallback default
+    const sender1 = resolveSender("otp", {});
+    expect(sender1.address).toBe("noreply@basecart.app");
+    expect(sender1.name).toBe("Basecart");
+
+    // 2. Separate env vars
+    const envVars = {
+      MAIL_FROM_ADDRESS: "main@basecart.app",
+      MAIL_FROM_NAME: "Basecart Main",
+      MAIL_FROM_OTP: "otp-override@basecart.app",
+      MAIL_FROM_OTP_NAME: "Basecart OTP Security",
+    };
+    const sender2 = resolveSender("otp", envVars);
+    expect(sender2.address).toBe("otp-override@basecart.app");
+    expect(sender2.name).toBe("Basecart OTP Security");
+
+    // 3. EMAIL_ALIASES parsed JSON object (Cloudflare standard)
+    const envJsonObj = {
+      EMAIL_ALIASES: {
+        default: { address: "default-json@basecart.app", name: "JSON Default" },
+        otp: { address: "otp-json@basecart.app", name: "JSON OTP" },
+      },
+    };
+    const sender3 = resolveSender("otp", envJsonObj);
+    expect(sender3.address).toBe("otp-json@basecart.app");
+    expect(sender3.name).toBe("JSON OTP");
+
+    const sender4 = resolveSender("welcome", envJsonObj);
+    expect(sender4.address).toBe("default-json@basecart.app");
+    expect(sender4.name).toBe("JSON Default");
+
+    // 4. EMAIL_ALIASES stringified JSON (Local dotenv fallback)
+    const envJsonStr = {
+      EMAIL_ALIASES: JSON.stringify({
+        otp: { address: "otp-string-json@basecart.app", name: "String JSON OTP" },
+      }),
+    };
+    const sender5 = resolveSender("otp", envJsonStr);
+    expect(sender5.address).toBe("otp-string-json@basecart.app");
+    expect(sender5.name).toBe("String JSON OTP");
+  });
 });

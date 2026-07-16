@@ -154,7 +154,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row bg-white font-sans overflow-hidden">
+    <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white font-sans lg:overflow-hidden">
       {/* Left Column - Hero Marketing Block */}
       <div className="hidden lg:flex w-[45%] bg-[#F8FAFC] p-12 flex-col justify-between border-r border-slate-100 select-none relative overflow-hidden h-full">
         <div className="absolute top-[-10%] right-[-20%] w-[500px] h-[500px] rounded-full bg-blue-50/60 filter blur-3xl opacity-80 -z-10"></div>
@@ -228,7 +228,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Column - Authentication forms */}
-      <div className="flex-1 flex flex-col justify-center py-6 px-6 sm:px-16 lg:px-24 bg-white relative h-full overflow-y-auto">
+      <div className="flex-1 flex flex-col justify-center py-6 px-6 sm:px-16 lg:px-24 bg-white relative min-h-screen lg:h-full overflow-y-auto">
         <div className="absolute top-8 right-8 sm:right-16 text-xs text-slate-500 font-semibold flex items-center gap-1.5 select-none">
           Don't have an account?{" "}
           <button 

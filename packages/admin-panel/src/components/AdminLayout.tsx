@@ -18,6 +18,9 @@ import {
   ShieldAlert,
   Settings,
   Search,
+  Menu,
+  X,
+  Mail,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -34,6 +37,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<AdminProfile | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Search state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -139,6 +153,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: "Security Center", href: "/security", icon: ShieldAlert },
     { name: "Audit Logs", href: "/audit-logs", icon: FileSpreadsheet },
     { name: "System Settings", href: "/settings", icon: Settings },
+    { name: "Mail Settings", href: "/emails", icon: Mail },
     { name: "Super Admins", href: "/admins", icon: ShieldCheck },
   ];
 
@@ -147,7 +162,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar */}
       <aside
         style={{ width: collapsed ? 72 : 256 }}
-        className="bg-white border-r border-slate-200/80 flex flex-col fixed h-full transition-[width] duration-300 ease-in-out z-30"
+        className="hidden lg:flex bg-white border-r border-slate-200/80 flex-col fixed h-full transition-[width] duration-300 ease-in-out z-30"
       >
         {/* Header branding */}
         <div className="h-14 border-b border-slate-100 px-4 flex items-center gap-3 shrink-0">
@@ -248,28 +263,38 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content Area */}
       <main
-        style={{ paddingLeft: collapsed ? 72 : 256 }}
-        className="flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out"
+        style={{ paddingLeft: isMobile ? 0 : (collapsed ? 72 : 256) }}
+        className="flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out pb-16 lg:pb-0"
       >
         {/* Top Header Bar */}
-        <header className="h-14 bg-white border-b border-slate-200/80 px-8 flex items-center justify-between sticky top-0 z-20">
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/85 hover:bg-slate-100/70 rounded-lg text-xs font-semibold text-slate-450 select-none transition-colors"
-          >
-            <Search className="w-3.5 h-3.5 text-slate-450" />
-            <span>Search console...</span>
-            <kbd className="bg-white border border-slate-200/90 rounded px-1.5 py-0.5 ml-3 font-mono text-[10px] text-slate-450">
-              Ctrl+K
-            </kbd>
-          </button>
+        <header className="h-14 bg-white border-b border-slate-200/80 px-4 lg:px-8 flex items-center justify-between sticky top-0 z-20 shrink-0">
+          <div className="flex items-center gap-3">
+            {/* Hamburger trigger */}
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="Open menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200/85 hover:bg-slate-100/70 rounded-lg text-xs font-semibold text-slate-450 select-none transition-colors"
+            >
+              <Search className="w-3.5 h-3.5 text-slate-450" />
+              <span className="hidden sm:inline">Search console...</span>
+              <kbd className="hidden sm:inline-block bg-white border border-slate-200/90 rounded px-1.5 py-0.5 ml-3 font-mono text-[10px] text-slate-450">
+                Ctrl+K
+              </kbd>
+            </button>
+          </div>
 
           <div className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded px-2.5 py-1 uppercase tracking-wider">
             Staging Operations Console
           </div>
         </header>
 
-        <div className="p-8 flex-1">{children}</div>
+        <div className="p-4 md:p-6 lg:p-8 flex-1">{children}</div>
       </main>
 
       {/* Cmd+K Search Modal */}
@@ -399,6 +424,98 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
       )}
+
+      {/* Mobile Drawer (Slide-out Hamburger Menu) */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop overlay */}
+          <div
+            onClick={() => setMobileMenuOpen(false)}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+          />
+          {/* Drawer content panel */}
+          <aside className="relative w-72 max-w-[80vw] bg-white h-full flex flex-col z-10 shadow-2xl animate-in slide-in-from-left duration-250">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 shrink-0 select-none">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-[18px] h-[18px] text-white" />
+                </div>
+                <span className="font-bold text-slate-800 text-[15px] whitespace-nowrap">
+                  Basecart Admin
+                </span>
+              </div>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="p-1 rounded-md text-slate-450 hover:text-slate-650 hover:bg-slate-50 transition-colors"
+                title="Close menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold px-3 py-2.5 transition-all ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+
+            {/* Logout button at bottom of drawer */}
+            <div className="p-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-650 font-bold rounded-lg text-xs transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex items-center justify-around px-2 select-none">
+        {[
+          { name: "Dashboard", href: "/", icon: LayoutDashboard },
+          { name: "Merchants", href: "/merchants", icon: Users },
+          { name: "Billing", href: "/billing", icon: CreditCard },
+          { name: "Support", href: "/support", icon: MessageSquare },
+          { name: "Settings", href: "/settings", icon: Settings },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 py-1.5 transition-all ${
+                isActive ? "text-indigo-600 font-bold" : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Icon className="w-5 h-5" />
+              <span className="text-[10px] tracking-tight">{item.name}</span>
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

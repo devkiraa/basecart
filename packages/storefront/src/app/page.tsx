@@ -816,7 +816,7 @@ export default function Storefront() {
 
       {/* Store Header */}
       <header 
-        className={`bg-white border-b px-8 flex items-center justify-between shadow-sm h-16 ${
+        className={`bg-white border-b px-4 md:px-8 flex items-center justify-between shadow-sm h-16 ${
           customSettings.stickyHeader !== false ? "sticky top-0 z-20" : "relative"
         } ${
           templateBase === "Origin" 
@@ -937,7 +937,7 @@ export default function Storefront() {
       </header>
 
       {/* Main Workspace */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-6 md:py-10">
         {/* VIEW 1: Catalog */}
         {view === "catalog" && (
           <div className="space-y-6">
@@ -1300,7 +1300,7 @@ export default function Storefront() {
 
         {/* VIEW 2: Cart */}
         {view === "cart" && (
-          <div className="bg-white border border-slate-200 rounded-card shadow-card p-8 max-w-2xl mx-auto">
+          <div className="bg-white border border-slate-200 rounded-card shadow-card p-4 md:p-8 max-w-2xl mx-auto">
             <div className="flex items-center gap-2 mb-6">
               <button onClick={() => setView("catalog")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
                 <ArrowLeft className="h-5 w-5" />
@@ -1421,7 +1421,7 @@ export default function Storefront() {
 
         {/* VIEW 3: Checkout Form */}
         {view === "checkout" && (
-          <div className="bg-white border border-slate-200 rounded-card shadow-card p-8 max-w-2xl mx-auto">
+          <div className="bg-white border border-slate-200 rounded-card shadow-card p-4 md:p-8 max-w-2xl mx-auto">
             <div className="flex items-center gap-2 mb-6">
               <button onClick={() => setView("cart")} className="p-1 hover:bg-slate-100 rounded text-slate-400">
                 <ArrowLeft className="h-5 w-5" />

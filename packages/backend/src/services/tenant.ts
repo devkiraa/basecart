@@ -57,8 +57,9 @@ export async function getTenantBySubdomain(
  * In local testing/dev environments, returns a mock database ID.
  */
 export async function createD1Database(tenantId: string, env: any): Promise<string> {
-  // If we are in test mode or local dev without real credentials, return a local mock ID
-  if (process.env.NODE_ENV === "test" || !env?.CLOUDFLARE_API_TOKEN) {
+  // If we are in test mode, local dev, or lack Cloudflare credentials, return a local mock ID
+  const isLocal = !env || env.NODE_ENV === "development" || env.NODE_ENV === "test" || process.env.NODE_ENV === "test";
+  if (isLocal || !env?.CLOUDFLARE_API_TOKEN) {
     return `local-db-uuid-${tenantId}`;
   }
 

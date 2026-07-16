@@ -23,7 +23,8 @@ export class ZeptoMailProvider implements EmailProvider {
     subject: string,
     html: string,
     text: string,
-    attachments?: EmailAttachment[]
+    attachments?: EmailAttachment[],
+    from?: { address?: string; name?: string }
   ): Promise<EmailResponse> {
     if (!this.apiUrl || !this.token) {
       console.log(`[Mock Send] To: ${to} | Subject: ${subject}`);
@@ -33,10 +34,13 @@ export class ZeptoMailProvider implements EmailProvider {
       };
     }
 
+    const fromAddress = from?.address || this.fromAddress;
+    const fromName = from?.name || this.fromName;
+
     const payload: any = {
       from: {
-        address: this.fromAddress,
-        name: this.fromName,
+        address: fromAddress,
+        name: fromName,
       },
       to: [
         {

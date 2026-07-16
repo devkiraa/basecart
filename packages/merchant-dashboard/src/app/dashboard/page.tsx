@@ -45,6 +45,8 @@ import {
   Smartphone,
   Eye,
   SlidersHorizontal,
+  X,
+  Menu,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -54,7 +56,7 @@ import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.basecart.app";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
 const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "https";
 const getStorefrontLink = (subdomain: string) => {
@@ -322,6 +324,7 @@ export default function MerchantDashboard() {
 
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   // Header interactivity states
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -1550,7 +1553,7 @@ export default function MerchantDashboard() {
       {/* Sidebar */}
       <aside
         style={{ width: sidebarCollapsed ? 72 : 256 }}
-        className="bg-white border-r border-slate-200/80 flex flex-col shrink-0 h-full transition-[width] duration-300 ease-in-out overflow-hidden"
+        className="hidden lg:flex bg-white border-r border-slate-200/80 flex-col shrink-0 h-full transition-[width] duration-300 ease-in-out overflow-hidden"
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Logo Branding */}
@@ -1721,14 +1724,24 @@ export default function MerchantDashboard() {
         )}
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-              Good morning, Kiran! 👋
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Here's what's happening with your store today. (Subdomain: <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>)
-            </p>
+        <header className="bg-white border-b border-slate-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {/* Hamburger button for mobile */}
+            <button
+              onClick={() => setMobileDrawerOpen(true)}
+              className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
+              title="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            <div>
+              <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                Good morning, Kiran! 👋
+              </h1>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">
+                Here's what's happening with your store today. (Subdomain: <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>)
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 ml-auto w-full md:w-auto justify-end">
@@ -2031,7 +2044,7 @@ export default function MerchantDashboard() {
           </div>
         )}
 
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8">
           {actionError && (
             <div className="mb-6 bg-red-50 border border-red-100 text-red-700 p-4 rounded-card text-sm">
               {actionError}
@@ -2182,7 +2195,7 @@ export default function MerchantDashboard() {
               <div className="space-y-6 animate-fade-in">
                 {loading ? (
                   <>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <div key={i} className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3">
                           <div className="h-3 bg-slate-200 rounded animate-shimmer w-1/2" />
@@ -2205,7 +2218,7 @@ export default function MerchantDashboard() {
                 ) : (
                   <>
                     {/* 5 KPI Metric Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                       {/* 1. Total Sales */}
                       <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
                         <div>
@@ -2905,7 +2918,7 @@ export default function MerchantDashboard() {
 
                         {/* Variants Matrix Table */}
                         {productForm.variants && productForm.variants.length > 0 && (
-                          <div className="border border-slate-200 rounded overflow-hidden mt-4">
+                          <div className="border border-slate-200 rounded overflow-x-auto mt-4">
                             <table className="min-w-full divide-y divide-slate-200 text-xs text-left">
                               <thead className="bg-slate-50 text-slate-600 font-semibold uppercase">
                                 <tr>
@@ -3231,8 +3244,8 @@ export default function MerchantDashboard() {
                     )}
                   </div>
 
-                  {/* List Table */}
-                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                  {/* List Table - Desktop View */}
+                  <div className="hidden md:block bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
                     <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                       <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
                         <tr>
@@ -3406,6 +3419,118 @@ export default function MerchantDashboard() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* List Cards - Mobile View */}
+                  <div className="md:hidden space-y-4 mt-4">
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3 animate-pulse">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 bg-slate-200 rounded" />
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-slate-200 rounded w-2/3" />
+                              <div className="h-3 bg-slate-200 rounded w-1/3" />
+                            </div>
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                            <div className="h-5 bg-slate-200 rounded w-16" />
+                            <div className="h-5 bg-slate-200 rounded w-12" />
+                          </div>
+                        </div>
+                      ))
+                    ) : products.filter((p) => {
+                      const matchQ = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (p.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                        (p.sku || "").toLowerCase().includes(searchQuery.toLowerCase());
+                      const matchCat = categoryFilter === "all" || p.category === categoryFilter;
+                      const matchStat = statusFilter === "all" || p.status === statusFilter;
+                      return matchQ && matchCat && matchStat;
+                    }).length > 0 ? (
+                      products
+                        .filter((p) => {
+                          const matchQ = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (p.description || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            (p.sku || "").toLowerCase().includes(searchQuery.toLowerCase());
+                          const matchCat = categoryFilter === "all" || p.category === categoryFilter;
+                          const matchStat = statusFilter === "all" || p.status === statusFilter;
+                          return matchQ && matchCat && matchStat;
+                        })
+                        .map((prod) => {
+                          const isSelected = selectedProducts.includes(prod.productId);
+                          const hasVariants = prod.variants && prod.variants.length > 0;
+                          const totalStock = hasVariants
+                            ? prod.variants!.reduce((acc, curr) => acc + (curr.stockQuantity || 0), 0)
+                            : prod.stockQuantity;
+                          return (
+                            <div key={prod.productId} className={`bg-white p-4 border rounded-card shadow-sm space-y-3 transition-colors ${isSelected ? "border-indigo-400 bg-indigo-50/10" : "border-slate-200"}`}>
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedProducts([...selectedProducts, prod.productId]);
+                                    } else {
+                                      setSelectedProducts(selectedProducts.filter((id) => id !== prod.productId));
+                                    }
+                                  }}
+                                  className="rounded text-blue-600 focus:ring-blue-500 mt-1"
+                                />
+                                <div className="h-12 w-12 border rounded bg-slate-50 flex items-center justify-center overflow-hidden shrink-0">
+                                  {prod.images && prod.images[0] ? (
+                                    <img src={getOptimizedImageUrl(prod.images[0], "thumbnail")} alt={prod.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <Package className="h-6 w-6 text-slate-400" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold text-slate-900 text-sm truncate">{prod.name}</h4>
+                                  {prod.sku && <p className="text-[10px] text-slate-400 font-mono mt-0.5">{prod.sku}</p>}
+                                  <p className="text-xs font-bold text-slate-800 mt-1">{formatINR(prod.price)}</p>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2 text-[10px]">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-bold uppercase ${
+                                  prod.status === "active"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                    : "bg-slate-100 text-slate-600 border border-slate-200"
+                                }`}>
+                                  {prod.status}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded border ${totalStock <= 0 ? "bg-red-50 text-red-700 border-red-100" : "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                                  {totalStock <= 0 ? "Out of stock" : `${totalStock} in stock`}
+                                </span>
+                                {prod.category && (
+                                  <span className="bg-indigo-50 text-indigo-700 border border-indigo-100 px-1.5 py-0.5 rounded font-medium">
+                                    {prod.category}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                                <button
+                                  onClick={() => handleEditProduct(prod)}
+                                  className="px-3 py-1.5 text-xs font-semibold border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => deleteProduct(prod.productId)}
+                                  className="px-3 py-1.5 text-xs font-semibold border border-red-200 text-red-600 rounded-md hover:bg-red-50"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="bg-white border border-slate-200 rounded-card p-8 text-center text-slate-400 text-xs shadow-sm">
+                        No products found matching filters.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -3426,77 +3551,150 @@ export default function MerchantDashboard() {
                   description="When customers purchase products from your storefront, they will show up here."
                 />
               ) : (
-                <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm animate-fade-in">
-                    <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
-                      <tr>
-                        <th className="px-6 py-3">Order ID</th>
-                        <th className="px-6 py-3">Date</th>
-                        <th className="px-6 py-3">Customer</th>
-                        <th className="px-6 py-3">Total</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {loading ? (
-                        Array.from({ length: 5 }).map((_, idx) => (
-                          <tr key={idx}>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20 animate-shimmer" /></td>
-                            <td className="px-6 py-4">
-                              <div className="h-4 bg-slate-200 rounded w-28 animate-shimmer mb-1" />
-                              <div className="h-3 bg-slate-200 rounded w-36 animate-shimmer" />
-                            </td>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-12 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
-                            <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto animate-shimmer" /></td>
-                          </tr>
-                        ))
-                      ) : (
-                        orders.map((order) => (
-                          <tr key={order.orderId} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-mono text-xs font-semibold text-blue-600">
+                <>
+                  <div className="hidden md:block bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm animate-fade-in">
+                      <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3">Order ID</th>
+                          <th className="px-6 py-3">Date</th>
+                          <th className="px-6 py-3">Customer</th>
+                          <th className="px-6 py-3">Total</th>
+                          <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {loading ? (
+                          Array.from({ length: 5 }).map((_, idx) => (
+                            <tr key={idx}>
+                              <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                              <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20 animate-shimmer" /></td>
+                              <td className="px-6 py-4">
+                                <div className="h-4 bg-slate-200 rounded w-28 animate-shimmer mb-1" />
+                                <div className="h-3 bg-slate-200 rounded w-36 animate-shimmer" />
+                              </td>
+                              <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-12 animate-shimmer" /></td>
+                              <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                              <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto animate-shimmer" /></td>
+                            </tr>
+                          ))
+                        ) : (
+                          orders.map((order) => (
+                            <tr key={order.orderId} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 font-mono text-xs font-semibold text-blue-600">
+                                #{order.orderId.substring(0, 8).toUpperCase()}
+                              </td>
+                              <td className="px-6 py-4 text-slate-500 text-xs">
+                                {new Date(order.createdAt).toLocaleDateString()}
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="font-semibold text-slate-900">{order.customerInfo.name}</div>
+                                <div className="text-xs text-slate-500">{order.customerInfo.email}</div>
+                              </td>
+                              <td className="px-6 py-4 font-bold text-slate-900">{formatINR(order.total)}</td>
+                              <td className="px-6 py-4">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${
+                                  order.status === "paid"
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                    : order.status === "pending"
+                                    ? "bg-amber-50 text-amber-700 border border-amber-100"
+                                    : "bg-slate-100 text-slate-600"
+                                }`}>
+                                  {order.status}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <select
+                                  value={order.status}
+                                  onChange={(e) => updateOrderStatus(order.orderId, e.target.value)}
+                                  className="px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 bg-white"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="paid">Paid</option>
+                                  <option value="shipped">Shipped</option>
+                                  <option value="delivered">Delivered</option>
+                                  <option value="cancelled">Cancelled</option>
+                                </select>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* List Cards - Mobile View */}
+                  <div className="md:hidden space-y-4">
+                    {loading ? (
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3 animate-pulse">
+                          <div className="flex justify-between items-center">
+                            <div className="h-4 bg-slate-200 rounded w-16" />
+                            <div className="h-4 bg-slate-200 rounded w-20" />
+                          </div>
+                          <div className="space-y-1.5">
+                            <div className="h-4 bg-slate-200 rounded w-28" />
+                            <div className="h-3 bg-slate-200 rounded w-36" />
+                          </div>
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                            <div className="h-4 bg-slate-200 rounded w-12" />
+                            <div className="h-5 bg-slate-200 rounded w-16" />
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      orders.map((order) => (
+                        <div key={order.orderId} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-mono text-xs font-bold text-blue-600">
                               #{order.orderId.substring(0, 8).toUpperCase()}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500 text-xs">
+                            </span>
+                            <span className="text-slate-550 text-[10px] font-medium">
                               {new Date(order.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="font-semibold text-slate-900">{order.customerInfo.name}</div>
-                              <div className="text-xs text-slate-500">{order.customerInfo.email}</div>
-                            </td>
-                            <td className="px-6 py-4 font-bold text-slate-900">{formatINR(order.total)}</td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${
-                                order.status === "paid"
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                  : order.status === "pending"
-                                  ? "bg-amber-50 text-amber-700 border border-amber-100"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}>
-                                {order.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <select
-                                value={order.status}
-                                onChange={(e) => updateOrderStatus(order.orderId, e.target.value)}
-                                className="px-2 py-1 border border-slate-300 rounded text-xs text-slate-800 bg-white"
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="paid">Paid</option>
-                                <option value="shipped">Shipped</option>
-                                <option value="delivered">Delivered</option>
-                                <option value="cancelled">Cancelled</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                            </span>
+                          </div>
+
+                          <div className="space-y-0.5">
+                            <div className="font-bold text-slate-800 text-sm">{order.customerInfo.name}</div>
+                            <div className="text-xs text-slate-500">{order.customerInfo.email}</div>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2.5 border-t border-slate-100">
+                            <div>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Amount</p>
+                              <p className="text-sm font-extrabold text-slate-900 mt-0.5">{formatINR(order.total)}</p>
+                            </div>
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                              order.status === "paid"
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                : order.status === "pending"
+                                ? "bg-amber-50 text-amber-700 border border-amber-100"
+                                : "bg-slate-100 text-slate-600"
+                            }`}>
+                              {order.status}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 pt-2 border-t border-slate-100">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Status:</label>
+                            <select
+                              value={order.status}
+                              onChange={(e) => updateOrderStatus(order.orderId, e.target.value)}
+                              className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-lg text-xs text-slate-800 bg-white"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="paid">Paid</option>
+                              <option value="shipped">Shipped</option>
+                              <option value="delivered">Delivered</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )}
@@ -3630,19 +3828,20 @@ export default function MerchantDashboard() {
                   }}
                 />
               ) : (
-                <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden animate-fade-in">
-                  <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                    <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
-                      <tr>
-                        <th className="px-6 py-3">Code</th>
-                        <th className="px-6 py-3">Discount Details</th>
-                        <th className="px-6 py-3">Min Order</th>
-                        <th className="px-6 py-3">Usage Count</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
+                <>
+                  <div className="hidden md:block bg-white border border-slate-200 rounded-card shadow-card overflow-hidden animate-fade-in">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3">Code</th>
+                          <th className="px-6 py-3">Discount Details</th>
+                          <th className="px-6 py-3">Min Order</th>
+                          <th className="px-6 py-3">Usage Count</th>
+                          <th className="px-6 py-3">Status</th>
+                          <th className="px-6 py-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
                       {loading ? (
                         Array.from({ length: 5 }).map((_, idx) => (
                           <tr key={idx}>
@@ -3696,7 +3895,74 @@ export default function MerchantDashboard() {
                     </tbody>
                   </table>
                 </div>
-              )}
+
+                {/* List Cards - Mobile View */}
+                <div className="md:hidden space-y-4">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={idx} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3 animate-pulse">
+                        <div className="flex justify-between items-center">
+                          <div className="h-4 bg-slate-200 rounded w-16" />
+                          <div className="h-4 bg-slate-200 rounded w-20" />
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
+                          <div className="h-4 bg-slate-200 rounded w-12" />
+                          <div className="h-5 bg-slate-200 rounded w-16" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    discounts.map((disc) => (
+                      <div key={disc.code} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-mono font-bold text-slate-900 text-sm">{disc.code}</span>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {disc.type === "flat" ? `${formatINR(disc.value)} Off` : `${disc.value}% Off`}
+                            </p>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                            disc.active
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                              : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {disc.active ? "Active" : "Inactive"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 text-[10px]">
+                          <div>
+                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Min Order</span>
+                            <span className="text-slate-700 font-semibold mt-0.5 block">{formatINR(disc.minOrderAmount)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Usage Count</span>
+                            <span className="text-slate-700 font-mono font-semibold mt-0.5 block">
+                              {disc.usageCount} {disc.usageLimit ? `/ ${disc.usageLimit}` : ""}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            onClick={() => setDiscountForm({ ...disc, isEdit: true })}
+                            className="px-3 py-1.5 text-xs font-semibold border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteDiscount(disc.code)}
+                            className="px-3 py-1.5 text-xs font-semibold border border-red-200 text-red-600 rounded-md hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
+            )}
             </div>
           )}
 
@@ -3843,7 +4109,7 @@ export default function MerchantDashboard() {
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
                   {/* Customers List */}
-                  <div className="lg:col-span-2 bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                  <div className="hidden md:block lg:col-span-2 bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
                     <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                       <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
                         <tr>
@@ -3896,6 +4162,56 @@ export default function MerchantDashboard() {
                         )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Customers Cards - Mobile View */}
+                <div className="md:hidden space-y-4">
+                  {loading ? (
+                    Array.from({ length: 3 }).map((_, idx) => (
+                      <div key={idx} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3 animate-pulse">
+                        <div className="h-4 bg-slate-200 rounded w-28" />
+                        <div className="h-3 bg-slate-200 rounded w-36" />
+                      </div>
+                    ))
+                  ) : (
+                    customers.map((cust) => (
+                      <div
+                        key={cust.email}
+                        onClick={() => {
+                          setSelectedCustomer(cust);
+                          fetchCustomerOrders(cust.email);
+                        }}
+                        className={`bg-white p-4 border rounded-card shadow-sm space-y-3 cursor-pointer transition-colors ${
+                          selectedCustomer?.email === cust.email ? "border-indigo-400 bg-indigo-50/10" : "border-slate-200"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-bold text-slate-800 text-sm">{cust.name}</h4>
+                            <p className="text-xs text-slate-500 font-mono mt-0.5">{cust.email}</p>
+                          </div>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
+                            cust.registered
+                              ? "bg-blue-50 text-blue-700 border border-blue-100"
+                              : "bg-slate-100 text-slate-600"
+                          }`}>
+                            {cust.registered ? "Registered" : "Guest"}
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 text-[10px]">
+                          <div>
+                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Total Spend</span>
+                            <span className="text-slate-900 font-extrabold mt-0.5 block">{formatINR(cust.totalSpend)}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Orders</span>
+                            <span className="text-slate-700 font-semibold font-mono mt-0.5 block">{cust.totalOrders}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 {/* Customer Detail Drawer */}
@@ -4140,7 +4456,7 @@ export default function MerchantDashboard() {
                     <div className="px-6 py-4 border-b border-slate-100">
                       <h3 className="font-bold text-slate-900 text-sm">Transactional Orders Ledger</h3>
                     </div>
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                    <table className="hidden md:table min-w-full divide-y divide-slate-200 text-left text-sm">
                       <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
                         <tr>
                           <th className="px-6 py-3">Order ID</th>
@@ -4180,6 +4496,48 @@ export default function MerchantDashboard() {
                         ))}
                       </tbody>
                     </table>
+
+                    {/* Transaction Cards - Mobile View */}
+                    <div className="md:hidden divide-y divide-slate-100">
+                      {financeSummary.transactions.map((txn: any) => (
+                        <div key={txn.orderId} className="p-4 space-y-2 text-xs font-semibold">
+                          <div className="flex justify-between items-center">
+                            <span className="font-bold text-slate-800">#{txn.orderId.substring(0, 8)}</span>
+                            <span className="text-[10px] text-slate-450 font-mono text-slate-500">{txn.customerEmail}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[10px]">
+                            <div>
+                              <span className="text-slate-400 font-bold uppercase tracking-wider block">Gross</span>
+                              <span className="text-slate-900 font-extrabold mt-0.5 block">{formatINR(txn.total)}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 font-bold uppercase tracking-wider block">Platform Fee</span>
+                              <span className="text-red-600 font-bold mt-0.5 block">-{formatINR(txn.platformFee)}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider block">Status</span>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-black uppercase text-[8px] mt-0.5 ${
+                                ["paid", "shipped", "delivered"].includes(txn.status)
+                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {txn.status}
+                              </span>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider block">Reconciliation</span>
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-bold uppercase text-[8px] mt-0.5 ${
+                                txn.reconciliationStatus === "settled"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}>
+                                {txn.reconciliationStatus || "pending"}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
@@ -4349,7 +4707,7 @@ export default function MerchantDashboard() {
                 <h3 className="font-bold text-base text-slate-900 mb-2">Monthly Invoices & Statements</h3>
                 <p className="text-xs text-slate-500 mb-4">View and download your monthly subscription bills and paid add-on invoice statements.</p>
 
-                <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                <div className="hidden md:block bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
                   <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
                     <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
                       <tr>
@@ -4404,6 +4762,58 @@ export default function MerchantDashboard() {
                       )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Invoices Mobile Cards View */}
+                <div className="md:hidden space-y-4">
+                  {billingInfo.statements && billingInfo.statements.length > 0 ? (
+                    billingInfo.statements.map((stmt: any) => (
+                      <div key={stmt.invoiceId} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="font-semibold text-slate-800 text-sm block">{stmt.billingPeriod}</span>
+                            <span className="font-mono text-[10px] text-slate-450 mt-0.5 block text-slate-500">{stmt.invoiceId}</span>
+                          </div>
+                          <span className="font-extrabold text-slate-900 text-sm font-mono">₹{stmt.amount}</span>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 text-[10px]">
+                          <div>
+                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Paid Date</span>
+                            <span className="text-slate-700 font-semibold mt-0.5 block">{stmt.date}</span>
+                          </div>
+                          {stmt.addOns && stmt.addOns.length > 0 && (
+                            <div className="text-right">
+                              <span className="text-slate-400 font-bold uppercase tracking-wider block">Add-ons</span>
+                              <div className="flex flex-wrap gap-1 mt-0.5 justify-end">
+                                {stmt.addOns.map((a: string) => (
+                                  <span key={a} className="text-[8px] bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-semibold border border-blue-100 uppercase tracking-wider">
+                                    {a}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-100 flex justify-end">
+                          <a
+                            href={`${API_URL}/store/billing/statement/${stmt.invoiceId}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-semibold py-1.5 px-3 border border-slate-200 rounded-lg hover:bg-slate-50 shadow-sm"
+                          >
+                            <Download className="h-3.5 w-3.5" />
+                            Download PDF
+                          </a>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-card p-6 text-center text-slate-400 text-xs shadow-sm">
+                      No billing statement records found.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -4936,6 +5346,117 @@ export default function MerchantDashboard() {
           )}
         </div>
       </main>
+
+      {/* Mobile Drawer (Slide-out Hamburger Menu) */}
+      {mobileDrawerOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop overlay */}
+          <div
+            onClick={() => setMobileDrawerOpen(false)}
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 animate-fade-in"
+          />
+          {/* Drawer content panel */}
+          <aside className="relative w-72 max-w-[80vw] bg-white h-full flex flex-col z-10 shadow-2xl animate-in slide-in-from-left duration-250">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-slate-100 shrink-0 select-none">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
+                  <ShoppingBag className="h-[18px] w-[18px]" />
+                </div>
+                <span className="text-[15px] font-bold text-slate-800 tracking-tight whitespace-nowrap">basecart</span>
+              </div>
+              <button
+                onClick={() => setMobileDrawerOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-650 hover:bg-slate-50 transition-colors"
+                title="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+              {[
+                { id: "summary", name: "Dashboard", icon: LayoutDashboard },
+                { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
+                { id: "products", name: "Products", icon: Package },
+                { id: "customers", name: "Customers", icon: Users },
+                { id: "catalog", name: "Catalog", icon: Globe },
+                { id: "discounts", name: "Discounts", icon: Tag },
+                { id: "marketing", name: "Marketing", icon: Megaphone },
+                { id: "store-design", name: "Store Design", icon: Palette },
+                { id: "addons", name: "Apps & Integrations", icon: Puzzle },
+                { id: "payments", name: "Payments", icon: CreditCard },
+                { id: "finances", name: "Analytics", icon: TrendingUp },
+                { id: "settings", name: "Settings", icon: SettingsIcon },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      setMobileDrawerOpen(false);
+                    }}
+                    className={`w-full flex items-center gap-3 rounded-lg text-sm font-semibold px-3 py-2.5 transition-all ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                    <span>{item.name}</span>
+                    {item.badge !== undefined && (
+                      <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Logout button at bottom of drawer */}
+            <div className="p-4 border-t border-slate-100 shrink-0">
+              <button
+                onClick={handleLogout}
+                className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-650 font-bold rounded-lg text-xs transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign Out
+              </button>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex items-center justify-around px-2 select-none">
+        {[
+          { id: "summary", name: "Dashboard", icon: LayoutDashboard },
+          { id: "orders", name: "Orders", icon: ShoppingCart },
+          { id: "products", name: "Products", icon: Package },
+          { id: "store-design", name: "Design", icon: Palette },
+          { id: "settings", name: "Settings", icon: SettingsIcon },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id as any);
+                setMobileDrawerOpen(false);
+              }}
+              className={`flex flex-col items-center justify-center gap-1 flex-1 py-1.5 transition-all ${
+                isActive ? "text-indigo-600 font-bold" : "text-slate-400 hover:text-slate-600"
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-[10px] tracking-tight">{item.name}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

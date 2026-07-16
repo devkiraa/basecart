@@ -74,7 +74,7 @@ export default function DashboardHome() {
           <div className="h-6 bg-slate-200 rounded w-1/4" />
           <div className="h-4 bg-slate-200 rounded w-1/2" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {Array.from({ length: 4 }).map((_, idx) => (
             <div key={idx} className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
               <div className="h-4 bg-slate-200 rounded w-1/3" />
@@ -142,7 +142,7 @@ export default function DashboardHome() {
         )}
 
         {/* KPIs */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {kpis.map((kpi) => {
             const Icon = kpi.icon;
             return (
@@ -213,7 +213,7 @@ export default function DashboardHome() {
               </span>
             </div>
             
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div className="bg-slate-50 border border-slate-100 rounded-xl p-4">
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block mb-1">
                   Worker CPU Time

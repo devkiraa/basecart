@@ -62,16 +62,16 @@ export default function LandingPage() {
         </div>
 
         {/* Auth Actions */}
-        <div className="flex items-center gap-4 select-none">
+        <div className="flex items-center gap-2 sm:gap-4 select-none">
           <button 
             onClick={() => { window.location.href = "/login"; }}
-            className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5"
+            className="text-xs sm:text-sm font-bold text-slate-600 hover:text-slate-900 px-2 sm:px-3 py-1.5"
           >
             Login
           </button>
           <button 
             onClick={() => { window.location.href = "/signup"; }}
-            className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm shadow-blue-500/10 transition-colors"
+            className="text-xs sm:text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg shadow-sm shadow-blue-500/10 transition-colors whitespace-nowrap"
           >
             Sign up
           </button>
