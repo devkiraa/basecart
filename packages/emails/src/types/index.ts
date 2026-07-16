@@ -14,10 +14,12 @@ export interface EmailAttachment {
   filename: string;
 }
 
+export type TemplateData = Record<string, any>;
+
 export interface EmailPayload {
   type: EmailType;
   to: string;
-  data: Record<string, any> & {
+  data: TemplateData & {
     attachments?: EmailAttachment[];
   };
 }
