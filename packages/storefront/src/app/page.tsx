@@ -750,7 +750,7 @@ export default function Storefront() {
 
           <div className="flex items-center gap-4">
             <a 
-              href="https://basecart.pages.dev" 
+              href="https://basecart.app"
               target="_blank" 
               rel="noreferrer"
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold tracking-wider rounded transition-all uppercase shadow-md shadow-indigo-600/20"
@@ -779,7 +779,7 @@ export default function Storefront() {
 
           <div className="flex flex-col sm:flex-row gap-4 pt-4 w-full justify-center">
             <a
-              href="https://basecart.pages.dev"
+              href="https://basecart.app"
               target="_blank"
               rel="noreferrer"
               className="px-8 py-4 bg-indigo-600 hover:bg-indigo-550 text-white text-sm font-bold tracking-wider rounded transition-colors uppercase shadow-lg shadow-indigo-600/30 text-center"

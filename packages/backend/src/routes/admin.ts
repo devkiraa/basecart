@@ -464,7 +464,7 @@ app.post("/admin/merchants/:tenantId/impersonate", authenticateAdmin, async (c) 
   return c.json({
     success: true,
     message: "Impersonation session initialized",
-    impersonateUrl: "https://basecart.pages.dev/",
+    impersonateUrl: "https://basecart.app/dashboard",
   });
 });
 

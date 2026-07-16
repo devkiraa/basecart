@@ -43,7 +43,7 @@ export function buildApp() {
           }
         }
 
-        const allowedOriginsStr = (c.env && c.env.ALLOWED_ORIGINS) || "https://dashboard.basecart.app,https://admin.basecart.app,https://*.basecart.store";
+        const allowedOriginsStr = (c.env && c.env.ALLOWED_ORIGINS) || "https://basecart.app,https://admin.basecart.app,https://*.basecart.app";
         const allowedOrigins = allowedOriginsStr.split(",").map((o: string) => o.trim());
 
         if (isOriginAllowed(origin, allowedOrigins)) {

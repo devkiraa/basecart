@@ -332,7 +332,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       >
                         <div>
                           <div className="text-slate-800">{m.storeName}</div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{m.subdomain}.basecart-storefront.pages.dev</div>
+                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">{m.subdomain}.basecart.app</div>
                         </div>
                         <span className="text-[9px] uppercase font-bold text-slate-400 px-1.5 py-0.5 bg-slate-100 rounded border border-slate-200">
                           {m.plan}

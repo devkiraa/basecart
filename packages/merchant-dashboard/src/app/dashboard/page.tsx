@@ -54,9 +54,9 @@ import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "localhost:3002").replace(/^(https?:\/\/)/, "");
-const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "http";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.basecart.app";
+const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
+const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "https";
 const getStorefrontLink = (subdomain: string) => {
   const isPagesDev = STOREFRONT_DOMAIN.includes(".pages.dev");
   if (isPagesDev) {
@@ -496,6 +496,13 @@ export default function MerchantDashboard() {
       }
     }
   }, []);
+
+  // Redirect to login if token is missing or expired
+  useEffect(() => {
+    if (isHydrated && !token) {
+      window.location.href = "/login";
+    }
+  }, [isHydrated, token]);
 
   // Fetch settings on login
   useEffect(() => {
@@ -4642,7 +4649,7 @@ export default function MerchantDashboard() {
                               <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
                               <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
                             </div>
-                            <div className="bg-slate-200/50 border border-slate-300/30 rounded px-4 py-0.5 text-[9px] font-mono w-60 text-center truncate">{settings.subdomain || "demo"}.basecart.app</div>
+                            <div className="bg-slate-200/50 border border-slate-300/30 rounded px-4 py-0.5 text-[9px] font-mono w-60 text-center truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</div>
                             <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider">Live Preview</span>
                           </div>
                           <iframe id="storefront-preview-iframe" src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${selectedTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(selectedTheme?.pageContent?.settings?.colorPrimary || selectedTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50" />
@@ -4764,7 +4771,7 @@ export default function MerchantDashboard() {
                             <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
                             <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
                           </div>
-                          <span className="truncate w-32 font-mono text-center mx-auto">{settings.subdomain || "demo"}.basecart.app</span>
+                          <span className="truncate w-32 font-mono text-center mx-auto">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</span>
                         </div>
                         <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50 pointer-events-none scale-90 origin-top" />
                       </div>

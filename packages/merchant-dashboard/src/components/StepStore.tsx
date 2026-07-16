@@ -179,8 +179,8 @@ export default function StepStore({ data, onChange, onNext, onBack }: StepStoreP
               className="flex-1 px-3 py-2 text-slate-950 focus:outline-none text-sm font-mono"
               placeholder="my-brand"
             />
-            <span className="inline-flex items-center px-3 text-slate-450 bg-slate-50 border-l border-slate-200 text-xs font-mono font-semibold">
-              .basecart.store
+            <span className="inline-flex items-center px-3 text-slate-450 bg-slate-55 bg-slate-50 border-l border-slate-200 text-xs font-mono font-semibold">
+              .basecart.app
             </span>
           </div>
           
