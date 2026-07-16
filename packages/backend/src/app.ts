@@ -34,10 +34,10 @@ export function buildApp() {
     "*",
     cors({
       origin: (origin, c) => {
-        if (!origin) return "";
+        if (!origin) return null;
         
-        // Always allow localhost/127.0.0.1 in local dev/test/staging environments
-        if (c.env && (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test" || c.env.NODE_ENV === "staging")) {
+        // Always allow localhost/127.0.0.1 in local dev/test environments
+        if (c.env && (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test")) {
           if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
             return origin;
           }
@@ -50,10 +50,13 @@ export function buildApp() {
           return origin;
         }
 
-        return "";
+        return null;
       },
       allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+      allowHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+      exposeHeaders: ["Set-Cookie"],
       credentials: true,
+      maxAge: 86400,
     })
   );
 

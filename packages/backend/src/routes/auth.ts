@@ -430,7 +430,7 @@ app.post("/auth/merchant/forgot-password", async (c) => {
       .bind(token, lowerEmail, user.tenantId, expiresAt, ttl)
       .run();
 
-    const resetLink = `http://localhost:3000/reset-password?token=${token}`;
+    const resetLink = `https://basecart.app/reset-password?token=${token}`;
     await sendEmailSafely(
       lowerEmail,
       "Reset Your Basecart Password",
@@ -582,7 +582,7 @@ app.get("/auth/merchant/verify-email", async (c) => {
 
   await controlDb.batch([updateVerify, deleteToken]);
 
-  return c.redirect("http://localhost:3000/?verified=true");
+  return c.redirect("https://basecart.app/?verified=true");
 });
 
 // -------------------------------------------------------------
@@ -822,7 +822,7 @@ app.post("/auth/customer/forgot-password", resolveStorefrontTenant, async (c) =>
 
     const tenant = c.get("tenant");
     const subdomain = tenant?.subdomain || "demo";
-    const resetLink = `http://${subdomain}.localhost:3002/reset-password?token=${token}`;
+    const resetLink = `https://${subdomain}.basecart.app/reset-password?token=${token}`;
 
     await sendEmailSafely(
       lowerEmail,

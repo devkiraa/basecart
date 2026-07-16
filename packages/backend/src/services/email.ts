@@ -74,7 +74,7 @@ export async function sendEmailWithAttachment(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Basecart <noreply@basecart.io>",
+          from: "Basecart <noreply@basecart.app>",
           to: [to],
           subject,
           html: htmlContent,
