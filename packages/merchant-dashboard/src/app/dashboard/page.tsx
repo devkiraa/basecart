@@ -2374,11 +2374,11 @@ export default function MerchantDashboard() {
 
                             {/* Grid Y Lines */}
                             {[0, 50, 100, 150, 200].map((yVal) => (
-                              <line key={yVal} x1="40" y1={yVal} x2="570" y2={yVal} className="stroke-slate-100 stroke-1 stroke-dasharray-[4,4]" />
+                              <line key={yVal} x1="40" y1={yVal} x2="570" y2={yVal} className="stroke-slate-100 stroke-1" strokeDasharray="4,4" />
                             ))}
 
                             {/* Smooth Curved Line & Gradient Fill */}
-                            <path d={dFill} fill="url(#chartGradient)" />
+                            <path d={`M ${chartPoints[0].x},190 L ` + dFill} fill="url(#chartGradient)" />
                             <path d={dPath} fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
 
                             {/* Interactive Hover Tooltips */}
