@@ -60,42 +60,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickDemoLogin = async () => {
-    setAuthError("");
-    setLoading(true);
-    try {
-      await fetch(`${API_URL}/auth/merchant/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeName: "Watchroom",
-          subdomain: "demo",
-          email: "merchant@basecart.io",
-          password: "password123",
-        }),
-      }).catch(() => {});
-
-      const res = await fetch(`${API_URL}/auth/merchant/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "merchant@basecart.io",
-          password: "password123",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Demo login failed");
-
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
-      
-      window.location.href = "/dashboard";
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to log in to demo store.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -366,25 +330,6 @@ export default function LoginPage() {
                 {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Login"}
               </button>
 
-              <div className="relative my-6 select-none">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-slate-100"></div>
-                </div>
-                <div className="relative flex justify-center text-[10px] uppercase font-bold tracking-wider">
-                  <span className="bg-white px-3 text-slate-400">or continue with</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 select-none">
-                <button
-                  type="button"
-                  onClick={handleQuickDemoLogin}
-                  disabled={loading}
-                  className="flex items-center justify-center gap-2 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
-                >
-                  <span className="text-sm">🤖</span> Demo Login
-                </button>
-              </div>
             </form>
           </div>
         </div>

@@ -884,47 +884,6 @@ export default function MerchantDashboard() {
     }
   };
 
-  const handleQuickDemoLogin = async () => {
-    setAuthError("");
-    setLoading(true);
-    try {
-      // 1. Try signing up a demo merchant (ignores failure if already registered)
-      await fetch(`${API_URL}/auth/merchant/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          storeName: "Watchroom",
-          subdomain: "demo",
-          email: "merchant@basecart.io",
-          password: "password123",
-        }),
-      }).catch(() => {});
-
-      // 2. Perform login
-      const res = await fetch(`${API_URL}/auth/merchant/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: "merchant@basecart.io",
-          password: "password123",
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Demo login failed");
-
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
-      setToken(data.accessToken);
-      setTenantId(data.tenantId);
-      setEmail("");
-      setPassword("");
-    } catch (err: any) {
-      setAuthError(err.message || "Failed to log in to demo store.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleWizardSubmit = async () => {
     setAuthError("");
     setLoading(true);
