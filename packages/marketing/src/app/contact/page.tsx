@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { Mail, MessageSquare, MapPin, Loader2 } from "lucide-react";
+import { Mail, MessageSquare, MapPin, Loader2, MessageCircle } from "lucide-react";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -83,6 +83,22 @@ export default function ContactPage() {
               </div>
             </div>
           </div>
+
+          {/* WhatsApp Quick Chat */}
+          <a
+            href="https://wa.me/919876543210?text=Hi%20Basecart%20Team%2C%20I%27d%20like%20to%20know%20more%20about%20your%20platform."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 rounded-xl p-4 hover:bg-emerald-100 transition-colors"
+          >
+            <div className="h-10 w-10 bg-emerald-500 text-white flex items-center justify-center rounded-lg shrink-0">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider">WhatsApp Us</h4>
+              <p className="text-xs text-emerald-600 font-semibold">Chat with us instantly for quick support</p>
+            </div>
+          </a>
         </div>
 
         {/* Right Column: Form */}

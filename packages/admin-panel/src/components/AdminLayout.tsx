@@ -6,12 +6,6 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
-  FileSpreadsheet,
-  LogOut,
-  Loader2,
-  ShieldCheck,
-  PanelLeftClose,
-  PanelLeftOpen,
   CreditCard,
   MessageSquare,
   Activity,
@@ -21,6 +15,23 @@ import {
   Menu,
   X,
   Mail,
+  ShoppingCart,
+  BarChart3,
+  ShoppingBag,
+  Bell,
+  ToggleLeft,
+  Key,
+  Layers,
+  HeartPulse,
+  Server,
+  FileText,
+  ShieldCheck,
+  FileSpreadsheet,
+  Cloud,
+  LogOut,
+  Loader2,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -144,24 +155,80 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!admin) return null;
 
-  const navItems = [
-    { name: "Dashboard", href: "/", icon: LayoutDashboard },
-    { name: "Merchants", href: "/merchants", icon: Users },
-    { name: "Billing & Subs", href: "/billing", icon: CreditCard },
-    { name: "Support Tickets", href: "/support", icon: MessageSquare },
-    { name: "Platform Health", href: "/monitoring", icon: Activity },
-    { name: "Security Center", href: "/security", icon: ShieldAlert },
-    { name: "Audit Logs", href: "/audit-logs", icon: FileSpreadsheet },
-    { name: "System Settings", href: "/settings", icon: Settings },
-    { name: "Mail Settings", href: "/emails", icon: Mail },
-    { name: "Super Admins", href: "/admins", icon: ShieldCheck },
+  // Grouped Navigation Items matching standard SaaS platforms (Stripe/Shopify)
+  const navGroups = [
+    {
+      group: "Executive Suite",
+      items: [
+        { name: "Dashboard", href: "/", icon: LayoutDashboard },
+      ],
+    },
+    {
+      group: "Merchant Registry",
+      items: [
+        { name: "All Merchants", href: "/merchants", icon: Users },
+      ],
+    },
+    {
+      group: "Revenue Operations",
+      items: [
+        { name: "Billing & Subs", href: "/billing", icon: CreditCard },
+        { name: "Orders Feed", href: "/orders", icon: ShoppingCart },
+        { name: "Platform Analytics", href: "/analytics", icon: BarChart3 },
+      ],
+    },
+    {
+      group: "Marketplaces",
+      items: [
+        { name: "Themes & Apps", href: "/marketplace", icon: ShoppingBag },
+      ],
+    },
+    {
+      group: "Communications",
+      items: [
+        { name: "Support Desk", href: "/support", icon: MessageSquare },
+        { name: "Notifications Center", href: "/notifications", icon: Bell },
+        { name: "Mail Templates", href: "/emails", icon: Mail },
+      ],
+    },
+    {
+      group: "Platform Configuration",
+      items: [
+        { name: "Feature Flags", href: "/platform/feature-flags", icon: ToggleLeft },
+        { name: "API & Webhooks", href: "/platform/api-keys", icon: Key },
+        { name: "Queue Monitor", href: "/platform/queue-monitor", icon: Layers },
+        { name: "System Status", href: "/platform/system-status", icon: HeartPulse },
+        { name: "Real-time Metrics", href: "/monitoring", icon: Server },
+        { name: "Security Console", href: "/security", icon: ShieldAlert },
+        { name: "System Settings", href: "/settings", icon: Settings },
+      ],
+    },
+    {
+      group: "Content Management",
+      items: [
+        { name: "CMS Toggles", href: "/content", icon: FileText },
+      ],
+    },
+    {
+      group: "Administration Control",
+      items: [
+        { name: "Super Admins", href: "/admins", icon: ShieldCheck },
+        { name: "Audit Logging", href: "/audit-logs", icon: FileSpreadsheet },
+      ],
+    },
+    {
+      group: "Edge Infrastructure",
+      items: [
+        { name: "Cloudflare Stack", href: "/infrastructure", icon: Cloud },
+      ],
+    },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside
-        style={{ width: collapsed ? 72 : 256 }}
+        style={{ width: collapsed ? 72 : 260 }}
         className="hidden lg:flex bg-white border-r border-slate-200/80 flex-col fixed h-full transition-[width] duration-300 ease-in-out z-30"
       >
         {/* Header branding */}
@@ -176,35 +243,44 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
         </div>
 
-        {/* Navigation Links */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/" && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                title={collapsed ? item.name : undefined}
-                className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
-                  collapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2.5"
-                } ${
-                  isActive
-                    ? "bg-indigo-50 text-indigo-700"
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                }`}
-              >
-                <Icon
-                  className={`w-[18px] h-[18px] shrink-0 ${
-                    isActive ? "text-indigo-600" : "text-slate-400"
-                  }`}
-                />
-                {!collapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
+        {/* Reorganized Navigation Groups */}
+        <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.group} className="space-y-1">
+              {!collapsed && (
+                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2 block">
+                  {group.group}
+                </h4>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    title={collapsed ? item.name : undefined}
+                    className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
+                      collapsed ? "px-3 py-2 justify-center" : "px-3 py-2"
+                    } ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <Icon
+                      className={`w-[18px] h-[18px] shrink-0 ${
+                        isActive ? "text-indigo-600" : "text-slate-400"
+                      }`}
+                    />
+                    {!collapsed && <span>{item.name}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         {/* Collapse toggle */}
@@ -263,7 +339,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Main Content Area */}
       <main
-        style={{ paddingLeft: isMobile ? 0 : (collapsed ? 72 : 256) }}
+        style={{ paddingLeft: isMobile ? 0 : (collapsed ? 72 : 260) }}
         className="flex-1 flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out pb-16 lg:pb-0"
       >
         {/* Top Header Bar */}
@@ -314,7 +390,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               />
               <button
                 onClick={() => setSearchOpen(false)}
-                className="text-xs font-semibold text-slate-450 hover:text-slate-600 px-2 py-1 rounded bg-slate-50 border border-slate-200"
+                className="text-xs font-semibold text-slate-450 hover:text-slate-650 px-2 py-1 rounded bg-slate-50 border border-slate-200"
               >
                 ESC
               </button>
@@ -453,28 +529,35 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/" && pathname.startsWith(item.href));
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold px-3 py-2.5 transition-all ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`}
-                  >
-                    <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
+            <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
+              {navGroups.map((group) => (
+                <div key={group.group} className="space-y-1">
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1.5 block">
+                    {group.group}
+                  </h4>
+                  {group.items.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      pathname === item.href ||
+                      (item.href !== "/" && pathname.startsWith(item.href));
+                    return (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 rounded-lg text-[13px] font-semibold px-3 py-2 transition-all ${
+                          isActive
+                            ? "bg-indigo-50 text-indigo-700"
+                            : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                        }`}
+                      >
+                        <Icon className={`w-[18px] h-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              ))}
             </nav>
 
             {/* Logout button at bottom of drawer */}
@@ -507,7 +590,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               key={item.name}
               href={item.href}
               className={`flex flex-col items-center justify-center gap-1 flex-1 py-1.5 transition-all ${
-                isActive ? "text-indigo-600 font-bold" : "text-slate-400 hover:text-slate-600"
+                isActive ? "text-indigo-600 font-bold" : "text-slate-400 hover:text-slate-650"
               }`}
             >
               <Icon className="w-5 h-5" />

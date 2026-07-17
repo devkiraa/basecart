@@ -3,10 +3,11 @@
 import React, { useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Search } from "lucide-react";
 
 export default function FAQPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const faqs = [
     {
@@ -31,6 +32,12 @@ export default function FAQPage() {
     }
   ];
 
+  const filteredFaqs = faqs.filter(
+    (faq) =>
+      faq.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      faq.a.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-white text-slate-650 font-sans selection:bg-blue-50 selection:text-blue-600">
       <Header />
@@ -50,8 +57,20 @@ export default function FAQPage() {
 
       {/* Accordion List */}
       <section className="px-6 py-12 max-w-3xl mx-auto">
+        {/* Search Bar */}
+        <div className="relative mb-8">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search questions..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 border border-slate-200 rounded-xl text-sm bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          />
+        </div>
+
         <div className="space-y-4">
-          {faqs.map((faq, idx) => {
+          {filteredFaqs.map((faq, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div 

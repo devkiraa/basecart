@@ -54,3 +54,10 @@ Icon\r
 *.dump
 # TypeScript cache
 *.tsbuildinfo
+
+# MiMoCode
+.mimocode/
+
+# Temporary files
+tmp/
+temp/
