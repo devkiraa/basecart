@@ -11,15 +11,15 @@ export default function Header() {
     <header className="sticky top-0 bg-white/80 backdrop-blur-md z-50 border-b border-slate-100 px-6 lg:px-16 py-3.5 flex items-center justify-between select-none">
       <div className="flex items-center gap-6">
         {/* Logo */}
-        <div 
-          onClick={() => { window.location.href = "/"; }}
-          className="flex items-center gap-2.5 cursor-pointer"
+        <a 
+          href="/"
+          className="flex items-center gap-2.5"
         >
           <div className="h-9 w-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
             <ShoppingBag className="h-5 w-5" />
           </div>
           <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
-        </div>
+        </a>
 
         {/* Navigation Links */}
         <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-600">
