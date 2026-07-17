@@ -65,7 +65,7 @@ export async function GET(request: Request) {
 
   return new NextResponse(sitemapXml, {
     headers: {
-      "Content-Type": "application/xml",
+      "Content-Type": "application/xml; charset=utf-8",
     },
   });
 }
