@@ -14,8 +14,57 @@ enabled = true
 tag = "v1"
 new_sqlite_classes = ["TenantDO"]
 
+[[ratelimits]]
+name = "API_RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 100, period = 60 }
 
-# --- DEVELOPMENT ENVIRONMENT (wrangler deploy --env dev) ---
+[vars]
+NODE_ENV = "production"
+API_URL = "https://api.basecart.app"
+ALLOWED_ORIGINS = "https://basecart.app,https://merchant.basecart.app,https://admin.basecart.app,https://*.basecart.app"
+COOKIE_DOMAIN_MERCHANT = ".basecart.app"
+COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
+COOKIE_DOMAIN_ADMIN = ".basecart.app"
+CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
+S3_BUCKET = "basecart-media-prod"
+MARKETING_URL = "https://basecart.app"
+MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
+
+# ZeptoMail configurations for production environment
+ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
+MAIL_FROM_ADDRESS = "noreply@basecart.app"
+MAIL_FROM_NAME = "Basecart"
+
+[[d1_databases]]
+binding = "CONTROL_DB"
+database_name = "basecart-control-prod"
+database_id = "5a1c680b-b6d4-4b6d-8283-8bfc8905d227"
+
+[durable_objects]
+bindings = [
+  { name = "TENANT_DO", class_name = "TenantDO" }
+]
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "basecart-media-prod"
+
+[[kv_namespaces]]
+binding = "KV_STORE"
+id = "782dd48172da4b1399b361107b48c2bd"
+
+[[queues.producers]]
+binding = "JOBS_QUEUE"
+queue = "basecart-jobs-queue-prod"
+
+[[queues.consumers]]
+queue = "basecart-jobs-queue-prod"
+max_batch_size = 10
+max_batch_timeout = 5
+
+
+# --- DEVELOPMENT ENVIRONMENT (wrangler dev / deploy --env dev) ---
 [env.dev]
 name = "basecart-backend-dev"
 
@@ -35,7 +84,6 @@ MERCHANT_DASHBOARD_URL = "http://localhost:3004"
 ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
 MAIL_FROM_ADDRESS = "noreply@basecart.app"
 MAIL_FROM_NAME = "Basecart"
-# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
 
 [[env.dev.d1_databases]]
 binding = "CONTROL_DB"
@@ -90,7 +138,6 @@ MERCHANT_DASHBOARD_URL = "https://merchant-staging.basecart.app"
 ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
 MAIL_FROM_ADDRESS = "noreply@basecart.app"
 MAIL_FROM_NAME = "Basecart"
-# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
 
 [[env.staging.d1_databases]]
 binding = "CONTROL_DB"
@@ -120,61 +167,6 @@ max_batch_size = 10
 max_batch_timeout = 5
 
 [[env.staging.ratelimits]]
-name = "API_RATE_LIMITER"
-namespace_id = "1001"
-simple = { limit = 100, period = 60 }
-
-
-# --- PRODUCTION ENVIRONMENT (wrangler deploy --env production) ---
-[env.production]
-name = "basecart-backend"
-
-[env.production.vars]
-NODE_ENV = "production"
-API_URL = "https://api.basecart.app"
-ALLOWED_ORIGINS = "https://basecart.app,https://merchant.basecart.app,https://admin.basecart.app,https://*.basecart.app"
-COOKIE_DOMAIN_MERCHANT = ".basecart.app"
-COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
-COOKIE_DOMAIN_ADMIN = ".basecart.app"
-CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
-S3_BUCKET = "basecart-media-prod"
-MARKETING_URL = "https://basecart.app"
-MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
-
-# ZeptoMail configurations for production environment
-ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
-MAIL_FROM_ADDRESS = "noreply@basecart.app"
-MAIL_FROM_NAME = "Basecart"
-# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
-
-[[env.production.d1_databases]]
-binding = "CONTROL_DB"
-database_name = "basecart-control-prod"
-database_id = "5a1c680b-b6d4-4b6d-8283-8bfc8905d227"
-
-[env.production.durable_objects]
-bindings = [
-  { name = "TENANT_DO", class_name = "TenantDO" }
-]
-
-[[env.production.r2_buckets]]
-binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-prod"
-
-[[env.production.kv_namespaces]]
-binding = "KV_STORE"
-id = "782dd48172da4b1399b361107b48c2bd"
-
-[[env.production.queues.producers]]
-binding = "JOBS_QUEUE"
-queue = "basecart-jobs-queue-prod"
-
-[[env.production.queues.consumers]]
-queue = "basecart-jobs-queue-prod"
-max_batch_size = 10
-max_batch_timeout = 5
-
-[[env.production.ratelimits]]
 name = "API_RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 100, period = 60 }

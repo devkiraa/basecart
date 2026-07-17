@@ -13,7 +13,7 @@
     "migrate:dev": "wrangler d1 migrations apply basecart-control-dev --local --env dev",
     "migrate:dev:remote": "wrangler d1 migrations apply basecart-control-dev --remote --env dev",
     "migrate:staging": "wrangler d1 migrations apply basecart-control-staging --remote --env staging",
-    "migrate:prod": "wrangler d1 migrations apply basecart-control-prod --remote --env production"
+    "migrate:prod": "wrangler d1 migrations apply basecart-control-prod --remote"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1086.0",
