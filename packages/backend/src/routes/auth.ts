@@ -394,6 +394,24 @@ app.get("/auth/merchant/me", authenticateMerchant, async (c) => {
 });
 
 /**
+ * GET /auth/merchant/stores
+ * Returns all stores the authenticated merchant owns (by email).
+ */
+app.get("/auth/merchant/stores", authenticateMerchant, async (c) => {
+  const user = c.get("user");
+  const controlDb = getControlDb(c.env);
+
+  const rows = await controlDb
+    .prepare(
+      "SELECT t.tenantId, t.subdomain, t.storeName FROM tenants t INNER JOIN merchant_users mu ON mu.tenantId = t.tenantId WHERE mu.email = ?"
+    )
+    .bind(user.email)
+    .all<{ tenantId: string; subdomain: string; storeName: string }>();
+
+  return c.json(rows.results ?? []);
+});
+
+/**
  * Merchant Logout
  */
 app.post("/auth/merchant/logout", async (c) => {

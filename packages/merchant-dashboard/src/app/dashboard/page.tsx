@@ -56,6 +56,16 @@ import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 import EmailsTab from "../../components/EmailsTab";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
@@ -332,7 +342,8 @@ export default function MerchantDashboard() {
   const [headerSearchQuery, setHeaderSearchQuery] = useState("");
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isStoreSwitcherOpen, setIsStoreSwitcherOpen] = useState(false);
-  const [isDateSelectorOpen, setIsDateSelectorOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [merchantStores, setMerchantStores] = useState<{ tenantId: string; storeName: string; subdomain: string }[]>([]);
   const [selectedDateRange, setSelectedDateRange] = useState<"Today" | "Yesterday" | "Last 7 Days" | "Last 30 Days" | "All Time">("Last 7 Days");
   const [selectedCategory, setSelectedCategory] = useState("All Themes");
   const [visibleThemeCount, setVisibleThemeCount] = useState(6);
@@ -515,6 +526,12 @@ export default function MerchantDashboard() {
     }
   }, [isHydrated, token]);
 
+  // Live clock ticker
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   // Fetch settings on login
   useEffect(() => {
     if (token) {
@@ -524,6 +541,16 @@ export default function MerchantDashboard() {
         .then((r) => (r.ok ? r.json() : null))
         .then((data) => {
           if (data) setSettings(data);
+        })
+        .catch(console.error);
+
+      // Fetch all stores linked to this merchant account
+      fetch(`${API_URL}/auth/merchant/stores`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (Array.isArray(data)) setMerchantStores(data);
         })
         .catch(console.error);
     }
@@ -1738,85 +1765,93 @@ export default function MerchantDashboard() {
         )}
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 p-4 md:p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
-          <div className="flex items-center gap-3 w-full md:w-auto">
-            {/* Hamburger button for mobile */}
-            <button
-              onClick={() => setMobileDrawerOpen(true)}
-              className="lg:hidden p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors"
-              title="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-lg md:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-                Good morning, Kiran! 👋
-              </h1>
-              <p className="text-[10px] md:text-xs text-slate-500 mt-0.5">
-                Here's what's happening with your store today. (Subdomain: <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>)
-              </p>
-            </div>
+        <header className="bg-white border-b border-slate-200 px-3 py-2 md:px-5 md:py-3 flex items-center gap-2 shrink-0 min-h-0">
+          {/* Hamburger - mobile only */}
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="lg:hidden p-1.5 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors shrink-0"
+            title="Open menu"
+          >
+            <Menu className="h-4.5 w-4.5" />
+          </button>
+
+          {/* Greeting */}
+          <div className="min-w-0 mr-auto">
+            <h1 className="text-sm md:text-base font-bold text-slate-900 tracking-tight leading-tight truncate">
+              {(() => {
+                const h = new Date().getHours();
+                const g = h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
+                return `${g}, ${settings.storeName?.split(" ")[0] || "Kiran"}! 👋`;
+              })()}
+            </h1>
+            <p className="hidden md:block text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
+              <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>
+              <span className="mx-1">·</span>Here's what's happening today
+            </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 ml-auto w-full md:w-auto justify-end">
-            {/* Search Bar */}
-            <div className="relative w-64">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
-                <Search className="h-4 w-4" />
+          {/* Right controls */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Search — icon on mobile, full bar on md+ */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="md:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+              title="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+            <div className="hidden md:flex relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 pointer-events-none text-slate-400">
+                <Search className="h-3.5 w-3.5" />
               </span>
               <input
                 type="text"
-                placeholder="Search anything..."
+                placeholder="Search..."
                 onClick={() => setIsSearchOpen(true)}
                 readOnly
-                className="w-full pl-9 pr-12 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs cursor-pointer focus:outline-none hover:border-[#4F46E5] transition-all"
+                className="w-44 pl-8 pr-10 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs cursor-pointer focus:outline-none hover:border-[#4F46E5] transition-all"
               />
               <span className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
-                <kbd className="bg-white border border-slate-200 text-slate-400 text-[9px] px-1.5 py-0.5 rounded font-mono shadow-sm">
-                  ⌘ K
-                </kbd>
+                <kbd className="bg-white border border-slate-200 text-slate-400 text-[9px] px-1 py-0.5 rounded font-mono shadow-sm">⌘K</kbd>
               </span>
             </div>
 
             {/* Notification Bell */}
             <div className="relative">
-              <button 
+              <button
                 onClick={() => {
                   setIsNotificationsOpen(!isNotificationsOpen);
                   setIsStoreSwitcherOpen(false);
-                  setIsDateSelectorOpen(false);
                 }}
-                className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 relative transition-colors font-bold"
+                className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 relative transition-colors"
               >
                 <Bell className="h-4 w-4" />
                 {notifications.some(n => !n.read) && (
-                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#4F46E5] rounded-full"></span>
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-[#4F46E5] rounded-full" />
                 )}
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 space-y-3">
+                <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-3 space-y-2.5">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                     <span className="text-xs font-bold text-slate-800">Notifications</span>
-                    <button 
+                    <button
                       onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
                       className="text-[10px] text-[#4F46E5] font-bold hover:underline"
                     >
                       Mark all read
                     </button>
                   </div>
-                  <div className="divide-y divide-slate-50 max-h-60 overflow-y-auto space-y-2.5">
+                  <div className="divide-y divide-slate-50 max-h-52 overflow-y-auto space-y-2">
                     {notifications.map((n) => (
-                      <div 
-                        key={n.id} 
-                        onClick={() => {
-                          setNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item));
-                        }}
-                        className={`pt-2.5 first:pt-0 cursor-pointer group ${n.read ? "opacity-60" : ""}`}
+                      <div
+                        key={n.id}
+                        onClick={() => setNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item))}
+                        className={`pt-2 first:pt-0 cursor-pointer group ${n.read ? "opacity-60" : ""}`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#4F46E5] transition-colors">{n.title}</h4>
-                          {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-[#4F46E5] shrink-0 mt-1"></span>}
+                          {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-[#4F46E5] shrink-0 mt-1" />}
                         </div>
                         <p className="text-[10px] text-slate-500 leading-normal mt-0.5">{n.desc}</p>
                       </div>
@@ -1826,46 +1861,77 @@ export default function MerchantDashboard() {
               )}
             </div>
 
-            <div className="h-4 w-[1px] bg-slate-200"></div>
+            {/* Divider */}
+            <div className="h-4 w-px bg-slate-200 mx-0.5" />
 
             {/* Store Switcher */}
             <div className="relative">
-              <div 
+              <div
                 onClick={() => {
                   setIsStoreSwitcherOpen(!isStoreSwitcherOpen);
                   setIsNotificationsOpen(false);
-                  setIsDateSelectorOpen(false);
                 }}
-                className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer shadow-sm select-none"
+                className="flex items-center gap-1.5 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer shadow-sm select-none max-w-[140px] md:max-w-none"
               >
-                <ShoppingBag className="h-3.5 w-3.5 text-slate-500" />
-                <span>{settings.storeName || "My Store"}</span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
+                <ShoppingBag className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <span className="truncate">{settings.storeName || "My Store"}</span>
+                <ChevronDown className="h-3 w-3 text-slate-400 shrink-0" />
               </div>
 
               {isStoreSwitcherOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-2 space-y-1">
-                  <div className="px-3 py-2 border-b border-slate-50">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Active Store</p>
-                    <p className="text-xs font-bold text-slate-800 mt-0.5">{settings.storeName || "My Store"}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</p>
+                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-2 space-y-0.5">
+                  <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                    <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Active Store</p>
+                    <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{settings.storeName || "My Store"}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</p>
                   </div>
-                  <a 
+
+                  {merchantStores.length > 1 && (
+                    <div className="pb-1">
+                      <p className="px-3 text-[9px] uppercase tracking-wider text-slate-400 font-bold pt-1 pb-1">Switch Store</p>
+                      {merchantStores.map((store) => (
+                        <button
+                          key={store.tenantId}
+                          onClick={() => {
+                            window.open(getStorefrontLink(store.subdomain), "_blank");
+                            setIsStoreSwitcherOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs rounded-lg transition-colors text-left ${
+                            store.subdomain === settings.subdomain
+                              ? "bg-indigo-50 text-[#4F46E5] font-bold"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-semibold"
+                          }`}
+                        >
+                          <ShoppingBag className="h-3 w-3 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate">{store.storeName}</div>
+                            <div className="text-[9px] text-slate-400 truncate">{store.subdomain}.{STOREFRONT_DOMAIN}</div>
+                          </div>
+                          {store.subdomain === settings.subdomain && (
+                            <span className="text-[9px] font-bold text-[#4F46E5] shrink-0">Active</span>
+                          )}
+                        </button>
+                      ))}
+                      <div className="border-t border-slate-100 mt-1" />
+                    </div>
+                  )}
+
+                  <a
                     href={getStorefrontLink(settings.subdomain || "demo")}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors"
                   >
                     <Globe className="h-3.5 w-3.5 text-slate-400" />
                     <span>View Live Storefront</span>
                   </a>
-                  <button 
+                  <button
                     onClick={() => {
                       navigator.clipboard.writeText(getStorefrontLink(settings.subdomain || "demo"));
                       setActionSuccess("Storefront link copied to clipboard!");
                       setIsStoreSwitcherOpen(false);
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors text-left"
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-colors text-left"
                   >
                     <Copy className="h-3.5 w-3.5 text-slate-400" />
                     <span>Copy Store Link</span>
@@ -1874,65 +1940,16 @@ export default function MerchantDashboard() {
               )}
             </div>
 
-            {/* Date Range Picker */}
-            <div className="relative">
-              <div 
-                onClick={() => {
-                  setIsDateSelectorOpen(!isDateSelectorOpen);
-                  setIsNotificationsOpen(false);
-                  setIsStoreSwitcherOpen(false);
-                }}
-                className="flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 cursor-pointer shadow-sm select-none"
-              >
-                <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                <span>{(() => {
-                  const label = selectedDateRange;
-                  const last = new Date();
-                  const first = new Date();
-                  
-                  if (label === "Today") {
-                    const format = (d: Date) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-                    return format(last);
-                  } else if (label === "Yesterday") {
-                    first.setDate(first.getDate() - 1);
-                    const format = (d: Date) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
-                    return format(first);
-                  } else if (label === "Last 30 Days") {
-                    first.setDate(first.getDate() - 29);
-                    const format = (d: Date) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getDate()}`;
-                    return `${format(first)} – ${format(last)}, ${last.getFullYear()}`;
-                  } else if (label === "All Time") {
-                    return "All Time Metrics";
-                  } else {
-                    // Last 7 Days
-                    first.setDate(first.getDate() - 6);
-                    const format = (d: Date) => `${["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][d.getMonth()]} ${d.getDate()}`;
-                    return `${format(first)} – ${format(last)}, ${last.getFullYear()}`;
-                  }
-                })()}</span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
-              </div>
-
-              {isDateSelectorOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-1 space-y-0.5">
-                  {(["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "All Time"] as const).map((preset) => (
-                    <button
-                      key={preset}
-                      onClick={() => {
-                        setSelectedDateRange(preset);
-                        setIsDateSelectorOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${
-                        selectedDateRange === preset 
-                          ? "bg-indigo-50 text-[#4F46E5]" 
-                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                      }`}
-                    >
-                      {preset}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Date & Time — desktop only */}
+            <div className="hidden md:flex items-center gap-1 border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white shadow-sm select-none">
+              <Calendar className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+              <span className="text-xs font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+                {currentTime.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+              </span>
+              <span className="text-slate-300 text-xs">·</span>
+              <span className="text-xs font-semibold text-slate-500 tabular-nums whitespace-nowrap">
+                {currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true })}
+              </span>
             </div>
           </div>
         </header>
@@ -2074,45 +2091,76 @@ export default function MerchantDashboard() {
           {/* 1. Summary View */}
           {activeTab === "summary" && (() => {
             const hasData = summary.totalOrders > 0;
-            const salesVal = summary.totalRevenue || 0;
-            const ordersCount = summary.totalOrders || 0;
-            const customersCount = customers.length || 0;
-            const conversionRate = hasData
-              ? ((summary.paidOrders / summary.totalOrders) * 100).toFixed(2) + "%"
-              : "0.00%";
-            const avgOrderValue = summary.paidOrders > 0
-              ? Math.round(summary.totalRevenue / summary.paidOrders)
-              : 0;
 
-            // Calculate dynamic weekly comparison trends from orders list
+            // --- Date range filtering ---
             const nowTime = Date.now();
             const oneDayMs = 24 * 60 * 60 * 1000;
-            const sevenDaysAgo = nowTime - 7 * oneDayMs;
-            const fourteenDaysAgo = nowTime - 14 * oneDayMs;
 
-            let curWeekSales = 0;
-            let prevWeekSales = 0;
-            let curWeekOrders = 0;
-            let prevWeekOrders = 0;
-
-            for (const order of orders) {
-              const orderTime = new Date(order.createdAt).getTime();
-              const isPaid = ["paid", "shipped", "delivered"].includes(order.status);
-              
-              if (orderTime >= sevenDaysAgo && orderTime <= nowTime) {
-                curWeekOrders++;
-                if (isPaid) curWeekSales += order.total || 0;
-              } else if (orderTime >= fourteenDaysAgo && orderTime < sevenDaysAgo) {
-                prevWeekOrders++;
-                if (isPaid) prevWeekSales += order.total || 0;
+            const rangeStart = (() => {
+              const d = new Date();
+              if (selectedDateRange === "Today") {
+                d.setHours(0, 0, 0, 0);
+                return d.getTime();
+              } else if (selectedDateRange === "Yesterday") {
+                d.setDate(d.getDate() - 1);
+                d.setHours(0, 0, 0, 0);
+                return d.getTime();
+              } else if (selectedDateRange === "Last 7 Days") {
+                return nowTime - 7 * oneDayMs;
+              } else if (selectedDateRange === "Last 30 Days") {
+                return nowTime - 30 * oneDayMs;
               }
-            }
+              return 0; // All Time
+            })();
 
-            const salesTrendPercent = prevWeekSales > 0 
-              ? ((curWeekSales - prevWeekSales) / prevWeekSales * 100).toFixed(1) 
+            const rangeEnd = (() => {
+              if (selectedDateRange === "Yesterday") {
+                const d = new Date();
+                d.setHours(0, 0, 0, 0);
+                return d.getTime() - 1;
+              }
+              return nowTime;
+            })();
+
+            const filteredOrders = orders.filter(order => {
+              const t = new Date(order.createdAt).getTime();
+              return t >= rangeStart && t <= rangeEnd;
+            });
+
+            // Previous period for trend comparison
+            const rangeLen = rangeEnd - rangeStart || oneDayMs;
+            const prevStart = rangeStart - rangeLen;
+            const prevEnd = rangeStart - 1;
+            const prevOrders = orders.filter(order => {
+              const t = new Date(order.createdAt).getTime();
+              return t >= prevStart && t <= prevEnd;
+            });
+
+            // KPI aggregates
+            const isPaidStatus = (s: string) => ["paid", "shipped", "delivered"].includes(s);
+            const curPaid = filteredOrders.filter(o => isPaidStatus(o.status));
+            const prevPaid = prevOrders.filter(o => isPaidStatus(o.status));
+
+            let curWeekSales = curPaid.reduce((s, o) => s + (o.total || 0), 0);
+            let prevWeekSales = prevPaid.reduce((s, o) => s + (o.total || 0), 0);
+            let curWeekOrders = filteredOrders.length;
+            let prevWeekOrders = prevOrders.length;
+
+            const salesVal = curWeekSales || summary.totalRevenue || 0;
+            const ordersCount = curWeekOrders || summary.totalOrders || 0;
+            const customersCount = customers.length || 0;
+            const conversionRate = filteredOrders.length > 0
+              ? ((curPaid.length / filteredOrders.length) * 100).toFixed(2) + "%"
+              : hasData ? ((summary.paidOrders / summary.totalOrders) * 100).toFixed(2) + "%" : "0.00%";
+            const avgOrderValue = curPaid.length > 0
+              ? Math.round(curWeekSales / curPaid.length)
+              : summary.paidOrders > 0 ? Math.round(summary.totalRevenue / summary.paidOrders) : 0;
+
+            const salesTrendPercent = prevWeekSales > 0
+              ? ((curWeekSales - prevWeekSales) / prevWeekSales * 100).toFixed(1)
               : null;
-            const ordersTrendPercent = prevWeekOrders > 0 
-              ? ((curWeekOrders - prevWeekOrders) / prevWeekOrders * 100).toFixed(1) 
+            const ordersTrendPercent = prevWeekOrders > 0
+              ? ((curWeekOrders - prevWeekOrders) / prevWeekOrders * 100).toFixed(1)
               : null;
 
             // Setup checklist items status
@@ -2170,43 +2218,74 @@ export default function MerchantDashboard() {
               }));
             }
 
-            // Chart data mapping from last7Days
-            const chartData = summary.last7Days && summary.last7Days.length === 7 
-              ? summary.last7Days.map((day: any) => {
-                  const parts = day.date.split("-");
-                  const formattedDate = parts.length === 3 ? `${parts[1]}/${parts[2]}` : day.date;
-                  return { date: formattedDate, revenue: day.revenue || 0, orders: day.orders || 0 };
-                })
-              : Array.from({ length: 7 }).map((_, i) => {
-                  const d = new Date();
-                  d.setDate(d.getDate() - (6 - i));
-                  const formattedDate = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
-                  return { date: formattedDate, revenue: 0, orders: 0 };
+            // Chart data — respect selected range
+            const chartDays = selectedDateRange === "Today" || selectedDateRange === "Yesterday" ? 1
+              : selectedDateRange === "Last 30 Days" ? 30 : 7;
+            const chartData = Array.from({ length: chartDays === 1 ? 24 : chartDays }).map((_, i) => {
+              if (chartDays === 1) {
+                // hourly buckets for Today / Yesterday
+                const hour = i;
+                const base = new Date(rangeStart);
+                const bucketStart = base.getTime() + hour * 60 * 60 * 1000;
+                const bucketEnd = bucketStart + 60 * 60 * 1000 - 1;
+                const bucketOrders = filteredOrders.filter(o => {
+                  const t = new Date(o.createdAt).getTime();
+                  return t >= bucketStart && t <= bucketEnd;
                 });
-
-            const maxRevenue = Math.max(...chartData.map((d: any) => d.revenue), 100);
-            
-            // Build coordinates for Bezier curved SVG chart
-            const chartPoints = chartData.map((d: any, i: number) => {
-              const x = 50 + (i * (510 / 6));
-              const y = 180 - (d.revenue / maxRevenue) * 130;
-              return { x, y, date: d.date, revenue: d.revenue, orders: d.orders };
+                const paid = bucketOrders.filter(o => isPaidStatus(o.status));
+                return {
+                  date: `${String(hour).padStart(2, "0")}:00`,
+                  revenue: paid.reduce((s, o) => s + (o.total || 0), 0),
+                  orders: bucketOrders.length
+                };
+              } else {
+                const d = new Date();
+                d.setDate(d.getDate() - (chartDays - 1 - i));
+                const dayStart = new Date(d); dayStart.setHours(0, 0, 0, 0);
+                const dayEnd = new Date(d); dayEnd.setHours(23, 59, 59, 999);
+                const dayOrders = filteredOrders.filter(o => {
+                  const t = new Date(o.createdAt).getTime();
+                  return t >= dayStart.getTime() && t <= dayEnd.getTime();
+                });
+                const paid = dayOrders.filter(o => isPaidStatus(o.status));
+                return {
+                  date: `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`,
+                  revenue: paid.reduce((s, o) => s + (o.total || 0), 0),
+                  orders: dayOrders.length
+                };
+              }
             });
 
-            let dPath = `M ${chartPoints[0].x},${chartPoints[0].y}`;
-            for (let i = 1; i < chartPoints.length; i++) {
-              const p0 = chartPoints[i - 1];
-              const p1 = chartPoints[i];
-              const cpX1 = p0.x + 30;
-              const cpY1 = p0.y;
-              const cpX2 = p1.x - 30;
-              const cpY2 = p1.y;
-              dPath += ` C ${cpX1},${cpY1} ${cpX2},${cpY2} ${p1.x},${p1.y}`;
-            }
-            const dFill = `${dPath} L ${chartPoints[chartPoints.length - 1].x},190 L ${chartPoints[0].x},190 Z`;
+
 
             return (
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-5 animate-fade-in">
+
+                {/* ── Date Range Timeline ── */}
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-1 bg-slate-100 rounded-xl p-1">
+                    {(["Today", "Yesterday", "Last 7 Days", "Last 30 Days", "All Time"] as const).map((preset) => (
+                      <button
+                        key={preset}
+                        onClick={() => setSelectedDateRange(preset)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          selectedDateRange === preset
+                            ? "bg-white text-[#4F46E5] shadow-sm border border-slate-200"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        {preset}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-medium">
+                    {selectedDateRange === "Today" && `${new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}`}
+                    {selectedDateRange === "Yesterday" && (() => { const d = new Date(); d.setDate(d.getDate()-1); return d.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" }); })()}
+                    {selectedDateRange === "Last 7 Days" && (() => { const d = new Date(); d.setDate(d.getDate()-6); return `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`; })()}
+                    {selectedDateRange === "Last 30 Days" && (() => { const d = new Date(); d.setDate(d.getDate()-29); return `${d.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${new Date().toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`; })()}
+                    {selectedDateRange === "All Time" && "All historical data"}
+                  </p>
+                </div>
                 {loading ? (
                   <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -2318,81 +2397,123 @@ export default function MerchantDashboard() {
 
                     {/* Middle Row: Sales Overview & Top Selling Products */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Sales Overview Area Chart */}
-                      <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex flex-col justify-between">
-                        <div className="flex items-center justify-between">
+                      {/* Sales Overview — Recharts AreaChart */}
+                      <div className="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex flex-col">
+                        {/* Card header */}
+                        <div className="flex items-start justify-between mb-4">
                           <div>
-                            <h3 className="text-sm font-bold text-slate-800">Sales Overview</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xl font-bold text-slate-900">{formatINR(salesVal)}</span>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sales Overview</p>
+                            <div className="flex items-baseline gap-2 mt-0.5">
+                              <span className="text-2xl font-bold text-slate-900">{formatINR(salesVal)}</span>
                               {salesTrendPercent !== null && (
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                                  Number(salesTrendPercent) >= 0 ? "text-emerald-600 bg-emerald-50" : "text-rose-600 bg-rose-50"
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                                  Number(salesTrendPercent) >= 0
+                                    ? "text-emerald-700 bg-emerald-50"
+                                    : "text-rose-700 bg-rose-50"
                                 }`}>
                                   {Number(salesTrendPercent) >= 0 ? "▲" : "▼"} {Math.abs(Number(salesTrendPercent))}%
                                 </span>
                               )}
                             </div>
+                            <p className="text-[10px] text-slate-400 mt-0.5">{selectedDateRange}</p>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <select className="border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white">
-                              <option>Net Sales</option>
-                              <option>Gross Sales</option>
-                            </select>
-                            <button 
-                              onClick={() => setActiveTab("finances")}
-                              className="border border-slate-200 rounded-lg px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
-                            >
-                              View Report
-                            </button>
+                          <button
+                            onClick={() => setActiveTab("finances")}
+                            className="border border-slate-200 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-slate-600 bg-white hover:bg-slate-50 transition-colors"
+                          >
+                            View Report
+                          </button>
+                        </div>
+
+                        {/* Legend */}
+                        <div className="flex items-center gap-4 mb-3">
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#4F46E5]" />
+                            <span className="text-[10px] font-semibold text-slate-500">Revenue</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2.5 w-2.5 rounded-full bg-[#06b6d4]" />
+                            <span className="text-[10px] font-semibold text-slate-500">Orders</span>
                           </div>
                         </div>
 
-                        {/* Bezier Line Chart */}
-                        <div className="h-52 relative mt-4">
-                          <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
-                            <defs>
-                              <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#4F46E5" stopOpacity="0.2" />
-                                <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.0" />
-                              </linearGradient>
-                            </defs>
-
-                            {/* Grid Y Lines */}
-                            {[0, 50, 100, 150, 200].map((yVal) => (
-                              <line key={yVal} x1="40" y1={yVal} x2="570" y2={yVal} className="stroke-slate-100 stroke-1" strokeDasharray="4,4" />
-                            ))}
-
-                            {/* Smooth Curved Line & Gradient Fill */}
-                            <path d={`M ${chartPoints[0].x},190 L ` + dFill} fill="url(#chartGradient)" />
-                            <path d={dPath} fill="none" stroke="#4F46E5" strokeWidth="2" strokeLinecap="round" />
-
-                            {/* Interactive Hover Tooltips */}
-                            {chartPoints.map((p: any, idx: number) => (
-                              <g key={idx} className="group cursor-pointer">
-                                <circle cx={p.x} cy={p.y} r="10" className="fill-transparent" />
-                                <circle cx={p.x} cy={p.y} r="4" className="fill-white stroke-[#4F46E5] stroke-2 group-hover:r-5 transition-all" />
-                                <foreignObject
-                                  x={p.x - 45}
-                                  y={p.y - 35}
-                                  width="90"
-                                  height="28"
-                                  className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none duration-150"
-                                >
-                                  <div className="bg-slate-900 text-white text-[8px] px-1.5 py-0.5 rounded shadow text-center font-bold">
-                                    {formatINR(p.revenue)}
-                                  </div>
-                                </foreignObject>
-                              </g>
-                            ))}
-                          </svg>
-
-                          {/* Chart X Labels */}
-                          <div className="flex justify-between text-[10px] text-slate-400 font-medium px-10 mt-1">
-                            {chartPoints.map((p: any, i: number) => (
-                              <span key={i}>{p.date}</span>
-                            ))}
-                          </div>
+                        {/* Chart */}
+                        <div className="flex-1 min-h-[200px]">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart
+                              data={chartData}
+                              margin={{ top: 4, right: 4, left: -10, bottom: 0 }}
+                            >
+                              <defs>
+                                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.18} />
+                                  <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
+                                </linearGradient>
+                                <linearGradient id="ordersGrad" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.15} />
+                                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 600 }}
+                                axisLine={false}
+                                tickLine={false}
+                                interval="preserveStartEnd"
+                              />
+                              <YAxis
+                                yAxisId="revenue"
+                                tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 600 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(v) => v === 0 ? "₹0" : `₹${(v / 1000).toFixed(0)}k`}
+                              />
+                              <YAxis
+                                yAxisId="orders"
+                                orientation="right"
+                                tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 600 }}
+                                axisLine={false}
+                                tickLine={false}
+                                tickFormatter={(v) => `${v}`}
+                                width={28}
+                              />
+                              <RechartsTooltip
+                                contentStyle={{
+                                  background: "#0f172a",
+                                  border: "none",
+                                  borderRadius: "10px",
+                                  padding: "8px 12px",
+                                  boxShadow: "0 4px 24px rgba(0,0,0,0.18)",
+                                }}
+                                labelStyle={{ color: "#94a3b8", fontSize: 9, fontWeight: 700, marginBottom: 4 }}
+                                itemStyle={{ color: "#fff", fontSize: 10, fontWeight: 700 }}
+                                formatter={(value: number, name: string) =>
+                                  name === "revenue" ? [formatINR(value), "Revenue"] : [value, "Orders"]
+                                }
+                              />
+                              <Area
+                                yAxisId="revenue"
+                                type="monotone"
+                                dataKey="revenue"
+                                stroke="#4F46E5"
+                                strokeWidth={2}
+                                fill="url(#revenueGrad)"
+                                dot={false}
+                                activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff", fill: "#4F46E5" }}
+                              />
+                              <Area
+                                yAxisId="orders"
+                                type="monotone"
+                                dataKey="orders"
+                                stroke="#06b6d4"
+                                strokeWidth={2}
+                                fill="url(#ordersGrad)"
+                                dot={false}
+                                activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff", fill: "#06b6d4" }}
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
                         </div>
                       </div>
 
