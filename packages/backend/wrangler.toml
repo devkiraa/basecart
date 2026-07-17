@@ -37,6 +37,12 @@ S3_BUCKET = "basecart-media-dev"
 MARKETING_URL = "http://localhost:3000"
 MERCHANT_DASHBOARD_URL = "http://localhost:3004"
 
+# ZeptoMail configurations for dev environment
+ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
+MAIL_FROM_ADDRESS = "noreply@basecart.app"
+MAIL_FROM_NAME = "Basecart"
+# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
+
 [[env.dev.d1_databases]]
 binding = "CONTROL_DB"
 database_name = "basecart-control-dev"
@@ -81,6 +87,12 @@ S3_BUCKET = "basecart-media-staging"
 MARKETING_URL = "https://staging.basecart.app"
 MERCHANT_DASHBOARD_URL = "https://merchant-staging.basecart.app"
 
+# ZeptoMail configurations for staging environment
+ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
+MAIL_FROM_ADDRESS = "noreply@basecart.app"
+MAIL_FROM_NAME = "Basecart"
+# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
+
 [[env.staging.d1_databases]]
 binding = "CONTROL_DB"
 database_name = "basecart-control-staging"
@@ -124,6 +136,12 @@ CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
 S3_BUCKET = "basecart-media-prod"
 MARKETING_URL = "https://basecart.app"
 MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
+
+# ZeptoMail configurations for production environment
+ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
+MAIL_FROM_ADDRESS = "noreply@basecart.app"
+MAIL_FROM_NAME = "Basecart"
+# Note: ZEPTOMAIL_TOKEN must be set as a Cloudflare secret via CLI or dashboard.
 
 [[env.production.d1_databases]]
 binding = "CONTROL_DB"
