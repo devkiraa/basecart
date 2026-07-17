@@ -74,7 +74,26 @@ export function resolveSender(type: EmailType, env: any): { address: string; nam
   let address = hardcoded.address;
   let name = hardcoded.name;
 
-  // Allow runtime override via EMAIL_ALIASES env variable (optional)
+  // 1. Check individual env variables
+  if (env) {
+    const typeKey = type.toUpperCase().replace(/-/g, "_");
+    const typeAddressKey = `MAIL_FROM_${typeKey}`;
+    const typeNameKey = `MAIL_FROM_${typeKey}_NAME`;
+
+    if (env[typeAddressKey]) {
+      address = env[typeAddressKey];
+    } else if (env.MAIL_FROM_ADDRESS) {
+      address = env.MAIL_FROM_ADDRESS;
+    }
+
+    if (env[typeNameKey]) {
+      name = env[typeNameKey];
+    } else if (env.MAIL_FROM_NAME) {
+      name = env.MAIL_FROM_NAME;
+    }
+  }
+
+  // 2. Allow runtime override via EMAIL_ALIASES env variable (optional)
   if (env?.EMAIL_ALIASES) {
     let aliases: any = env.EMAIL_ALIASES;
     if (typeof aliases === "string") {
@@ -86,7 +105,7 @@ export function resolveSender(type: EmailType, env: any): { address: string; nam
     }
 
     if (aliases && typeof aliases === "object") {
-      const templateAlias = aliases[type];
+      const templateAlias = aliases[type] || aliases.default;
       if (templateAlias?.address) address = templateAlias.address;
       if (templateAlias?.name) name = templateAlias.name;
     }

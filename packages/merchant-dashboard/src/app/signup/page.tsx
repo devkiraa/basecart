@@ -119,7 +119,7 @@ export default function SignupPage() {
 
         {/* Logo */}
         <div 
-          onClick={() => { window.location.href = "/"; }}
+          onClick={() => { window.location.href = process.env.NEXT_PUBLIC_MARKETING_URL || "http://localhost:3000"; }}
           className="flex items-center gap-2.5 cursor-pointer"
         >
           <div className="h-9 w-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
@@ -209,7 +209,7 @@ export default function SignupPage() {
         </div>
 
         <div className="max-w-[440px] w-full mx-auto space-y-6">
-          <div className="flex lg:hidden items-center gap-2 mb-4 select-none cursor-pointer" onClick={() => { window.location.href = "/"; }}>
+          <div className="flex lg:hidden items-center gap-2 mb-4 select-none cursor-pointer" onClick={() => { window.location.href = process.env.NEXT_PUBLIC_MARKETING_URL || "http://localhost:3000"; }}>
             <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
               <ShoppingBag className="h-4.5 w-4.5" />
             </div>

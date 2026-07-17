@@ -454,7 +454,7 @@ app.post("/admin/merchants/:tenantId/impersonate", authenticateAdmin, async (c) 
     path: "/",
     httpOnly: true,
     secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    sameSite: "Lax" as const,
     maxAge: 15 * 60,
     domain,
   };
@@ -465,7 +465,7 @@ app.post("/admin/merchants/:tenantId/impersonate", authenticateAdmin, async (c) 
   return c.json({
     success: true,
     message: "Impersonation session initialized",
-    impersonateUrl: "https://basecart.app/dashboard",
+    impersonateUrl: `${c.env.MERCHANT_DASHBOARD_URL}/dashboard`,
   });
 });
 
@@ -649,12 +649,12 @@ app.get("/admin/emails/templates", authenticateAdmin, async (c) => {
     },
     welcome: {
       userName: "Kiran G",
-      verifyLink: "https://basecart.app/verify?token=example-token",
+      verifyLink: `${c.env.MERCHANT_DASHBOARD_URL || "https://merchant.basecart.app"}/verify?token=example-token`,
       storeName: "Fashion Hub",
     },
     "password-reset": {
       userName: "Kiran G",
-      resetLink: "https://basecart.app/reset-password?token=example-token",
+      resetLink: `${c.env.MERCHANT_DASHBOARD_URL || "https://merchant.basecart.app"}/reset-password?token=example-token`,
       storeName: "Fashion Hub",
     },
     "order-confirmation": {
@@ -695,7 +695,7 @@ app.get("/admin/emails/templates", authenticateAdmin, async (c) => {
       storeName: "Fashion Hub",
     },
     "team-invite": {
-      inviteLink: "https://basecart.app/accept-invite?token=invite-token",
+      inviteLink: `${c.env.MERCHANT_DASHBOARD_URL || "https://merchant.basecart.app"}/accept-invite?token=invite-token`,
       inviterName: "Admin",
       role: "Manager",
       storeName: "Fashion Hub",

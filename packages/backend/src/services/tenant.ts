@@ -52,41 +52,7 @@ export async function getTenantBySubdomain(
   }
 }
 
-/**
- * Creates a new D1 database dynamically on Cloudflare via the REST API in production.
- * In local testing/dev environments, returns a mock database ID.
- */
-export async function createD1Database(tenantId: string, env: any): Promise<string> {
-  // If we are in test mode, local dev, or lack Cloudflare credentials, return a local mock ID
-  const isLocal = !env || env.NODE_ENV === "development" || env.NODE_ENV === "test" || process.env.NODE_ENV === "test";
-  if (isLocal || !env?.CLOUDFLARE_API_TOKEN) {
-    return `local-db-uuid-${tenantId}`;
-  }
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/d1/database`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      name: `tenant_${tenantId.replace(/-/g, "_")}`,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Failed to dynamically create D1 database for tenant: ${res.statusText} - ${errText}`);
-  }
-
-  const data = await res.json() as any;
-  if (!data.success || !data.result?.uuid) {
-    throw new Error(`Cloudflare D1 creation error: ${JSON.stringify(data.errors || data)}`);
-  }
-
-  return data.result.uuid;
-}
 
 /**
  * Dynamically provisions a new tenant:

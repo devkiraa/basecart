@@ -2,7 +2,7 @@ import { Hono } from "hono";
 import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
-import { getTenantBySubdomain, provisionTenantDatabase, createD1Database } from "../services/tenant";
+import { getTenantBySubdomain, provisionTenantDatabase } from "../services/tenant";
 import { sendEmail } from "../services/email";
 import {
   MerchantSignupSchema,
@@ -16,35 +16,43 @@ const app = new Hono<{ Bindings: any; Variables: any }>();
 
 function getMerchantCookieOptions(c: any, maxAge: number) {
   const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
+  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
   return {
     path: "/",
     httpOnly: true,
     secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    sameSite: "Lax" as const,
     maxAge,
+    domain,
   };
 }
 
 function getMerchantDeleteOptions(c: any) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
   return {
     path: "/",
+    domain,
   };
 }
 
 function getCustomerCookieOptions(c: any, maxAge: number) {
   const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
+  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
   return {
     path: "/",
     httpOnly: true,
     secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    sameSite: "Lax" as const,
     maxAge,
+    domain,
   };
 }
 
 function getCustomerDeleteOptions(c: any) {
+  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
   return {
     path: "/",
+    domain,
   };
 }
 
@@ -178,10 +186,7 @@ app.post("/auth/merchant/signup", async (c) => {
   const hashedPassword = await authService.hashPassword(password);
   const createdAt = new Date().toISOString();
 
-  // 4. Provision the dynamic D1/Durable Object database
-  const databaseId = await createD1Database(tenantId, c.env);
-
-  // 5. Save registry details in the control database
+  // 4. Save registry details in the control database
   const tStmt = controlDb
     .prepare(
       "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding, businessCategory, businessType, country, state, ownerName, phone, teamSize, monthlyOrders, currentPlatform, hearAboutUs, receiveUpdates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
@@ -234,7 +239,7 @@ app.post("/auth/merchant/signup", async (c) => {
     .bind(verificationToken, lowerEmail, tenantId, verificationExpiry, verificationTtl)
     .run();
 
-  const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
+  const verifyLink = `${c.env.MERCHANT_DASHBOARD_URL}/verify?token=${verificationToken}`;
   await sendEmailSafely(
     {
       type: "welcome",
@@ -427,7 +432,7 @@ app.post("/auth/merchant/forgot-password", async (c) => {
       .bind(token, lowerEmail, user.tenantId, expiresAt, ttl)
       .run();
 
-    const resetLink = `https://basecart.app/reset-password?token=${token}`;
+    const resetLink = `${c.env.MERCHANT_DASHBOARD_URL}/reset-password?token=${token}`;
     await sendEmailSafely(
       {
         type: "password-reset",
@@ -522,7 +527,7 @@ app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) =
     .bind(verificationToken, email, tenantId, verificationExpiry, verificationTtl)
     .run();
 
-  const verifyLink = `${c.req.url.split("/auth")[0]}/auth/merchant/verify-email?token=${verificationToken}`;
+  const verifyLink = `${c.env.MERCHANT_DASHBOARD_URL}/verify?token=${verificationToken}`;
   await sendEmailSafely(
     {
       type: "welcome",
@@ -543,8 +548,11 @@ app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) =
  */
 app.get("/auth/merchant/verify-email", async (c) => {
   const token = c.req.query("token");
+  const isJson = c.req.header("accept")?.includes("application/json");
+
   if (!token) {
-    return c.json({ error: "Token is required" }, 400);
+    if (isJson) return c.json({ error: "Token is required" }, 400);
+    return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?error=Token is required`);
   }
 
   const controlDb = getControlDb(c.env);
@@ -554,11 +562,13 @@ app.get("/auth/merchant/verify-email", async (c) => {
     .first<any>();
 
   if (!tokenItem) {
-    return c.json({ error: "Invalid or expired token" }, 400);
+    if (isJson) return c.json({ error: "Invalid or expired token" }, 400);
+    return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?error=Invalid or expired token`);
   }
 
   if (new Date(tokenItem.expiresAt) < new Date()) {
-    return c.json({ error: "Token has expired" }, 400);
+    if (isJson) return c.json({ error: "Token has expired" }, 400);
+    return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?error=Token has expired`);
   }
 
   // Update merchant user emailVerified status and delete the verification token
@@ -572,7 +582,8 @@ app.get("/auth/merchant/verify-email", async (c) => {
 
   await controlDb.batch([updateVerify, deleteToken]);
 
-  return c.redirect("https://basecart.app/?verified=true");
+  if (isJson) return c.json({ success: true });
+  return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?verified=true`);
 });
 
 // -------------------------------------------------------------

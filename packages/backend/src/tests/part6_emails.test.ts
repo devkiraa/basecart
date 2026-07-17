@@ -67,8 +67,8 @@ describe("Part 6: Transactional Email Templates & Renderer", () => {
 
     // 1. Fallback default
     const sender1 = resolveSender("otp", {});
-    expect(sender1.address).toBe("noreply@basecart.app");
-    expect(sender1.name).toBe("Basecart");
+    expect(sender1.address).toBe("otp@basecart.app");
+    expect(sender1.name).toBe("Basecart Security");
 
     // 2. Separate env vars
     const envVars = {

@@ -4,6 +4,10 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Basecart Dashboard",
   description: "Headless E-commerce SaaS Platform Dashboard",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({

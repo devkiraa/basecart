@@ -2,6 +2,7 @@ name = "basecart-backend"
 main = "src/index.ts"
 compatibility_date = "2024-09-23"
 compatibility_flags = [ "nodejs_compat" ]
+migrations_dir = "migrations"
 
 [observability.logs]
 enabled = true
@@ -10,98 +11,75 @@ invocation_logs = true
 [observability.traces]
 enabled = true
 
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TenantDO"]
+
 [[ratelimits]]
 name = "API_RATE_LIMITER"
 namespace_id = "1001"
 simple = { limit = 100, period = 60 }
 
-[vars]
-API_URL = "https://api.basecart.app"
+
+# --- DEVELOPMENT ENVIRONMENT (wrangler deploy --env dev) ---
+[env.dev]
+name = "basecart-backend-dev"
+
+[env.dev.vars]
 NODE_ENV = "development"
-ALLOWED_ORIGINS = "https://basecart.app,https://admin.basecart.app,https://*.basecart.app"
-COOKIE_DOMAIN_MERCHANT = ".basecart.app"
-COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
-COOKIE_DOMAIN_ADMIN = ".basecart.app"
-CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
-S3_BUCKET = "basecart-media-bucket"
+API_URL = "http://localhost:3001"
+ALLOWED_ORIGINS = "http://localhost:3000,http://localhost:3002,http://localhost:3004,https://basecart.app,https://admin.basecart.app,https://*.basecart.app"
+COOKIE_DOMAIN_MERCHANT = "localhost"
+COOKIE_DOMAIN_CUSTOMER = "localhost"
+COOKIE_DOMAIN_ADMIN = "localhost"
+CLOUDFLARE_ZONE_URL = "http://localhost:3001"
+S3_BUCKET = "basecart-media-dev"
+MARKETING_URL = "http://localhost:3000"
+MERCHANT_DASHBOARD_URL = "http://localhost:3004"
 
-[[d1_databases]]
+[[env.dev.d1_databases]]
 binding = "CONTROL_DB"
-database_name = "basecart-control-staging"
-database_id = "94242e41-5fc6-43e2-9abf-ff7b45436522"
+database_name = "basecart-control-dev"
+database_id = "bd31b769-7c65-4308-b078-91de57b94687"
 
-[durable_objects]
+[env.dev.durable_objects]
 bindings = [
   { name = "TENANT_DO", class_name = "TenantDO" }
 ]
 
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = ["TenantDO"]
-
-[[r2_buckets]]
+[[env.dev.r2_buckets]]
 binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-bucket"
+bucket_name = "basecart-media-dev"
 
-[[queues.producers]]
+[[env.dev.kv_namespaces]]
+binding = "KV_STORE"
+id = "5bad528ae4ec4f4d932293f00895a7fe"
+
+[[env.dev.queues.producers]]
 binding = "JOBS_QUEUE"
-queue = "basecart-jobs-queue-staging"
+queue = "basecart-jobs-queue-dev"
 
-[[queues.consumers]]
-queue = "basecart-jobs-queue-staging"
+[[env.dev.queues.consumers]]
+queue = "basecart-jobs-queue-dev"
 max_batch_size = 10
 max_batch_timeout = 5
 
-# Production Environment Settings
-[env.production]
-name = "basecart-backend-prod"
 
-[env.production.vars]
-NODE_ENV = "production"
-API_URL = "https://api.basecart.app"
-ALLOWED_ORIGINS = "https://basecart.app,https://admin.basecart.app,https://*.basecart.app"
-COOKIE_DOMAIN_MERCHANT = ".basecart.app"
-COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
-COOKIE_DOMAIN_ADMIN = ".basecart.app"
-CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
-S3_BUCKET = "basecart-media-prod"
-
-[[env.production.d1_databases]]
-binding = "CONTROL_DB"
-database_name = "basecart-control-prod"
-database_id = "PROD_D1_CONTROL_DB_ID" # REPLACE with real production D1 database ID
-
-[env.production.durable_objects]
-bindings = [
-  { name = "TENANT_DO", class_name = "TenantDO" }
-]
-
-[[env.production.r2_buckets]]
-binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-prod"
-
-[[env.production.queues.producers]]
-binding = "JOBS_QUEUE"
-queue = "basecart-jobs-queue-prod"
-
-[[env.production.queues.consumers]]
-queue = "basecart-jobs-queue-prod"
-max_batch_size = 10
-max_batch_timeout = 5
-
-# Staging Environment Settings
+# --- STAGING ENVIRONMENT (wrangler deploy --env staging) ---
 [env.staging]
 name = "basecart-backend-staging"
 
 [env.staging.vars]
 NODE_ENV = "staging"
 API_URL = "https://api-staging.basecart.app"
-ALLOWED_ORIGINS = "https://staging.basecart.app,https://admin-staging.basecart.app,https://*.staging.basecart.app"
+ALLOWED_ORIGINS = "https://staging.basecart.app,https://merchant-staging.basecart.app,https://admin-staging.basecart.app,https://*.staging.basecart.app"
 COOKIE_DOMAIN_MERCHANT = ".basecart.app"
 COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
 CLOUDFLARE_ZONE_URL = "https://api-staging.basecart.app"
-S3_BUCKET = "basecart-media-bucket"
+S3_BUCKET = "basecart-media-staging"
+MARKETING_URL = "https://staging.basecart.app"
+MERCHANT_DASHBOARD_URL = "https://merchant-staging.basecart.app"
 
 [[env.staging.d1_databases]]
 binding = "CONTROL_DB"
@@ -115,7 +93,11 @@ bindings = [
 
 [[env.staging.r2_buckets]]
 binding = "MEDIA_BUCKET"
-bucket_name = "basecart-media-bucket"
+bucket_name = "basecart-media-staging"
+
+[[env.staging.kv_namespaces]]
+binding = "KV_STORE"
+id = "9ac18f3916584585bcd7b67574872ba7"
 
 [[env.staging.queues.producers]]
 binding = "JOBS_QUEUE"
@@ -126,9 +108,47 @@ queue = "basecart-jobs-queue-staging"
 max_batch_size = 10
 max_batch_timeout = 5
 
-[[env.staging.ratelimits]]
-name = "API_RATE_LIMITER"
-namespace_id = "1001"
-simple = { limit = 100, period = 60 }
 
-# Triggering automated deployment
+# --- PRODUCTION ENVIRONMENT (wrangler deploy --env production) ---
+[env.production]
+name = "basecart-backend-prod"
+
+[env.production.vars]
+NODE_ENV = "production"
+API_URL = "https://api.basecart.app"
+ALLOWED_ORIGINS = "https://basecart.app,https://merchant.basecart.app,https://admin.basecart.app,https://*.basecart.app"
+COOKIE_DOMAIN_MERCHANT = ".basecart.app"
+COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
+COOKIE_DOMAIN_ADMIN = ".basecart.app"
+CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
+S3_BUCKET = "basecart-media-prod"
+MARKETING_URL = "https://basecart.app"
+MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
+
+[[env.production.d1_databases]]
+binding = "CONTROL_DB"
+database_name = "basecart-control-prod"
+database_id = "5a1c680b-b6d4-4b6d-8283-8bfc8905d227"
+
+[env.production.durable_objects]
+bindings = [
+  { name = "TENANT_DO", class_name = "TenantDO" }
+]
+
+[[env.production.r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "basecart-media-prod"
+
+[[env.production.kv_namespaces]]
+binding = "KV_STORE"
+id = "782dd48172da4b1399b361107b48c2bd"
+
+[[env.production.queues.producers]]
+binding = "JOBS_QUEUE"
+queue = "basecart-jobs-queue-prod"
+
+[[env.production.queues.consumers]]
+queue = "basecart-jobs-queue-prod"
+max_batch_size = 10
+max_batch_timeout = 5
+

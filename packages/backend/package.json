@@ -6,10 +6,14 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "wrangler dev --port 3001 --ip 0.0.0.0",
+    "dev": "wrangler dev --env dev --port 3001 --ip 0.0.0.0",
     "bootstrap": "ts-node src/scripts/bootstrap.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "migrate:dev": "wrangler d1 migrations apply basecart-control-dev --local --env dev",
+    "migrate:dev:remote": "wrangler d1 migrations apply basecart-control-dev --remote --env dev",
+    "migrate:staging": "wrangler d1 migrations apply basecart-control-staging --remote --env staging",
+    "migrate:prod": "wrangler d1 migrations apply basecart-control-prod --remote --env production"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1086.0",

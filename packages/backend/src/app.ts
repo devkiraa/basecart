@@ -12,8 +12,6 @@ import customersRouter from "./routes/customers";
 import dashboardRouter from "./routes/dashboard";
 import adminRouter from "./routes/admin";
 
-let isDbMigrated = false;
-
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
     if (pattern === "*") return true;
@@ -60,6 +58,12 @@ export function buildApp() {
     })
   );
 
+  // Global Robots header to prevent API route indexing
+  app.use("*", async (c, next) => {
+    c.header("X-Robots-Tag", "noindex, nofollow");
+    await next();
+  });
+
   // Global Rate Limiter Middleware
   app.use("*", async (c, next) => {
     if (c.env && (c.env as any).API_RATE_LIMITER) {
@@ -96,22 +100,6 @@ export function buildApp() {
       },
       statusCode
     );
-  });
-
-  // Auto-migrate CONTROL_DB on startup when running locally
-  app.use("*", async (c, next) => {
-    const isLocal = c.req.url.includes("localhost") || c.req.url.includes("127.0.0.1") || c.req.url.includes("0.0.0.0");
-    if (c.env && isLocal && c.env.CONTROL_DB && !isDbMigrated) {
-      try {
-        const { controlSchema } = await import("./lib/control_schema");
-        const { migrateDatabase } = await import("./lib/db");
-        await migrateDatabase(c.env.CONTROL_DB, controlSchema);
-        isDbMigrated = true;
-      } catch (err) {
-        console.error("Failed to auto-migrate CONTROL_DB:", err);
-      }
-    }
-    await next();
   });
 
   // Health check

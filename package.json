@@ -5,7 +5,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n \"backend,merchant,storefront,admin\" -c \"magenta,blue,green,yellow\" \"npm run dev:backend\" \"npm run dev:merchant\" \"npm run dev:storefront\" \"npm run dev:admin\"",
+    "dev": "concurrently -n \"marketing,backend,merchant,storefront,admin\" -c \"cyan,magenta,blue,green,yellow\" \"npm run dev:marketing\" \"npm run dev:backend\" \"npm run dev:merchant\" \"npm run dev:storefront\" \"npm run dev:admin\"",
+    "dev:marketing": "npm run dev --workspace=packages/marketing",
     "dev:backend": "npm run dev --workspace=packages/backend",
     "dev:merchant": "npm run dev --workspace=packages/merchant-dashboard",
     "dev:storefront": "npm run dev --workspace=packages/storefront",
@@ -16,7 +17,11 @@
     "build:admin": "npm run build --workspace=packages/admin-panel",
     "test:backend": "npm run test --workspace=packages/backend",
     "localstack:up": "docker compose up -d",
-    "localstack:down": "docker compose down"
+    "localstack:down": "docker compose down",
+    "migrate:dev": "npm run migrate:dev --workspace=packages/backend",
+    "migrate:dev:remote": "npm run migrate:dev:remote --workspace=packages/backend",
+    "migrate:staging": "npm run migrate:staging --workspace=packages/backend",
+    "migrate:prod": "npm run migrate:prod --workspace=packages/backend"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
