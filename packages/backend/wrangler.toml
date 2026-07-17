@@ -127,7 +127,7 @@ simple = { limit = 100, period = 60 }
 
 # --- PRODUCTION ENVIRONMENT (wrangler deploy --env production) ---
 [env.production]
-name = "basecart-backend-prod"
+name = "basecart-backend"
 
 [env.production.vars]
 NODE_ENV = "production"
