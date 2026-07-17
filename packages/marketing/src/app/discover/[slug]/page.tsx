@@ -18,6 +18,8 @@ import Footer from "../../../components/Footer";
 // Reuse client components for interactions
 import BookDemoButton from "../../../components/BookDemoButton";
 
+export const runtime = "edge";
+
 // Define the interface for slug data
 interface LocalNicheData {
   slug: string;
