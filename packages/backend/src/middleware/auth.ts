@@ -3,6 +3,7 @@ import { getCookie } from "hono/cookie";
 import { getControlDb } from "../lib/db";
 import { authService, TokenPayload } from "../services/auth";
 import { getTenantBySubdomain } from "../services/tenant";
+import { isReservedSubdomain, isPlatformHost } from "@basecart/shared";
 
 /**
  * Authenticate merchant request
@@ -21,7 +22,7 @@ export async function authenticateMerchant(c: Context, next: Next) {
       return c.json({ error: "Unauthorized: Missing token" }, 401);
     }
 
-    const payload = await authService.verifyAccessToken(token);
+    const payload = await authService.verifyAccessToken(token, c.env);
 
     if (payload.type !== "merchant") {
       return c.json({ error: "Forbidden: Not a merchant session" }, 403);
@@ -63,7 +64,7 @@ export async function authenticateCustomer(c: Context, next: Next) {
       return c.json({ error: "Unauthorized: Missing token" }, 401);
     }
 
-    const payload = await authService.verifyAccessToken(token);
+    const payload = await authService.verifyAccessToken(token, c.env);
 
     if (payload.type !== "customer") {
       return c.json({ error: "Forbidden: Not a customer session" }, 403);
@@ -81,11 +82,17 @@ export async function authenticateCustomer(c: Context, next: Next) {
  * Resolves tenant details based on URL subdomain parameters, Host header, or a custom header
  */
 export async function resolveStorefrontTenant(c: Context, next: Next) {
+  const host = c.req.header("host") || "";
+
+  // Avoid database queries for platform hostnames
+  if (isPlatformHost(host) && !c.req.param("subdomain")) {
+    return c.json({ error: `Store "${host}" not found` }, 404);
+  }
+
   let subdomain = c.req.param("subdomain");
 
   if (!subdomain) {
     // Attempt to extract from host header
-    const host = c.req.header("host") || "";
     const parts = host.split(".");
     if (parts.length >= 2) {
       const sub = parts[0];
@@ -109,6 +116,10 @@ export async function resolveStorefrontTenant(c: Context, next: Next) {
 
   if (!subdomain) {
     return c.json({ error: "Bad Request: Subdomain is required" }, 400);
+  }
+
+  if (isReservedSubdomain(subdomain) || isPlatformHost(`${subdomain}.basecart.app`)) {
+    return c.json({ error: `Store "${subdomain}" not found` }, 404);
   }
 
   const tenant = await getTenantBySubdomain(subdomain, c.env);

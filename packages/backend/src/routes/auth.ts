@@ -9,8 +9,10 @@ import {
   MerchantLoginSchema,
   CustomerSignupSchema,
   CustomerLoginSchema,
+  isReservedSubdomain,
 } from "@basecart/shared";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
+import { logReservedSubdomainAbuse } from "../lib/audit";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -78,12 +80,13 @@ app.get("/auth/merchant/check-subdomain", async (c) => {
     return c.json({ error: "Subdomain is required" }, 400);
   }
 
-  if (!/^[a-z0-9-]+$/.test(subdomain)) {
+  if (isReservedSubdomain(subdomain)) {
+    logReservedSubdomainAbuse(c, subdomain);
     return c.json({
-      available: false,
-      error: "Subdomain must contain only lowercase letters, numbers, and hyphens.",
-      alternates: [],
-    });
+      success: false,
+      code: "RESERVED_SUBDOMAIN",
+      message: "This store name is reserved."
+    }, 409);
   }
 
   const controlDb = getControlDb(c.env);
@@ -157,6 +160,15 @@ app.post("/auth/merchant/signup", async (c) => {
   } = parseResult.data;
   const lowerEmail = email.toLowerCase();
   const lowerSubdomain = subdomain.toLowerCase();
+
+  if (isReservedSubdomain(lowerSubdomain)) {
+    logReservedSubdomainAbuse(c, lowerSubdomain);
+    return c.json({
+      success: false,
+      code: "RESERVED_SUBDOMAIN",
+      message: "This store name is reserved."
+    }, 409);
+  }
 
   const controlDb = getControlDb(c.env);
 
@@ -262,7 +274,8 @@ app.post("/auth/merchant/signup", async (c) => {
       tenantId,
       type: "merchant",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
@@ -320,7 +333,8 @@ app.post("/auth/merchant/login", async (c) => {
       tenantId: user.tenantId,
       type: "merchant",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
@@ -349,7 +363,7 @@ app.post("/auth/merchant/refresh", async (c) => {
 
   try {
     const controlDb = getControlDb(c.env);
-    const tokens = await authService.refreshSession(refreshToken, tenantId, controlDb);
+    const tokens = await authService.refreshSession(refreshToken, tenantId, controlDb, c.env);
 
     setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
     setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
@@ -381,7 +395,8 @@ app.get("/auth/merchant/me", authenticateMerchant, async (c) => {
       tenantId: tenantId,
       type: "merchant",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   return c.json({
@@ -674,7 +689,8 @@ app.post("/auth/customer/signup", resolveStorefrontTenant, async (c) => {
       tenantId,
       type: "customer",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_customer_token", tokens.accessToken, getCustomerCookieOptions(c, 15 * 60));
@@ -746,7 +762,8 @@ app.post("/auth/customer/login", resolveStorefrontTenant, async (c) => {
       tenantId,
       type: "customer",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_customer_token", tokens.accessToken, getCustomerCookieOptions(c, 15 * 60));
@@ -786,7 +803,8 @@ app.get("/auth/customer/me", resolveStorefrontTenant, authenticateCustomer, asyn
       tenantId,
       type: "customer",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   return c.json({

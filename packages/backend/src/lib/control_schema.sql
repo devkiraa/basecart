@@ -86,3 +86,25 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   expiresAt INTEGER NOT NULL,
   createdAt TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS support_tickets (
+  ticketId TEXT PRIMARY KEY,
+  tenantId TEXT NOT NULL,
+  storeName TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  priority TEXT NOT NULL DEFAULT 'medium',
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS email_logs (
+  logId TEXT PRIMARY KEY,
+  recipient TEXT NOT NULL,
+  template TEXT NOT NULL,
+  status TEXT NOT NULL,
+  providerResponse TEXT,
+  timestamp TEXT NOT NULL,
+  duration INTEGER NOT NULL,
+  errorMessage TEXT
+);

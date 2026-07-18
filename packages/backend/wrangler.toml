@@ -84,6 +84,8 @@ MERCHANT_DASHBOARD_URL = "http://localhost:3004"
 ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
 MAIL_FROM_ADDRESS = "noreply@basecart.app"
 MAIL_FROM_NAME = "Basecart"
+JWT_SECRET = "local_jwt_secret_key_for_testing_purposes"
+ENCRYPTION_SECRET = "0123456789abcdef0123456789abcdef"
 
 [[env.dev.d1_databases]]
 binding = "CONTROL_DB"

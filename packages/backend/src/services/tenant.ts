@@ -1,6 +1,7 @@
 import { getControlDb, getTenantDb, migrateDatabase } from "../lib/db";
 import fs from "fs";
 import path from "path";
+import { isReservedSubdomain } from "@basecart/shared";
 
 // Use TypeScript module for schema
 import { tenantSchema } from "../lib/tenant_schema";
@@ -65,6 +66,17 @@ export async function provisionTenantDatabase(
   storeName: string,
   env: any
 ): Promise<void> {
+  // Double-check resolved subdomain is not reserved to block direct API bypasses
+  const controlDb = getControlDb(env);
+  const tenantRow = await controlDb
+    .prepare("SELECT subdomain FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ subdomain: string }>();
+
+  if (tenantRow && isReservedSubdomain(tenantRow.subdomain)) {
+    throw new Error(`FATAL: Cannot provision database for reserved subdomain "${tenantRow.subdomain}"`);
+  }
+
   const tenantDb = await getTenantDb(tenantId, env);
   
   // 1. Run migrations on the isolated tenant database

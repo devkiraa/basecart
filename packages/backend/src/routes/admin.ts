@@ -4,6 +4,9 @@ import { getControlDb, getTenantDb } from "../lib/db";
 import { authService } from "../services/auth";
 import { authenticateMerchant } from "../middleware/auth";
 import { renderEmail, getEmailProvider, sendEmail, PLATFORM_EMAIL_ALIASES } from "@basecart/emails";
+import { isReservedSubdomain } from "@basecart/shared";
+import { provisionTenantDatabase } from "../services/tenant";
+import { logReservedSubdomainAbuse } from "../lib/audit";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -268,7 +271,7 @@ export async function authenticateAdmin(c: any, next: () => Promise<void>) {
       return c.json({ error: "Unauthorized: Missing token" }, 401);
     }
 
-    const payload = await authService.verifyAccessToken(token);
+    const payload = await authService.verifyAccessToken(token, c.env);
 
     if (payload.role !== "admin") {
       return c.json({ error: "Forbidden: Admin access required" }, 403);
@@ -341,7 +344,8 @@ app.post("/admin/auth/signup", async (c) => {
       tenantId: "PLATFORM",
       type: "admin" as any,
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_admin_token", tokens.accessToken, getAdminCookieOptions(c, 15 * 60));
@@ -391,7 +395,8 @@ app.post("/admin/auth/login", async (c) => {
       tenantId: "PLATFORM",
       type: "admin" as any,
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   setCookie(c, "basecart_admin_token", tokens.accessToken, getAdminCookieOptions(c, 15 * 60));
@@ -432,6 +437,94 @@ app.get("/admin/merchants", authenticateAdmin, async (c) => {
   }));
 
   return c.json(merchants);
+});
+
+/**
+ * Manually create a merchant (Admin-only)
+ */
+app.post("/admin/merchants", authenticateAdmin, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const { email, password, storeName, subdomain, plan = "starter" } = body;
+
+  if (!email || !password || !storeName || !subdomain) {
+    return c.json({ error: "Email, password, storeName, and subdomain are required" }, 400);
+  }
+
+  const lowerEmail = email.toLowerCase();
+  const lowerSubdomain = subdomain.trim().toLowerCase();
+
+  // Validate reserved subdomain list
+  if (isReservedSubdomain(lowerSubdomain)) {
+    logReservedSubdomainAbuse(c, lowerSubdomain);
+    return c.json({
+      success: false,
+      code: "RESERVED_SUBDOMAIN",
+      message: "This store name is reserved."
+    }, 409);
+  }
+
+  const controlDb = getControlDb(c.env);
+
+  // 1. Check if subdomain already exists
+  const existingSubdomain = await controlDb
+    .prepare("SELECT tenantId FROM tenants WHERE subdomain = ?")
+    .bind(lowerSubdomain)
+    .first();
+
+  if (existingSubdomain) {
+    return c.json({ error: "Subdomain is already registered by another store" }, 400);
+  }
+
+  // 2. Check if email already exists globally
+  const existingUser = await controlDb
+    .prepare("SELECT email FROM merchant_users WHERE email = ?")
+    .bind(lowerEmail)
+    .first();
+
+  if (existingUser) {
+    return c.json({ error: "Email is already registered" }, 400);
+  }
+
+  // 3. Generate credentials and IDs
+  const tenantId = crypto.randomUUID();
+  const userId = crypto.randomUUID();
+  const hashedPassword = await authService.hashPassword(password);
+  const createdAt = new Date().toISOString();
+
+  // 4. Save registry details in the control database
+  const tStmt = controlDb
+    .prepare(
+      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, addOns, branding) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(tenantId, storeName, lowerSubdomain, plan, "active", createdAt, "[]", "{}");
+
+  const uStmt = controlDb
+    .prepare(
+      "INSERT INTO merchant_users (email, tenantId, userId, hashedPassword, role, emailVerified, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 1, createdAt);
+
+  await controlDb.batch([tStmt, uStmt]);
+
+  // 5. Run dynamic database provisioning (D1 migration + Seeding)
+  await provisionTenantDatabase(tenantId, storeName, c.env);
+
+  // Write Admin Audit Log
+  const logId = crypto.randomUUID();
+  await controlDb
+    .prepare(
+      "INSERT INTO admin_audit_logs (logId, adminEmail, action, targetTenantId, plan, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(logId, c.get("user").email || "admin", "create_store", tenantId, plan, "active", createdAt)
+    .run();
+
+  return c.json({
+    message: "Merchant created successfully",
+    tenantId,
+    storeName,
+    subdomain: lowerSubdomain,
+    plan,
+  }, 201);
 });
 
 /**
@@ -722,7 +815,8 @@ app.post("/admin/merchants/:tenantId/impersonate", authenticateAdmin, async (c) 
       tenantId,
       type: "merchant",
     },
-    controlDb
+    controlDb,
+    c.env
   );
 
   const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isReservedSubdomain, isPlatformHost } from "@basecart/shared";
 
 export const config = {
   matcher: [
@@ -49,8 +50,8 @@ export function middleware(request: NextRequest) {
     tenant = hostname.toLowerCase();
   }
 
-  // Bypass rewriting for empty or default subdomains
-  if (!tenant || tenant === "www" || tenant === "admin" || tenant === "dashboard") {
+  // Bypass rewriting for empty, platform hostnames, or reserved subdomains
+  if (!tenant || isReservedSubdomain(tenant) || isPlatformHost(hostname)) {
     return NextResponse.next();
   }
 

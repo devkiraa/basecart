@@ -14,7 +14,9 @@ import {
   Building2,
   ExternalLink,
   Copy,
+  Plus,
 } from "lucide-react";
+import { isReservedSubdomain } from "@basecart/shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
@@ -34,6 +36,59 @@ export default function MerchantsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Manual merchant creation states
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newStoreName, setNewStoreName] = useState("");
+  const [newSubdomain, setNewSubdomain] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPlan, setNewPlan] = useState<"starter" | "growth" | "pro">("starter");
+  const [createError, setCreateError] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const isSubdomainReserved = newSubdomain.trim() !== "" && isReservedSubdomain(newSubdomain);
+
+  const handleCreateMerchant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubdomainReserved) return;
+    try {
+      setCreating(true);
+      setCreateError("");
+      const res = await fetch(`${API_URL}/admin/merchants`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeName: newStoreName,
+          subdomain: newSubdomain,
+          email: newEmail,
+          password: newPassword,
+          plan: newPlan,
+        }),
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to create merchant");
+      }
+
+      // Reset and close
+      setNewStoreName("");
+      setNewSubdomain("");
+      setNewEmail("");
+      setNewPassword("");
+      setNewPlan("starter");
+      setShowCreateModal(false);
+      
+      // Reload list
+      await loadMerchants();
+    } catch (err: any) {
+      setCreateError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const handleCopyId = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -132,6 +187,13 @@ export default function MerchantsListPage() {
               Audit registration details, plan metrics, and control tenant suspension states.
             </p>
           </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+          >
+            <Plus className="w-4 h-4" />
+            Create Merchant
+          </button>
         </div>
 
         {error && (
@@ -439,6 +501,128 @@ export default function MerchantsListPage() {
                   Confirm Change
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create Merchant Modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white border border-slate-200 rounded-xl shadow-xl w-full max-w-md p-6 overflow-hidden">
+              <h3 className="font-bold text-slate-800 text-lg mb-4">Create New Merchant</h3>
+              
+              {createError && (
+                <div className="p-3 bg-red-50 border border-red-100 text-xs text-red-600 rounded-lg mb-4">
+                  {createError}
+                </div>
+              )}
+
+              <form onSubmit={handleCreateMerchant} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Store Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newStoreName}
+                    onChange={(e) => setNewStoreName(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g. Nike Store"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Subdomain / Slug
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newSubdomain}
+                    onChange={(e) => setNewSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g. nike"
+                  />
+                  {isSubdomainReserved && (
+                    <span className="text-xs text-red-500 font-semibold mt-1 block">
+                      This name is reserved by the platform.
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Owner Email
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                    placeholder="e.g. owner@nike.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
+                    Subscription Plan
+                  </label>
+                  <select
+                    value={newPlan}
+                    onChange={(e) => setNewPlan(e.target.value as any)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none"
+                  >
+                    <option value="starter">Starter</option>
+                    <option value="growth">Growth</option>
+                    <option value="pro">Pro</option>
+                  </select>
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateModal(false);
+                      setCreateError("");
+                      setNewStoreName("");
+                      setNewSubdomain("");
+                      setNewEmail("");
+                      setNewPassword("");
+                      setNewPlan("starter");
+                    }}
+                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-lg text-sm font-semibold transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creating || isSubdomainReserved}
+                    className={`px-4 py-2 text-white rounded-lg text-sm font-semibold transition-colors ${
+                      isSubdomainReserved
+                        ? "bg-slate-300 cursor-not-allowed opacity-50"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    {creating ? "Creating..." : "Save"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

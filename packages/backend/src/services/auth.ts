@@ -3,10 +3,6 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { D1Database } from "../lib/db";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("FATAL: JWT_SECRET environment variable is not set. Refusing to start without a secure JWT secret.");
-}
-const JWT_SECRET = process.env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 
@@ -23,6 +19,25 @@ export interface AuthTokens {
   refreshToken: string;
 }
 
+/**
+ * Resolves JWT_SECRET from the Cloudflare Worker env bindings.
+ * Throws a clear error if the secret is not configured.
+ */
+function resolveJwtSecret(env: any): string {
+  const secret = env?.JWT_SECRET || (typeof process !== "undefined" && process.env ? process.env.JWT_SECRET : undefined);
+  if (secret) return secret;
+
+  try {
+    // @ts-ignore
+    const { env: testEnv } = require("cloudflare:test");
+    if (testEnv && testEnv.JWT_SECRET) {
+      return testEnv.JWT_SECRET;
+    }
+  } catch (e) {}
+
+  throw new Error("JWT_SECRET is not configured. Set it in your Worker environment bindings.");
+}
+
 export class AuthService {
   async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, 10);
@@ -32,7 +47,8 @@ export class AuthService {
     return bcrypt.compare(password, hash);
   }
 
-  async generateTokens(payload: TokenPayload, db?: D1Database): Promise<AuthTokens> {
+  async generateTokens(payload: TokenPayload, db?: D1Database, env?: any): Promise<AuthTokens> {
+    const secret = resolveJwtSecret(env);
     const accessToken = jwt.sign(
       {
         userId: payload.userId,
@@ -41,7 +57,7 @@ export class AuthService {
         tenantId: payload.tenantId,
         type: payload.type,
       },
-      JWT_SECRET,
+      secret,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
@@ -52,7 +68,7 @@ export class AuthService {
         type: payload.type,
         jti: crypto.randomUUID(),
       },
-      JWT_SECRET,
+      secret,
       { expiresIn: "7d" }
     );
 
@@ -79,9 +95,10 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  async verifyAccessToken(token: string): Promise<TokenPayload> {
+  async verifyAccessToken(token: string, env: any): Promise<TokenPayload> {
+    const secret = resolveJwtSecret(env);
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as any;
+      const decoded = jwt.verify(token, secret) as any;
       if (!decoded.userId || !decoded.tenantId || !decoded.type) {
         throw new Error("Invalid token payload");
       }
@@ -100,11 +117,13 @@ export class AuthService {
   async refreshSession(
     refreshToken: string,
     tenantId: string,
-    db: D1Database
+    db: D1Database,
+    env: any
   ): Promise<AuthTokens> {
+    const secret = resolveJwtSecret(env);
     let decoded: any;
     try {
-      decoded = jwt.verify(refreshToken, JWT_SECRET);
+      decoded = jwt.verify(refreshToken, secret);
     } catch (err) {
       throw new Error("Invalid refresh token");
     }
@@ -139,7 +158,7 @@ export class AuthService {
       role: tokenItem.role,
       tenantId: tenantId,
       type: tokenItem.type,
-    }, db);
+    }, db, env);
   }
 
   async revokeSession(refreshToken: string, tenantId: string, db: D1Database): Promise<void> {
