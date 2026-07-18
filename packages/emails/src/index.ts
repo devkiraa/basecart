@@ -79,16 +79,17 @@ export function resolveSender(type: EmailType, env: any): { address: string; nam
     const typeKey = type.toUpperCase().replace(/-/g, "_");
     const typeAddressKey = `MAIL_FROM_${typeKey}`;
     const typeNameKey = `MAIL_FROM_${typeKey}_NAME`;
+    const isPlatformSpecific = !!PLATFORM_EMAIL_ALIASES[type];
 
     if (env[typeAddressKey]) {
       address = env[typeAddressKey];
-    } else if (env.MAIL_FROM_ADDRESS) {
+    } else if (env.MAIL_FROM_ADDRESS && !isPlatformSpecific) {
       address = env.MAIL_FROM_ADDRESS;
     }
 
     if (env[typeNameKey]) {
       name = env[typeNameKey];
-    } else if (env.MAIL_FROM_NAME) {
+    } else if (env.MAIL_FROM_NAME && !isPlatformSpecific) {
       name = env.MAIL_FROM_NAME;
     }
   }
