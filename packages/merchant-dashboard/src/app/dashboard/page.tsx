@@ -350,6 +350,7 @@ export default function MerchantDashboard() {
   ]);
 
   const [isHydrated, setIsHydrated] = useState(false);
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -477,6 +478,8 @@ export default function MerchantDashboard() {
         }
       } catch (err) {
         console.error("No active merchant session:", err);
+      } finally {
+        setSessionChecked(true);
       }
     };
     checkSession();
@@ -498,10 +501,10 @@ export default function MerchantDashboard() {
 
   // Redirect to login if token is missing or expired
   useEffect(() => {
-    if (isHydrated && !token) {
+    if (isHydrated && sessionChecked && !token) {
       window.location.href = "/login";
     }
-  }, [isHydrated, token]);
+  }, [isHydrated, sessionChecked, token]);
 
   // Live clock ticker
   useEffect(() => {
