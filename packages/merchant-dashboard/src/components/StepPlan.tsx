@@ -1,11 +1,12 @@
 import React from "react";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 interface StepPlanProps {
   data: any;
   onChange: (fields: any) => void;
   onNext: () => void;
   onBack: () => void;
+  loading?: boolean;
 }
 
 const PLANS = [
@@ -46,7 +47,7 @@ const PLANS = [
   }
 ];
 
-export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanProps) {
+export default function StepPlan({ data, onChange, onNext, onBack, loading }: StepPlanProps) {
   const selectedPlanId = data.selectedPlan || "free";
 
   const handleSelectPlan = (id: string) => {
@@ -71,12 +72,12 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
           return (
             <div
               key={plan.id}
-              onClick={() => handleSelectPlan(plan.id)}
+              onClick={() => !loading && handleSelectPlan(plan.id)}
               className={`p-4 border rounded-card cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all ${
                 active
                   ? "border-indigo-600 bg-indigo-50/50 shadow-sm"
                   : "border-slate-200 hover:border-slate-350 bg-white"
-              }`}
+              } ${loading ? "pointer-events-none opacity-80" : ""}`}
             >
               <div className="flex-1 space-y-2">
                 <div className="flex items-center gap-2">
@@ -90,7 +91,7 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
                 <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500">
                   {plan.features.slice(0, 3).map((f) => (
                     <span key={f} className="flex items-center gap-1">
-                      • {f}
+                       {f}
                     </span>
                   ))}
                 </div>
@@ -108,15 +109,24 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
         <button
           type="button"
           onClick={onBack}
-          className="w-1/3 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-button text-sm transition-colors"
+          disabled={loading}
+          className="w-1/3 py-2.5 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold rounded-button text-sm transition-colors disabled:opacity-50"
         >
           Back
         </button>
         <button
           type="submit"
-          className="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-button text-sm transition-colors shadow-sm text-center"
+          disabled={loading}
+          className="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-button text-sm transition-colors shadow-sm text-center flex items-center justify-center gap-2"
         >
-          Next Step
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Launching...
+            </>
+          ) : (
+            "Verify & Launch"
+          )}
         </button>
       </div>
     </form>

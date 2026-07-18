@@ -122,6 +122,31 @@ export function resolveSender(type: EmailType, env: any): { address: string; nam
  * For platform-level templates (OTP, Welcome, Password Reset, etc.), the storeName
  * in the email data is always forced to "Basecart" regardless of what was passed in.
  */
+async function dispatchSynchronously(payload: EmailPayload, env: any): Promise<void> {
+  try {
+    const { renderEmail } = await import("./renderer");
+    const { getEmailProvider } = await import("./services/provider");
+
+    const { subject, html, text } = renderEmail(payload.type, payload.data);
+    const provider = getEmailProvider(env);
+    const res = await provider.send(
+      payload.to,
+      subject,
+      html,
+      text,
+      payload.data.attachments,
+      payload.from
+    );
+    if (!res.success) {
+      console.error(`❌ Synchronous email dispatch failed: ${res.error}`);
+    } else {
+      console.log(`✅ Synchronous email dispatch completed successfully.`);
+    }
+  } catch (err) {
+    console.error("❌ Synchronous email dispatch crashed:", err);
+  }
+}
+
 export async function sendEmail(
   payload: EmailPayload,
   env: any
@@ -154,34 +179,17 @@ export async function sendEmail(
   const queue = env?.JOBS_QUEUE;
   if (!queue) {
     console.warn("⚠️ env.JOBS_QUEUE is missing. Dispatching email synchronously.");
-    try {
-      const { renderEmail } = await import("./renderer");
-      const { getEmailProvider } = await import("./services/provider");
-
-      const { subject, html, text } = renderEmail(payload.type, payload.data);
-      const provider = getEmailProvider(env);
-      const res = await provider.send(
-        payload.to,
-        subject,
-        html,
-        text,
-        payload.data.attachments,
-        payload.from
-      );
-      if (!res.success) {
-        console.error(`❌ Synchronous email dispatch failed: ${res.error}`);
-      } else {
-        console.log(`✅ Synchronous email dispatch completed successfully.`);
-      }
-    } catch (err) {
-      console.error("❌ Synchronous email dispatch crashed:", err);
-    }
+    await dispatchSynchronously(payload, env);
     return;
   }
 
-  // Serialize and send job to queue
-  await queue.send({
-    type: "TRANSACTIONAL_EMAIL",
-    emailPayload: payload,
-  });
+  try {
+    await queue.send({
+      type: "TRANSACTIONAL_EMAIL",
+      emailPayload: payload,
+    });
+  } catch (err) {
+    console.warn("⚠️ env.JOBS_QUEUE send failed. Falling back to synchronous email dispatch:", err);
+    await dispatchSynchronously(payload, env);
+  }
 }

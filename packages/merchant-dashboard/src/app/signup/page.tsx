@@ -14,7 +14,6 @@ import StepAccount from "../../components/StepAccount";
 import StepStore from "../../components/StepStore";
 import StepBusiness from "../../components/StepBusiness";
 import StepPlan from "../../components/StepPlan";
-import StepVerification from "../../components/StepVerification";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
@@ -226,15 +225,14 @@ export default function SignupPage() {
               <div className="absolute top-[18px] left-[5%] right-[5%] h-0.5 bg-slate-100 -z-10"></div>
               <div 
                 className="absolute top-[18px] left-[5%] h-0.5 bg-blue-600 transition-all duration-300 -z-10"
-                style={{ width: `${((wizardStep - 1) / 4) * 90}%` }}
+                style={{ width: `${((wizardStep - 1) / 3) * 90}%` }}
               ></div>
               
               {[
                 { step: 1, label: "Account" },
                 { step: 2, label: "Store" },
                 { step: 3, label: "Business" },
-                { step: 4, label: "Plan" },
-                { step: 5, label: "Verify" }
+                { step: 4, label: "Plan" }
               ].map((s) => {
                 const isCompleted = s.step < wizardStep;
                 const isActive = s.step === wizardStep;
@@ -260,7 +258,7 @@ export default function SignupPage() {
             </div>
 
             {/* Wizard Form Errors */}
-            {authError && wizardStep !== 5 && (
+            {authError && (
               <div className="bg-red-50 text-red-700 border border-red-100 p-3.5 rounded-button text-xs flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{authError}</span>
@@ -297,17 +295,8 @@ export default function SignupPage() {
                 data={onboardingData} 
                 onChange={handleUpdateOnboarding} 
                 onBack={() => setWizardStep(3)}
-                onNext={() => setWizardStep(5)} 
-              />
-            )}
-            {wizardStep === 5 && (
-              <StepVerification 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
-                onBack={() => setWizardStep(4)}
-                onSubmit={handleSignupComplete}
+                onNext={handleSignupComplete} 
                 loading={loading}
-                error={authError}
               />
             )}
           </div>
