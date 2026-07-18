@@ -464,7 +464,7 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
     }
 
     const createdAt = new Date().toISOString();
-    const customerId = c.req.header("x-customer-id") || "GUEST";
+    const customerId = c.get("user")?.userId || crypto.randomUUID();
     const addressStr = typeof shippingAddress === "string" ? shippingAddress : JSON.stringify(shippingAddress);
 
     // Generate incremental orderNumber
@@ -592,10 +592,8 @@ app.post("/store/:subdomain/webhooks/razorpay", async (c) => {
     .join("");
 
   const isSignatureValid = expectedSignature === signature;
-  const isMockBypass =
-    (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test") && signature === "mock-signature-bypass";
 
-  if (!isSignatureValid && !isMockBypass) {
+  if (!isSignatureValid) {
     return c.json({ error: "Invalid webhook signature verification failed" }, 400);
   }
 
@@ -753,12 +751,13 @@ app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async
   const tenantId = c.get("tenantId")!;
   const signature = c.req.header("x-shiprocket-signature");
 
-  const expectedToken = c.env.SHIPROCKET_WEBHOOK_TOKEN || "mock-shiprocket-token";
+  if (!c.env.SHIPROCKET_WEBHOOK_TOKEN) {
+    return c.json({ error: "Shiprocket webhook token not configured" }, 500);
+  }
+  const expectedToken = c.env.SHIPROCKET_WEBHOOK_TOKEN;
   const isValid = verifyShiprocketSignature(signature || "", expectedToken);
-  const isSignatureBypass =
-    (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test") && signature === "mock-signature-bypass";
 
-  if (!isValid && !isSignatureBypass) {
+  if (!isValid) {
     return c.json({ error: "Invalid Shiprocket webhook signature" }, 400);
   }
 

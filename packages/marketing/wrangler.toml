@@ -2,3 +2,9 @@ name = "basecart-landingpage"
 pages_build_output_dir = ".vercel/output/static"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NEXT_PUBLIC_API_URL = "https://api.basecart.app"
+NEXT_PUBLIC_MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
+NEXT_PUBLIC_STOREFRONT_DOMAIN = "basecart.app"
+NEXT_PUBLIC_CLOUDFLARE_ZONE_URL = "https://api.basecart.app"

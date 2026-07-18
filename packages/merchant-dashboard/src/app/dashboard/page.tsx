@@ -243,19 +243,9 @@ function formatINR(val: number | string) {
 }
 
 export default function MerchantDashboard() {
-  // Auth state
-  const [token, setToken] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("basecart_merchant_token");
-    }
-    return null;
-  });
-  const [tenantId, setTenantId] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("basecart_tenant_id");
-    }
-    return null;
-  });
+  // Auth state (in-memory only, no localStorage)
+  const [token, setToken] = useState<string | null>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [isLoginView, setIsLoginView] = useState(true);
   const [authActive, setAuthActive] = useState(false);
 
@@ -373,7 +363,6 @@ export default function MerchantDashboard() {
         setIsLoginView(true);
         setAuthActive(true);
       } else if (hash === "" || hash.startsWith("#features") || hash.startsWith("#pricing") || hash.startsWith("#testimonials")) {
-        const token = localStorage.getItem("basecart_merchant_token");
         if (!token) {
           setAuthActive(false);
         }
@@ -469,32 +458,20 @@ export default function MerchantDashboard() {
     { name: "", values: [] }
   ]);
 
-  // Read tokens on startup (via httpOnly cookie session check & localStorage fallback)
+  // Read tokens on startup (via httpOnly cookie session check)
   useEffect(() => {
     const checkSession = async () => {
       try {
-        const localToken = typeof window !== "undefined" ? localStorage.getItem("basecart_merchant_token") : null;
-        const headers: Record<string, string> = {};
-        if (localToken) {
-          headers["Authorization"] = `Bearer ${localToken}`;
-        }
-
         const res = await fetch(`${API_URL}/auth/merchant/me`, {
           credentials: "include",
-          headers,
         });
         if (res.ok) {
           const data = await res.json();
           setToken(data.accessToken);
           setTenantId(data.tenantId);
           setEmailVerified(data.emailVerified !== false);
-          
-          localStorage.setItem("basecart_merchant_token", data.accessToken);
-          localStorage.setItem("basecart_tenant_id", data.tenantId);
         } else {
           // Clear session if invalid/expired
-          localStorage.removeItem("basecart_merchant_token");
-          localStorage.removeItem("basecart_tenant_id");
           setToken(null);
           setTenantId(null);
         }
@@ -913,8 +890,6 @@ export default function MerchantDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
       setToken(data.accessToken);
       setTenantId(data.tenantId);
       setEmailVerified(data.emailVerified !== false);
@@ -968,8 +943,6 @@ export default function MerchantDashboard() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
       setToken(data.accessToken);
       setTenantId(data.tenantId);
       setEmailVerified(true); // Verification code verified client-side (mock OTP = 000000)
@@ -1013,8 +986,6 @@ export default function MerchantDashboard() {
     } catch (e) {
       console.error("Logout request failed", e);
     }
-    localStorage.removeItem("basecart_merchant_token");
-    localStorage.removeItem("basecart_tenant_id");
     setToken(null);
     setTenantId(null);
     setProducts([]);

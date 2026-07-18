@@ -48,11 +48,10 @@ export default function SignupPage() {
   const merchantDashboardUrl = process.env.NEXT_PUBLIC_MERCHANT_DASHBOARD_URL || "http://localhost:3004";
 
   useEffect(() => {
-    // If already logged in, go to dashboard on merchant domain
-    const token = localStorage.getItem("basecart_merchant_token");
-    if (token) {
-      window.location.href = `${merchantDashboardUrl}/dashboard`;
-    }
+    // If already logged in via httpOnly cookie, go to dashboard on merchant domain
+    fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
+      .then(res => { if (res.ok) window.location.href = `${merchantDashboardUrl}/dashboard`; })
+      .catch(() => {});
   }, [merchantDashboardUrl]);
 
   const handleUpdateOnboarding = (fields: Partial<typeof onboardingData>) => {
@@ -100,8 +99,7 @@ export default function SignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
+      // Token is stored in httpOnly cookie by the server
 
       // On successful signup, redirect to dashboard on the merchant domain
       window.location.href = `${merchantDashboardUrl}/dashboard`;

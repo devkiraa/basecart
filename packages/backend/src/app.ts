@@ -91,7 +91,10 @@ export function buildApp() {
     console.error("Hono error handler caught error:", err);
     
     const statusCode = (err as any).statusCode || (err as any).status || 500;
-    const msg = err.message || "An unexpected error occurred";
+    const isProduction = c.env && c.env.NODE_ENV === "production";
+    const msg = isProduction
+      ? "An unexpected error occurred"
+      : (err.message || "An unexpected error occurred");
 
     return c.json(
       {
@@ -122,6 +125,11 @@ export function buildApp() {
   app.get("/media/*", async (c) => {
     const key = c.req.path.replace(/^\/media\//, "");
     if (!key) return c.text("Not Found", 404);
+
+    // Prevent path traversal attacks
+    if (key.includes("..") || key.includes("%2e%2e") || key.includes("%2E%2E")) {
+      return c.text("Not Found", 404);
+    }
 
     const bucketName = getBucketName(c.env);
     const storageClient = getStorageClient(c.env);

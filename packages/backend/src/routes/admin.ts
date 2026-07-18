@@ -655,7 +655,7 @@ app.get("/admin/admins", authenticateAdmin, async (c) => {
 /**
  * Admin Logout
  */
-app.post("/admin/auth/logout", async (c) => {
+app.post("/admin/auth/logout", authenticateAdmin, async (c) => {
   deleteCookie(c, "basecart_admin_token", getAdminDeleteOptions(c));
   deleteCookie(c, "basecart_admin_refresh_token", getAdminDeleteOptions(c));
   return c.json({ message: "Logged out successfully" });
@@ -672,7 +672,9 @@ app.get("/admin/search", authenticateAdmin, async (c) => {
     return c.json({ merchants: [], admins: [], tickets: [] });
   }
 
-  const queryLike = `%${q}%`;
+  // Escape LIKE wildcards to prevent SQL pattern injection
+  const escapedQuery = q.replace(/%/g, "\\%").replace(/_/g, "\\_");
+  const queryLike = `%${escapedQuery}%`;
 
   const merchants = await controlDb
     .prepare("SELECT tenantId, storeName, subdomain, plan, status FROM tenants WHERE storeName LIKE ? OR subdomain LIKE ? OR tenantId LIKE ? LIMIT 10")

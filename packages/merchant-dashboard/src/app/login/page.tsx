@@ -28,11 +28,11 @@ export default function LoginPage() {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   useEffect(() => {
-    // If already logged in, go to dashboard
-    const token = localStorage.getItem("basecart_merchant_token");
-    if (token) {
-      window.location.href = "/dashboard";
-    }
+    // If already logged in via httpOnly cookie, go to dashboard
+    // Check cookie existence (httpOnly cookies can't be read by JS, so we check auth status)
+    fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
+      .then(res => { if (res.ok) window.location.href = "/dashboard"; })
+      .catch(() => {});
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -48,9 +48,7 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
-      
+      // Token is stored in httpOnly cookie by the server
       // Redirect to dashboard on success
       window.location.href = "/dashboard";
     } catch (err: any) {

@@ -46,11 +46,10 @@ export default function SignupPage() {
   });
 
   useEffect(() => {
-    // If already logged in, go to dashboard
-    const token = localStorage.getItem("basecart_merchant_token");
-    if (token) {
-      window.location.href = "/dashboard";
-    }
+    // If already logged in via httpOnly cookie, go to dashboard
+    fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
+      .then(res => { if (res.ok) window.location.href = "/dashboard"; })
+      .catch(() => {});
   }, []);
 
   const handleUpdateOnboarding = (fields: Partial<typeof onboardingData>) => {
@@ -98,8 +97,7 @@ export default function SignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
-      localStorage.setItem("basecart_merchant_token", data.accessToken);
-      localStorage.setItem("basecart_tenant_id", data.tenantId);
+      // Token is stored in httpOnly cookie by the server
 
       // On successful signup, redirect to dashboard
       window.location.href = "/dashboard";

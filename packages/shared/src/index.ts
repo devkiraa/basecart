@@ -1,9 +1,17 @@
 import { z } from "zod";
 
 // --- Merchant Auth ---
+const passwordValidation = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
 export const MerchantSignupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: passwordValidation,
   storeName: z.string().min(2),
   subdomain: z
     .string()
@@ -149,7 +157,7 @@ export type CheckoutInput = z.infer<typeof CheckoutSchema>;
 // --- Customer Auth ---
 export const CustomerSignupSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(6),
+  password: passwordValidation,
   name: z.string().min(2),
 }).strict();
 

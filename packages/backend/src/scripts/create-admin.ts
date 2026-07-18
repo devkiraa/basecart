@@ -6,8 +6,15 @@ import crypto from "crypto";
 const TABLE_NAME = process.env.TABLE_NAME || "BasecartMain";
 
 async function run() {
-  const email = "admin@basecart.io";
-  const password = "adminpassword123";
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.error("FATAL: ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required.");
+    console.error("Usage: ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=yourpassword npm run create-admin");
+    process.exit(1);
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
   const userId = crypto.randomUUID();
   const createdAt = new Date().toISOString();

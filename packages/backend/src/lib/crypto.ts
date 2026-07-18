@@ -32,12 +32,8 @@ async function getCryptoKey(secret: string): Promise<CryptoKey> {
  * Encrypts plaintext using Web Crypto AES-256-GCM
  */
 export async function encrypt(text: string, secret?: string): Promise<string> {
-  if (process.env.NODE_ENV !== "production" && !secret) {
-    return btoa(`mock-encrypted:${text}`);
-  }
-
   if (!secret) {
-    throw new Error("ENCRYPTION_SECRET is required for production encryption");
+    throw new Error("ENCRYPTION_SECRET is required for encryption");
   }
 
   const key = await getCryptoKey(secret);
@@ -60,17 +56,6 @@ export async function encrypt(text: string, secret?: string): Promise<string> {
  * Decrypts base64 ciphertext using Web Crypto AES-256-GCM
  */
 export async function decrypt(cipherTextBase64: string, secret?: string): Promise<string> {
-  if (process.env.NODE_ENV !== "production" && !secret) {
-    try {
-      const decoded = atob(cipherTextBase64);
-      if (decoded.startsWith("mock-encrypted:")) {
-        return decoded.replace("mock-encrypted:", "");
-      }
-    } catch {
-      // ignore decoding fallback
-    }
-  }
-
   if (!secret) {
     throw new Error("ENCRYPTION_SECRET is required for decryption");
   }

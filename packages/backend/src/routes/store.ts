@@ -49,24 +49,9 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     return c.json({ error: "Store settings not found" }, 404);
   }
 
-  // Decrypt credentials
-  let razorpayKey = "";
-  let razorpaySecret = "";
-
-  if (store.razorpayKeyId) {
-    try {
-      razorpayKey = await decrypt(store.razorpayKeyId, c.env.ENCRYPTION_SECRET);
-    } catch (e) {
-      console.error("Failed to decrypt razorpayKeyId", e);
-    }
-  }
-  if (store.razorpaySecret) {
-    try {
-      razorpaySecret = await decrypt(store.razorpaySecret, c.env.ENCRYPTION_SECRET);
-    } catch (e) {
-      console.error("Failed to decrypt razorpaySecret", e);
-    }
-  }
+  // Check if credentials are configured (without returning plaintext secrets)
+  const hasRazorpayKey = !!store.razorpayKeyId;
+  const hasRazorpaySecret = !!store.razorpaySecret;
 
   let addOns = [];
   if (store.addOns) {
@@ -92,8 +77,7 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     registeredBusinessName: store.registeredBusinessName || "",
     registeredBusinessAddress: store.registeredBusinessAddress || "",
     registeredState: store.registeredState || "",
-    razorpayKey,
-    razorpaySecret,
+    razorpayConfigured: hasRazorpayKey && hasRazorpaySecret,
     branding,
     termsOfService: store.termsOfService || "",
     privacyPolicy: store.privacyPolicy || "",

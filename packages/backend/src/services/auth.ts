@@ -1,9 +1,12 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { D1Database } from "../lib/db";
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || "local_jwt_secret_key_for_testing_purposes";
+if (!process.env.JWT_SECRET) {
+  throw new Error("FATAL: JWT_SECRET environment variable is not set. Refusing to start without a secure JWT secret.");
+}
+const JWT_SECRET = process.env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
 
@@ -47,7 +50,7 @@ export class AuthService {
         userId: payload.userId,
         tenantId: payload.tenantId,
         type: payload.type,
-        jti: Math.random().toString(36).substring(2),
+        jti: crypto.randomUUID(),
       },
       JWT_SECRET,
       { expiresIn: "7d" }
