@@ -2459,8 +2459,8 @@ export default function MerchantDashboard() {
                                 }}
                                 labelStyle={{ color: "#94a3b8", fontSize: 9, fontWeight: 700, marginBottom: 4 }}
                                 itemStyle={{ color: "#fff", fontSize: 10, fontWeight: 700 }}
-                                formatter={(value: number, name: string) =>
-                                  name === "revenue" ? [formatINR(value), "Revenue"] : [value, "Orders"]
+                                formatter={(value: any, name: any) =>
+                                  name === "revenue" ? [formatINR(Number(value || 0)), "Revenue"] : [value, "Orders"]
                                 }
                               />
                               <Area
