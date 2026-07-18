@@ -5,6 +5,8 @@ import { getTenantStoreData, getTenantProducts } from "../../../lib/store";
 import { getOptimizedImageUrl } from "../../../lib/image";
 import { Package, Tag, ShoppingBag } from "lucide-react";
 
+export const runtime = "edge";
+
 interface CatalogPageProps {
   params: { tenant: string };
   searchParams: { sort?: string; category?: string };

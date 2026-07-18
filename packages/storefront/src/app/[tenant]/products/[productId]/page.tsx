@@ -5,6 +5,8 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTenantStoreData, getProductData } from "../../../../lib/store";
 
+export const runtime = "edge";
+
 interface ProductPageProps {
   params: {
     tenant: string;

@@ -3,6 +3,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { getTenantStoreData, getTenantProducts } from "../../lib/store";
 
+export const runtime = "edge";
+
 interface PageProps {
   params: {
     tenant: string;
