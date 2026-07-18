@@ -1,0 +1,16 @@
+<svg version="1.2" baseProfile="tiny-ps" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="112" fill="url(#blueGrad)" />
+  
+  <!-- Stylized Shopping Bag Handle -->
+  <path d="M190,170 C190,100 322,100 322,170" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" />
+  
+  <!-- Stylized Bold Letter 'B' / Bag Body -->
+  <path d="M170,170 H300 C345,170 345,230 300,235 C355,240 355,320 290,320 H170 V170 Z M215,202 V232 H285 C295,202 285,202 285,202 Z M215,258 V288 H285 C298,288 285,258 285,258 Z" fill="#ffffff" fill-rule="evenodd" />
+</svg>
