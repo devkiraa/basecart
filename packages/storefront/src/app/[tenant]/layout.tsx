@@ -1,6 +1,8 @@
 import React from "react";
 import { Metadata } from "next";
 import { getTenantStoreData } from "../../lib/store";
+import { CartBadge } from "./cart-badge";
+import { MobileMenu } from "./mobile-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -58,18 +60,29 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700 antialiased font-sans">
       {/* Visual Header / Navigation Bar for Storefront */}
-      <header className="sticky top-0 bg-white/95 backdrop-blur z-50 border-b border-slate-100 px-6 py-4 flex items-center justify-between select-none max-w-7xl mx-auto rounded-b-xl shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center text-white font-extrabold shadow-sm">
-            {store.name.charAt(0)}
+      <header className="sticky top-0 bg-white/95 backdrop-blur z-50 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center text-white font-extrabold shadow-sm">
+              {store.name.charAt(0)}
+            </div>
+            <a href={`/`} className="text-lg font-black text-slate-900 tracking-tight">{store.name}</a>
           </div>
-          <span className="text-lg font-black text-slate-900 tracking-tight">{store.name}</span>
+          
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-500">
+            <a href={`/`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Home</a>
+            <a href={`/catalog`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Catalog</a>
+            <a href={`/account`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Account</a>
+            <a href={`/cart`} className="relative px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors flex items-center gap-1">
+              Cart
+              <CartBadge tenantId={store.id} />
+            </a>
+          </nav>
+
+          {/* Mobile Menu */}
+          <MobileMenu tenantId={store.id} />
         </div>
-        
-        <nav className="flex items-center gap-4 text-xs font-bold text-slate-500">
-          <a href={`/`} className="hover:text-slate-950 transition-colors">Catalog</a>
-          <a href="#about" className="hover:text-slate-950 transition-colors">About Us</a>
-        </nav>
       </header>
 
       {/* Main Tenant Page Content */}
@@ -80,7 +93,7 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
       {/* Footer */}
       <footer className="border-t border-slate-200/60 bg-white py-12 mt-16 text-center text-xs text-slate-400 font-medium">
         <div className="max-w-7xl mx-auto space-y-3">
-          <p>© {new Date().getFullYear()} {store.name}. Powered by <a href="https://basecart.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline">Basecart</a></p>
+          <p>&copy; {new Date().getFullYear()} {store.name}. Powered by <a href="https://basecart.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline">Basecart</a></p>
           <div className="flex justify-center gap-4 select-none">
             <a href="#privacy" className="hover:text-slate-650 transition-colors">Privacy Policy</a>
             <a href="#terms" className="hover:text-slate-650 transition-colors">Terms of Service</a>

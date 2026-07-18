@@ -11,6 +11,7 @@ import storeRouter from "./routes/store";
 import customersRouter from "./routes/customers";
 import dashboardRouter from "./routes/dashboard";
 import adminRouter from "./routes/admin";
+import storefrontDesignRouter from "./routes/storefront-design";
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
@@ -181,6 +182,9 @@ export function buildApp() {
 
   // Mount Admin Router
   app.route("/", adminRouter);
+
+  // Mount Storefront Design Router
+  app.route("/", storefrontDesignRouter);
 
   return app;
 }
