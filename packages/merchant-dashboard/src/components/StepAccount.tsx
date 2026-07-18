@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
 
+const MARKETING_URL = process.env.NEXT_PUBLIC_MARKETING_URL || "https://basecart.app";
+
 interface StepAccountProps {
   data: any;
   onChange: (fields: any) => void;
@@ -151,11 +153,11 @@ export default function StepAccount({ data, onChange, onNext, loading }: StepAcc
             />
             <label htmlFor="acceptTerms" className="text-xs text-slate-500 leading-normal font-sans">
               I agree to the{" "}
-              <a href="/legal/terms" target="_blank" className="text-blue-600 hover:underline font-semibold">
+              <a href={`${MARKETING_URL}/legal/terms`} target="_blank" className="text-blue-600 hover:underline font-semibold">
                 Terms of Service
               </a>{" "}
               and{" "}
-              <a href="/legal/privacy" target="_blank" className="text-blue-600 hover:underline font-semibold">
+              <a href={`${MARKETING_URL}/legal/privacy`} target="_blank" className="text-blue-600 hover:underline font-semibold">
                 Privacy Policy
               </a>
             </label>
