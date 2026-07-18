@@ -59,7 +59,7 @@ export async function getTenantProducts(tenantId: string) {
 
 // Mock product details resolver
 export async function getProductData(productId: string) {
-  const mockProducts: Record<string, { id: string; name: string; description: string; price: number; inStock: boolean; category: string; categorySlug: string; imageUrl: string }> = {
+  const mockProducts: Record<string, { id: string; name: string; description: string; price: number; inStock: boolean; category: string; categorySlug: string; imageUrl: string; rating?: number; reviewCount?: number; reviews?: Array<{ author: string; rating: number; date: string; title: string; comment: string }> }> = {
     "prod-1": {
       id: "prod-1",
       name: "Handcrafted Silk Kasavu Saree",
@@ -68,7 +68,14 @@ export async function getProductData(productId: string) {
       inStock: true,
       category: "Ethnic Wear",
       categorySlug: "ethnic-wear",
-      imageUrl: "https://r2.basecart.app/stores/boutique/products/kasavu-saree.jpg", // Cloudflare R2 path
+      imageUrl: "https://r2.basecart.app/stores/boutique/products/kasavu-saree.jpg",
+      rating: 4.8,
+      reviewCount: 24,
+      reviews: [
+        { author: "Lakshmi Nair", rating: 5, date: "2026-07-10", title: "Absolutely beautiful!", comment: "The silk quality is outstanding and the gold borders are stunning. Wore it for Onam and received so many compliments." },
+        { author: "Anjali Menon", rating: 5, date: "2026-06-22", title: "Premium craftsmanship", comment: "Handwoven quality is evident. Worth every rupee. The packaging was also excellent." },
+        { author: "Deepa Rajan", rating: 4, date: "2026-05-15", title: "Great for festivals", comment: "Lovely saree, perfect for temple visits and festivals. Only suggestion would be more color options." },
+      ]
     },
     "prod-2": {
       id: "prod-2",
@@ -78,7 +85,14 @@ export async function getProductData(productId: string) {
       inStock: true,
       category: "Celebration Cakes",
       categorySlug: "celebration-cakes",
-      imageUrl: "https://r2.basecart.app/stores/bakes/products/chocolate-fudge-cake.jpg", // Cloudflare R2 path
+      imageUrl: "https://r2.basecart.app/stores/bakes/products/chocolate-fudge-cake.jpg",
+      rating: 4.6,
+      reviewCount: 18,
+      reviews: [
+        { author: "Vishnu Prasad", rating: 5, date: "2026-07-05", title: "Best cake in Kochi!", comment: "Ordered for my daughter's birthday. The chocolate fudge was rich and delicious. Everyone loved it!" },
+        { author: "Meera Sharma", rating: 4, date: "2026-06-18", title: "Fresh and tasty", comment: "Delivered on time and tasted amazing. The frosting was perfect." },
+        { author: "Arjun K.", rating: 5, date: "2026-05-30", title: "Will order again", comment: "Highly recommend for any celebration. Great quality at a reasonable price." },
+      ]
     }
   };
   return mockProducts[productId];

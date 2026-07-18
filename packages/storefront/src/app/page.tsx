@@ -51,6 +51,8 @@ interface Product {
   seoDescription?: string | null;
   continueSellingOutOfStock?: boolean;
   variants?: ProductVariant[];
+  rating?: number;
+  reviewCount?: number;
 }
 
 interface CartItem {
@@ -70,6 +72,8 @@ const MOCK_WATCH_PRODUCTS: Product[] = [
     description: "Elegant minimalist design with premium golden mesh strap.",
     category: "Other",
     compareAtPrice: 450,
+    rating: 4.7,
+    reviewCount: 32,
   },
   {
     productId: "watch-2",
@@ -80,6 +84,8 @@ const MOCK_WATCH_PRODUCTS: Product[] = [
     images: ["https://images.unsplash.com/photo-1542496658-e33a6d0d50f6?w=600&auto=format&fit=crop&q=80"],
     description: "Rose gold smartwatch featuring touchscreen and activity tracking.",
     category: "Other",
+    rating: 4.3,
+    reviewCount: 18,
   },
   {
     productId: "watch-3",
@@ -90,6 +96,8 @@ const MOCK_WATCH_PRODUCTS: Product[] = [
     images: ["https://images.unsplash.com/photo-1522312346375-d1a52e2b99b3?w=600&auto=format&fit=crop&q=80"],
     description: "Polished silver design with a classic, refined stainless steel band.",
     category: "Other",
+    rating: 4.5,
+    reviewCount: 24,
   },
   {
     productId: "watch-4",
@@ -1125,8 +1133,10 @@ export default function Storefront() {
                             {prod.name}
                           </h3>
                           <div className="flex items-center gap-0.5 text-amber-400 text-[10px] mt-1">
-                            {"★★★★★".split("").map((s, i) => <span key={i}>{s}</span>)}
-                            <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">(132 reviews)</span>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span key={star} className={star <= Math.round(prod.rating || 0) ? "" : "text-slate-200"}>★</span>
+                            ))}
+                            <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">({prod.reviewCount || 0} reviews)</span>
                           </div>
                         </div>
                         <div className="flex items-baseline gap-2 mt-2">
@@ -1268,6 +1278,12 @@ export default function Storefront() {
                       <div className="p-5 flex-1 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
                         <div>
                           <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
+                          <div className="flex items-center gap-0.5 text-amber-400 text-[10px] mb-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <span key={star} className={star <= Math.round(prod.rating || 0) ? "" : "text-slate-200"}>★</span>
+                            ))}
+                            <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">({prod.reviewCount || 0})</span>
+                          </div>
                           <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
                         </div>
                         <div className="flex items-center justify-between mt-auto">
@@ -2031,6 +2047,19 @@ export default function Storefront() {
                 {selectedProductDetails.description}
               </p>
             )}
+
+            {/* Rating Summary */}
+            <div className="flex items-center gap-3 bg-slate-50 p-2.5 rounded border border-slate-100">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <svg key={star} className="h-3.5 w-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
+              <span className="text-xs font-bold text-slate-700">4.8</span>
+              <span className="text-xs text-slate-400 font-semibold">(24 reviews)</span>
+            </div>
 
             {/* Option pickers */}
             <div className="space-y-4">

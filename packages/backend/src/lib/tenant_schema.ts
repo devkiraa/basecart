@@ -120,6 +120,21 @@ CREATE TABLE IF NOT EXISTS idempotency_keys (
   createdAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS product_reviews (
+  reviewId TEXT PRIMARY KEY,
+  productId TEXT NOT NULL,
+  customerId TEXT NOT NULL,
+  customerName TEXT NOT NULL,
+  rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+  title TEXT,
+  comment TEXT,
+  verified INTEGER NOT NULL DEFAULT 0,
+  createdAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_reviews_product ON product_reviews (productId);
+CREATE INDEX IF NOT EXISTS idx_product_reviews_customer ON product_reviews (customerId);
+
 -- B-Tree Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_products_status ON products (status);
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
