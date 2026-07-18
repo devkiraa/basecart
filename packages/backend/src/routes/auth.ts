@@ -17,7 +17,8 @@ import { logReservedSubdomainAbuse } from "../lib/audit";
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
 function getMerchantCookieOptions(c: any, maxAge: number) {
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
+  const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
   const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
   return {
     path: "/",
@@ -30,15 +31,20 @@ function getMerchantCookieOptions(c: any, maxAge: number) {
 }
 
 function getMerchantDeleteOptions(c: any) {
+  const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
   const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
   return {
     path: "/",
     domain,
+    secure: isProdOrStaging,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
   };
 }
 
 function getCustomerCookieOptions(c: any, maxAge: number) {
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging");
+  const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
   const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
   return {
     path: "/",
@@ -51,10 +57,14 @@ function getCustomerCookieOptions(c: any, maxAge: number) {
 }
 
 function getCustomerDeleteOptions(c: any) {
+  const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
+  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
   const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
   return {
     path: "/",
     domain,
+    secure: isProdOrStaging,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
   };
 }
 

@@ -886,6 +886,7 @@ export default function MerchantDashboard() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
@@ -939,6 +940,7 @@ export default function MerchantDashboard() {
           selectedPlan: onboardingData.selectedPlan,
           receiveUpdates: onboardingData.receiveUpdates,
         }),
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");

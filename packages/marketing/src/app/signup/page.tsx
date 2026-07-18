@@ -95,6 +95,7 @@ export default function SignupPage() {
           selectedPlan: onboardingData.selectedPlan,
           receiveUpdates: onboardingData.receiveUpdates,
         }),
+        credentials: "include",
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
