@@ -23,7 +23,7 @@ function getMerchantCookieOptions(c: any, maxAge: number) {
     path: "/",
     httpOnly: true,
     secure: isProdOrStaging,
-    sameSite: "Lax" as const,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };
@@ -44,7 +44,7 @@ function getCustomerCookieOptions(c: any, maxAge: number) {
     path: "/",
     httpOnly: true,
     secure: isProdOrStaging,
-    sameSite: "Lax" as const,
+    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };
