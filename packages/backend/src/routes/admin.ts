@@ -1466,18 +1466,107 @@ app.delete("/admin/queue-jobs/:id", authenticateAdmin, async (c) => {
   return c.json({ success: true });
 });
 
-app.get("/admin/infrastructure/status", authenticateAdmin, async (c) => {
+app.get("/admin/billing/overview", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
-  const totalInvoices = await controlDb.prepare("SELECT COUNT(*) as total FROM email_logs").first<{ total: number }>();
-  
+  const tenantsResult = await controlDb.prepare("SELECT plan FROM tenants").all<any>();
+  const tenants = tenantsResult.results || [];
+
+  let mrr = 0;
+  const planDistribution = { starter: 0, growth: 0, pro: 0 };
+
+  for (const t of tenants) {
+    const plan = (t.plan || "starter").toLowerCase();
+    if (plan === "starter") {
+      mrr += 299;
+      planDistribution.starter += 1;
+    } else if (plan === "growth") {
+      mrr += 899;
+      planDistribution.growth += 1;
+    } else if (plan === "pro" || plan === "business") {
+      mrr += 1999;
+      planDistribution.pro += 1;
+    }
+  }
+
+  const arr = mrr * 12;
+  const emailLogsCount = await controlDb.prepare("SELECT COUNT(*) as total FROM email_logs").first<any>();
+
   return c.json({
-    cpuTime: "3.16 ms",
-    d1Queries: "4,891 / min",
-    durableObjects: "242 stores",
-    r2Pool: "1.84 TB",
-    activeSessions: 1420,
-    emailLogsCount: totalInvoices?.total || 0,
+    mrr,
+    arr,
+    planDistribution,
+    totalInvoices: emailLogsCount?.total || 0,
   });
+});
+
+app.get("/admin/orders", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const tenantsResult = await controlDb.prepare("SELECT tenantId, storeName, country, state FROM tenants").all<any>();
+  const tenants = tenantsResult.results || [];
+
+  const allOrders: any[] = [];
+  for (const t of tenants) {
+    try {
+      const tenantDb = await getTenantDb(t.tenantId, c.env);
+      const ordersRes = await tenantDb.prepare("SELECT * FROM orders ORDER BY id DESC LIMIT 20").all<any>();
+      if (ordersRes.results) {
+        for (const o of ordersRes.results) {
+          allOrders.push({
+            id: o.orderId || o.id,
+            merchant: t.storeName || t.tenantId,
+            date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "Today",
+            customer: o.customerInfo ? (typeof o.customerInfo === "string" ? JSON.parse(o.customerInfo).name : o.customerInfo.name) : "Customer",
+            amount: o.total || 0,
+            status: o.status || "completed",
+            gateway: o.paymentMethod || "Razorpay",
+            country: t.country || "India",
+            state: t.state || t.registeredState || "Kerala",
+          });
+        }
+      }
+    } catch (e) {}
+  }
+
+  return c.json(allOrders);
+});
+
+app.get("/admin/notifications", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+  const result = await controlDb.prepare("SELECT * FROM platform_alerts ORDER BY id DESC").all();
+  return c.json(result.results || []);
+});
+
+app.post("/admin/notifications/broadcast", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { type, subject, target } = body;
+
+  const id = `alt_${Date.now()}`;
+  const date = new Date().toISOString().split("T")[0];
+
+  await controlDb.prepare("INSERT INTO platform_alerts (id, date, type, subject, target, status) VALUES (?, ?, ?, ?, ?, 'active')")
+    .bind(id, date, type || "Announcement", subject, target || "Everyone")
+    .run();
+
+  return c.json({ success: true, id });
+});
+
+app.get("/admin/support/tickets", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+  const result = await controlDb.prepare("SELECT * FROM support_tickets ORDER BY createdAt DESC").all();
+  return c.json(result.results || []);
+});
+
+app.patch("/admin/support/tickets/:id", authenticateAdmin, async (c) => {
+  const id = c.req.param("id");
+  const controlDb = getControlDb(c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { status } = body;
+
+  await controlDb.prepare("UPDATE support_tickets SET status = ? WHERE ticketId = ?").bind(status || "resolved", id).run();
+  return c.json({ success: true });
 });
 
 export default app;

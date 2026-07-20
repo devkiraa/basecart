@@ -171,4 +171,105 @@ CREATE TABLE IF NOT EXISTS theme_downloads (
   downloaded_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS marketplace_apps (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  developer TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published',
+  scopesJson TEXT,
+  version TEXT NOT NULL DEFAULT '1.0.0',
+  description TEXT,
+  iconUrl TEXT,
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS platform_notifications (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'info',
+  audience TEXT NOT NULL DEFAULT 'all',
+  readCount INTEGER NOT NULL DEFAULT 0,
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS mail_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  bodyHtml TEXT NOT NULL,
+  variablesJson TEXT,
+  updatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS feature_flags (
+  id TEXT PRIMARY KEY,
+  flagKey TEXT NOT NULL UNIQUE,
+  description TEXT,
+  enabled INTEGER NOT NULL DEFAULT 0,
+  targetAudience TEXT DEFAULT 'all',
+  percentageRollout INTEGER DEFAULT 100,
+  updatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  keyPrefix TEXT NOT NULL,
+  hashedKey TEXT NOT NULL,
+  scopesJson TEXT,
+  expiresAt TEXT,
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS webhooks (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  targetUrl TEXT NOT NULL,
+  eventsJson TEXT NOT NULL,
+  secret TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS queue_logs (
+  id TEXT PRIMARY KEY,
+  queueName TEXT NOT NULL,
+  batchSize INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'completed',
+  processedCount INTEGER NOT NULL DEFAULT 1,
+  failedCount INTEGER NOT NULL DEFAULT 0,
+  durationMs INTEGER NOT NULL DEFAULT 12,
+  timestamp TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_health_status (
+  id TEXT PRIMARY KEY,
+  serviceName TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'operational',
+  latencyMs INTEGER NOT NULL DEFAULT 15,
+  uptimePercentage REAL NOT NULL DEFAULT 99.99,
+  region TEXT DEFAULT 'global',
+  lastCheckedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS system_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'general',
+  updatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cms_pages (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  contentHtml TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published',
+  author TEXT NOT NULL DEFAULT 'System Admin',
+  publishedAt TEXT,
+  updatedAt TEXT NOT NULL
+);
+
+
 
