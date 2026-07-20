@@ -51,6 +51,10 @@ export const PLATFORM_EMAIL_ALIASES: Record<string, { address: string; name: str
     address: "noreply@basecart.app",
     name: "Basecart",
   },
+  newsletter: {
+    address: "newsletters@basecart.app",
+    name: "Basecart News",
+  },
 };
 
 /**

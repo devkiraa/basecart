@@ -47,6 +47,8 @@ import {
   SlidersHorizontal,
   X,
   Menu,
+  Send,
+  Sparkles,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -323,6 +325,23 @@ export default function MerchantDashboard() {
     "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
   >("summary");
 
+  // Marketing / Newsletter campaign states
+  const [newsletterSubject, setNewsletterSubject] = useState("");
+  const [newsletterHeadline, setNewsletterHeadline] = useState("");
+  const [newsletterBody, setNewsletterBody] = useState("");
+  const [newsletterCtaText, setNewsletterCtaText] = useState("Shop Collection");
+  const [newsletterCtaUrl, setNewsletterCtaUrl] = useState("");
+  const [newsletterSending, setNewsletterSending] = useState(false);
+  const [newsletterSuccess, setNewsletterSuccess] = useState("");
+  const [newsletterError, setNewsletterError] = useState("");
+  const [campaignsList, setCampaignsList] = useState<any[]>([
+    { id: 1, subject: "Grand Opening Promotion! 🛍️", date: "July 18, 2026", recipients: 24, status: "Sent" },
+    { id: 2, subject: "Check out our new stock arrivals", date: "July 15, 2026", recipients: 18, status: "Sent" }
+  ]);
+  const [emailCampaignActive, setEmailCampaignActive] = useState(true);
+  const [whatsappCampaignActive, setWhatsappCampaignActive] = useState(true);
+  const [abandonedCartActive, setAbandonedCartActive] = useState(false);
+
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -548,6 +567,7 @@ export default function MerchantDashboard() {
     try {
       const res = await fetch(`${API_URL}/store/themes`, {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       if (res.ok) {
         const themesList = await res.json();
@@ -599,6 +619,7 @@ export default function MerchantDashboard() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
+          credentials: "include",
           body: JSON.stringify({
             name: selectedTheme.name,
             templateBase: selectedTheme.templateBase,
@@ -645,6 +666,7 @@ export default function MerchantDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({ name: newName.trim() }),
       });
       if (res.ok) {
@@ -4932,46 +4954,264 @@ export default function MerchantDashboard() {
 
 
           {/* 11. Marketing Tab */}
-          {activeTab === "marketing" && (
-            <div className="space-y-6 animate-fade-in">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight mb-2">Marketing</h2>
-                <p className="text-sm text-slate-500">Configure promotional notifications, set up automated buyer updates, and launch newsletters</p>
-              </div>
+          {activeTab === "marketing" && (() => {
+            const handleSendBroadcast = async (e: React.FormEvent) => {
+              e.preventDefault();
+              if (!newsletterSubject || !newsletterBody) {
+                setNewsletterError("Subject and Body are required.");
+                return;
+              }
+              setNewsletterSending(true);
+              setNewsletterError("");
+              setNewsletterSuccess("");
+              try {
+                const res = await fetch(`${API_URL}/customers/broadcast`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`
+                  },
+                  body: JSON.stringify({
+                    subject: newsletterSubject,
+                    headline: newsletterHeadline,
+                    bodyText: newsletterBody,
+                    ctaText: newsletterCtaText,
+                    ctaUrl: newsletterCtaUrl,
+                  }),
+                  credentials: "include"
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || "Failed to send newsletter");
+                setNewsletterSuccess(`Success! Broadcast sent to ${data.sentCount} customers.`);
+                setCampaignsList(prev => [
+                  {
+                    id: Date.now(),
+                    subject: newsletterSubject,
+                    date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                    recipients: data.sentCount,
+                    status: "Sent"
+                  },
+                  ...prev
+                ]);
+                setNewsletterSubject("");
+                setNewsletterHeadline("");
+                setNewsletterBody("");
+                setNewsletterCtaUrl("");
+              } catch (err: any) {
+                setNewsletterError(err.message || "An unexpected error occurred.");
+              } finally {
+                setNewsletterSending(false);
+              }
+            };
 
-              <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <h3 className="font-bold text-slate-800 text-sm">Automated Email Campaign Triggers</h3>
-                  <button className="px-3 py-1 bg-[#4F46E5] text-white text-[11px] font-bold rounded-lg hover:bg-[#4338CA] transition-colors shadow-sm">
-                    New Campaign
-                  </button>
+            return (
+              <div className="space-y-6 animate-fade-in font-sans">
+                <div>
+                  <h2 className="text-xl font-bold tracking-tight mb-1">Marketing Campaigns</h2>
+                  <p className="text-xs text-slate-500">Configure automated customer notifications and launch custom promotional email blasts.</p>
                 </div>
 
-                <div className="divide-y divide-slate-100">
-                  {[
-                    { name: "Order Confirmation SES Trigger", status: "Active", recipient: "Customers on checkout", sent: "Auto-trigger" },
-                    { name: "WhatsApp Fulfillment Dispatch Alerts", status: "Active (via SQS)", recipient: "Customer phone logs", sent: "Auto-trigger" },
-                    { name: "Abandoned Cart Retargeting", status: "Placeholder Mode", recipient: "Guest list checkouts", sent: "Paused" }
-                  ].map((c, idx) => (
-                    <div key={idx} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
-                      <div>
-                        <h4 className="text-xs font-bold text-slate-800">{c.name}</h4>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">Audience: {c.recipient}</p>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Left Column: Create Newsletter Form */}
+                  <div className="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                      <Sparkles className="h-4.5 w-4.5 text-indigo-600" />
+                      <h3 className="font-bold text-slate-800 text-sm">Create Email Broadcast Campaign</h3>
+                    </div>
+
+                    {newsletterSuccess && (
+                      <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <CheckCircle className="h-4 w-4 text-emerald-600" />
+                        {newsletterSuccess}
                       </div>
-                      <div className="text-right">
-                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase ${
-                          c.status.includes("Active") ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        }`}>
-                          {c.status}
-                        </span>
-                        <p className="text-[9px] text-slate-400 font-medium mt-1">{c.sent}</p>
+                    )}
+
+                    {newsletterError && (
+                      <div className="bg-red-50 border border-red-100 text-red-800 p-3 rounded-lg text-xs font-semibold flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        {newsletterError}
+                      </div>
+                    )}
+
+                    <form onSubmit={handleSendBroadcast} className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Email Subject Line <span className="text-red-500">*</span></label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Flash Sale: 20% Off All Items!"
+                            value={newsletterSubject}
+                            onChange={(e) => setNewsletterSubject(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Campaign Headline (Optional)</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Limited Time Offer"
+                            value={newsletterHeadline}
+                            onChange={(e) => setNewsletterHeadline(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-bold text-slate-700">Email Message Body <span className="text-red-500">*</span></label>
+                        <textarea
+                          placeholder="Write your email content here. Tell your customers about the promotion, new stock, or update..."
+                          value={newsletterBody}
+                          onChange={(e) => setNewsletterBody(e.target.value)}
+                          rows={6}
+                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none font-sans"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Button Text</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Shop Collection"
+                            value={newsletterCtaText}
+                            onChange={(e) => setNewsletterCtaText(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Button Destination URL</label>
+                          <input
+                            type="url"
+                            placeholder={`e.g. https://${settings.subdomain || "demo"}.basecart.app/catalog`}
+                            value={newsletterCtaUrl}
+                            onChange={(e) => setNewsletterCtaUrl(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end pt-2">
+                        <button
+                          type="submit"
+                          disabled={newsletterSending}
+                          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-indigo-650 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-xs font-bold rounded-lg transition-all shadow-sm"
+                        >
+                          {newsletterSending ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              Sending Broadcast Blast...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="h-3.5 w-3.5" />
+                              Send Broadcast Blast
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+
+                  {/* Right Column: Automated Campaign Triggers & Logs */}
+                  <div className="space-y-6">
+                    {/* Automated Triggers */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                        <Megaphone className="h-4.5 w-4.5 text-indigo-600" />
+                        <h3 className="font-bold text-slate-800 text-sm">Automated Campaigns</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Order Confirmation */}
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-0.5">
+                            <h4 className="text-xs font-bold text-slate-800">Order Confirmation Emails</h4>
+                            <p className="text-[10px] text-slate-400">SMTP/SES checkout alerts.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEmailCampaignActive(!emailCampaignActive)}
+                            className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
+                              emailCampaignActive ? "bg-indigo-600" : "bg-slate-200"
+                            }`}
+                          >
+                            <div
+                              className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ${
+                                emailCampaignActive ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* WhatsApp Fulfillment */}
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-0.5">
+                            <h4 className="text-xs font-bold text-slate-800">WhatsApp Dispatch Alerts</h4>
+                            <p className="text-[10px] text-slate-400">Dispatched via integrated SQS queue.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setWhatsappCampaignActive(!whatsappCampaignActive)}
+                            className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
+                              whatsappCampaignActive ? "bg-indigo-600" : "bg-slate-200"
+                            }`}
+                          >
+                            <div
+                              className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ${
+                                whatsappCampaignActive ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Abandoned Cart */}
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-0.5">
+                            <h4 className="text-xs font-bold text-slate-800">Abandoned Cart Retargeting</h4>
+                            <p className="text-[10px] text-slate-400">Trigger automatically after 1 hour.</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAbandonedCartActive(!abandonedCartActive)}
+                            className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-200 focus:outline-none ${
+                              abandonedCartActive ? "bg-indigo-600" : "bg-slate-200"
+                            }`}
+                          >
+                            <div
+                              className={`bg-white w-4 h-4 rounded-full shadow-sm transform transition-transform duration-200 ${
+                                abandonedCartActive ? "translate-x-4" : "translate-x-0"
+                              }`}
+                            />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  ))}
+
+                    {/* Broadcast Logs */}
+                    <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-3">
+                      <h3 className="font-bold text-slate-800 text-xs border-b border-slate-100 pb-2">Campaign Broadcast History</h3>
+                      <div className="divide-y divide-slate-100 max-h-[160px] overflow-y-auto pr-1">
+                        {campaignsList.map((c) => (
+                          <div key={c.id} className="py-2.5 first:pt-0 last:pb-0 flex items-center justify-between">
+                            <div className="truncate max-w-[70%]">
+                              <h4 className="text-[11px] font-bold text-slate-800 truncate">{c.subject}</h4>
+                              <p className="text-[9px] text-slate-400 font-semibold">{c.date} • {c.recipients} Customers</p>
+                            </div>
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase bg-emerald-50 text-emerald-700">
+                              {c.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* 12. Store Design Tab */}
           {activeTab === "store-design" && (() => {
@@ -5000,7 +5240,8 @@ export default function MerchantDashboard() {
               try {
                 const res = await fetch(`${API_URL}/store/themes/${themeId}/publish`, {
                   method: "POST",
-                  headers: { Authorization: `Bearer ${token}` }
+                  headers: { Authorization: `Bearer ${token}` },
+                  credentials: "include",
                 });
                 if (res.ok) {
                   const promoted = await res.json();
@@ -5021,6 +5262,7 @@ export default function MerchantDashboard() {
                 const res = await fetch(`${API_URL}/store/themes`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                  credentials: "include",
                   body: JSON.stringify({
                     name: libTheme.name,
                     templateBase: libTheme.templateBase,

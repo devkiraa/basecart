@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { getTenantDb } from "../lib/db";
 import { authenticateMerchant } from "../middleware/auth";
+import { sendEmail } from "../services/email";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -105,6 +106,88 @@ app.get("/customers/:email/orders", authenticateMerchant, async (c) => {
   }
 
   return c.json(customerOrders);
+});
+
+/**
+ * POST /customers/broadcast
+ * Send a custom marketing email to all customers in the tenant database
+ */
+app.post("/customers/broadcast", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const body = await c.req.json().catch(() => ({}));
+  const { subject, headline, bodyText, ctaText, ctaUrl } = body;
+
+  if (!subject || !bodyText) {
+    return c.json({ error: "Subject and body text are required" }, 400);
+  }
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  // 1. Fetch all customer emails
+  const customersResult = await tenantDb.prepare("SELECT email FROM customers").all();
+  const customers = (customersResult.results || []) as any[];
+
+  // 2. Fetch all unique emails from guest orders just in case
+  const ordersResult = await tenantDb.prepare("SELECT DISTINCT customerEmail FROM orders WHERE customerEmail IS NOT NULL").all();
+  const guestEmails = (ordersResult.results || []) as any[];
+
+  // Combine and deduplicate
+  const emailSet = new Set<string>();
+  customers.forEach((cust) => {
+    if (cust.email) emailSet.add(cust.email.trim().toLowerCase());
+  });
+  guestEmails.forEach((ord) => {
+    if (ord.customerEmail) emailSet.add(ord.customerEmail.trim().toLowerCase());
+  });
+
+  const emailsList = Array.from(emailSet);
+
+  if (emailsList.length === 0) {
+    return c.json({ message: "No customers found to broadcast to", sentCount: 0 });
+  }
+
+  // 3. Get store details for the email footer
+  const controlDb = (c.env as any).CONTROL_DB;
+  let storeName = "Basecart Store";
+  if (controlDb) {
+    try {
+      const store = (await controlDb
+        .prepare("SELECT storeName FROM tenants WHERE tenantId = ?")
+        .bind(tenantId)
+        .first()) as any;
+      if (store) storeName = store.storeName;
+    } catch (e) {}
+  }
+
+  // 4. Send emails asynchronously to each customer
+  let sentCount = 0;
+  for (const recipient of emailsList) {
+    try {
+      await sendEmail(
+        {
+          type: "newsletter" as any,
+          to: recipient,
+          data: {
+            subject,
+            headline,
+            bodyText,
+            ctaText,
+            ctaUrl,
+            storeName,
+          },
+        },
+        c.env
+      );
+      sentCount++;
+    } catch (err) {
+      console.error(`Failed to send broadcast email to ${recipient}:`, err);
+    }
+  }
+
+  return c.json({
+    message: `Newsletter broadcast triggered successfully to ${sentCount} recipients.`,
+    sentCount,
+  });
 });
 
 export default app;

@@ -7,6 +7,7 @@ import { renderInvoice } from "../templates/invoice";
 import { renderPaymentFailed } from "../templates/payment-failed";
 import { renderSubscription } from "../templates/subscription";
 import { renderTeamInvite } from "../templates/team-invite";
+import { renderNewsletter } from "../templates/newsletter";
 import { EmailType } from "../types";
 
 export function renderEmail(
@@ -36,6 +37,8 @@ export function renderEmail(
       return renderSubscription(data);
     case "team-invite":
       return renderTeamInvite(data);
+    case "newsletter":
+      return renderNewsletter(data);
     default:
       throw new Error(`Unsupported email type: ${type}`);
   }
