@@ -1570,3 +1570,4 @@ app.patch("/admin/support/tickets/:id", authenticateAdmin, async (c) => {
 });
 
 export default app;
+
