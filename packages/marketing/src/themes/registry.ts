@@ -23,7 +23,7 @@ export interface Theme {
   previewMobileImage: string;
   isNew: boolean;
   features: string[];
-  templateBase: "Pulse" | "Origin" | "Stride" | "Aura";
+  templateBase: "Pulse" | "Origin" | "Stride" | "Aura" | "Satoshi";
   schema: SettingGroup[];
   defaults: Record<string, any>;
 }
@@ -138,6 +138,31 @@ function getDefaultsForSchema(): Record<string, any> {
 const GLOBAL_DEFAULTS = getDefaultsForSchema();
 
 export const THEME_LIBRARY: Theme[] = [
+  {
+    id: "satoshi",
+    name: "Satoshi",
+    version: "1.0.0",
+    description: "Ultra-modern geometric layout with soft off-white product gallery frames, interactive size grids, and high-conversion sneaker storefront spotlight.",
+    category: "Footwear & Fashion",
+    price: "Free",
+    previewImage: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80",
+    previewMobileImage: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=300&q=80",
+    isNew: true,
+    features: ["Satoshi Geometric UI", "Interactive Size & Swatch Selector", "Soft Cream Gallery Spotlight", "High Conversion Checkout CTA"],
+    templateBase: "Satoshi",
+    schema: THEME_SETTINGS_SCHEMA,
+    defaults: {
+      ...GLOBAL_DEFAULTS,
+      colorPrimary: "#010101",
+      colorSecondary: "#F2F0EA",
+      colorAccent: "#EDCF5D",
+      colorBg: "#FFFFFF",
+      colorText: "#010101",
+      fontHeading: "sans",
+      fontBody: "sans",
+      buttonRadius: "9999px"
+    }
+  },
   {
     id: "vogue",
     name: "Vogue",
