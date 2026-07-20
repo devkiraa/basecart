@@ -32,6 +32,18 @@ interface StoreDetails {
     registeredBusinessName?: string;
     registeredBusinessAddress?: string;
     registeredState?: string;
+    createdAt?: string;
+    customDomain?: string;
+    businessCategory?: string;
+    businessType?: string;
+    country?: string;
+    state?: string;
+    ownerName?: string;
+    phone?: string;
+    teamSize?: string;
+    monthlyOrders?: string;
+    currentPlatform?: string;
+    hearAboutUs?: string;
     addOns?: string[];
   };
   products: any[];
@@ -309,6 +321,12 @@ export default function MerchantDetailPage() {
               <div className="space-y-3.5 text-sm">
                 <div>
                   <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Custom Domain
+                  </span>
+                  <span className="text-slate-700 font-semibold">{store.customDomain || "None Configured"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
                     GSTIN Registration
                   </span>
                   <span className="font-mono text-slate-700">{store.gstin || "Not Configured"}</span>
@@ -329,9 +347,71 @@ export default function MerchantDetailPage() {
                 </div>
                 <div>
                   <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    State
+                    State / Country
                   </span>
-                  <span className="text-slate-700">{store.registeredState || "Not Configured"}</span>
+                  <span className="text-slate-700">{store.registeredState || store.state || "Not Configured"} {store.country ? `, ${store.country}` : ""}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Owner & Contact Information */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+              <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
+                Owner & Contact Info
+              </h2>
+              <div className="space-y-3.5 text-sm">
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Owner Name
+                  </span>
+                  <span className="text-slate-700 font-medium">{store.ownerName || "Not Configured"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Contact Phone
+                  </span>
+                  <span className="text-slate-700 font-mono">{store.phone || "Not Configured"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Registered On
+                  </span>
+                  <span className="text-slate-700">
+                    {store.createdAt ? new Date(store.createdAt).toLocaleDateString(undefined, { dateStyle: "long" }) : "N/A"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Onboarding & Platform Metrics */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+              <h2 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">
+                Business & Onboarding Details
+              </h2>
+              <div className="space-y-3.5 text-sm">
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Business Segment
+                  </span>
+                  <span className="text-slate-700 capitalize">{store.businessCategory || "N/A"} ({store.businessType || "N/A"})</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Team Size & Monthly Volume
+                  </span>
+                  <span className="text-slate-700">{store.teamSize || "N/A"} members / {store.monthlyOrders || "N/A"} orders</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Migrated From
+                  </span>
+                  <span className="text-slate-700 capitalize">{store.currentPlatform || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    Referral / Lead Source
+                  </span>
+                  <span className="text-slate-700 capitalize">{store.hearAboutUs || "N/A"}</span>
                 </div>
               </div>
             </div>
