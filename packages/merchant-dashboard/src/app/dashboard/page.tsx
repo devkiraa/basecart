@@ -341,6 +341,8 @@ export default function MerchantDashboard() {
   const [emailCampaignActive, setEmailCampaignActive] = useState(true);
   const [whatsappCampaignActive, setWhatsappCampaignActive] = useState(true);
   const [abandonedCartActive, setAbandonedCartActive] = useState(false);
+  const [targetAudience, setTargetAudience] = useState("all");
+  const [spendRange, setSpendRange] = useState("all");
 
   // Sidebar collapse state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -693,6 +695,7 @@ export default function MerchantDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           name: `Copy of ${theme.name}`,
           templateBase: theme.templateBase,
@@ -730,6 +733,7 @@ export default function MerchantDashboard() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
       if (res.ok) {
         setActionSuccess(`Theme "${theme.name}" deleted successfully.`);
@@ -754,6 +758,7 @@ export default function MerchantDashboard() {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
       });
       if (res.ok) {
         const updated = await res.json();
@@ -780,6 +785,7 @@ export default function MerchantDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           name: activeTheme ? `Draft of ${activeTheme.name}` : "New Aura Theme Draft",
           templateBase: activeTheme ? activeTheme.templateBase : "Aura",
@@ -811,6 +817,7 @@ export default function MerchantDashboard() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        credentials: "include",
         body: JSON.stringify({
           name: `${libraryTheme.name} Draft`,
           templateBase: libraryTheme.templateBase,
@@ -4965,7 +4972,7 @@ export default function MerchantDashboard() {
               setNewsletterError("");
               setNewsletterSuccess("");
               try {
-                const res = await fetch(`${API_URL}/customers/broadcast`, {
+                 const res = await fetch(`${API_URL}/customers/broadcast`, {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
@@ -4977,6 +4984,8 @@ export default function MerchantDashboard() {
                     bodyText: newsletterBody,
                     ctaText: newsletterCtaText,
                     ctaUrl: newsletterCtaUrl,
+                    targetAudience,
+                    spendRange,
                   }),
                   credentials: "include"
                 });
@@ -5034,6 +5043,35 @@ export default function MerchantDashboard() {
                     )}
 
                     <form onSubmit={handleSendBroadcast} className="space-y-4">
+                      {/* Segmentation Target Dropdowns */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Target Audience (Who to Send to)</label>
+                          <select
+                            value={targetAudience}
+                            onChange={(e) => setTargetAudience(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white text-slate-700 font-semibold"
+                          >
+                            <option value="all">All Customers (Registered & Guests)</option>
+                            <option value="registered">Registered Accounts Only</option>
+                            <option value="guest">Guest Checkouts Only</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-700">Customer Spend Range</label>
+                          <select
+                            value={spendRange}
+                            onChange={(e) => setSpendRange(e.target.value)}
+                            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none bg-white text-slate-700 font-semibold"
+                          >
+                            <option value="all">All Spenders (No Limit)</option>
+                            <option value="purchased">Has purchased at least once</option>
+                            <option value="high_1000">High Spenders (Spent &gt; ₹1,000)</option>
+                            <option value="high_5000">VIP Spenders (Spent &gt; ₹5,000)</option>
+                          </select>
+                        </div>
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <label className="block text-xs font-bold text-slate-700">Email Subject Line <span className="text-red-500">*</span></label>

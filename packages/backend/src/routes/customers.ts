@@ -121,29 +121,76 @@ app.post("/customers/broadcast", authenticateMerchant, async (c) => {
     return c.json({ error: "Subject and body text are required" }, 400);
   }
 
+  const targetAudience = body.targetAudience || "all"; // "all" | "registered" | "guest"
+  const spendRange = body.spendRange || "all"; // "all" | "purchased" | "high_1000" | "high_5000"
+
   const tenantDb = await getTenantDb(tenantId, c.env);
 
-  // 1. Fetch all customer emails
-  const customersResult = await tenantDb.prepare("SELECT email FROM customers").all();
-  const customers = (customersResult.results || []) as any[];
+  // 1. Fetch all customer accounts from isolated D1 DB
+  const customersResult = await tenantDb.prepare("SELECT * FROM customers").all();
+  const registeredCustomers = customersResult.results || [];
 
-  // 2. Fetch all unique emails from guest orders just in case
-  const ordersResult = await tenantDb.prepare("SELECT DISTINCT customerEmail FROM orders WHERE customerEmail IS NOT NULL").all();
-  const guestEmails = (ordersResult.results || []) as any[];
+  // 2. Fetch all orders to compute transaction metrics from isolated D1 DB
+  const ordersResult = await tenantDb.prepare("SELECT * FROM orders").all();
+  const orders = ordersResult.results || [];
 
-  // Combine and deduplicate
-  const emailSet = new Set<string>();
-  customers.forEach((cust) => {
-    if (cust.email) emailSet.add(cust.email.trim().toLowerCase());
-  });
-  guestEmails.forEach((ord) => {
-    if (ord.customerEmail) emailSet.add(ord.customerEmail.trim().toLowerCase());
-  });
+  // Map to track unique customers by email
+  const customerMap = new Map<string, any>();
 
-  const emailsList = Array.from(emailSet);
+  // Initialize with registered customers
+  for (const rc of registeredCustomers) {
+    if (rc.email) {
+      customerMap.set(rc.email.toLowerCase().trim(), {
+        name: rc.name,
+        email: rc.email.toLowerCase().trim(),
+        registered: true,
+        totalOrders: 0,
+        totalSpend: 0,
+      });
+    }
+  }
 
-  if (emailsList.length === 0) {
-    return c.json({ message: "No customers found to broadcast to", sentCount: 0 });
+  // Aggregate orders for registered and guest checkout emails
+  for (const order of orders) {
+    const email = order.customerEmail?.toLowerCase()?.trim();
+    if (!email) continue;
+
+    let entry = customerMap.get(email);
+    if (!entry) {
+      entry = {
+        name: order.customerName || "Guest Customer",
+        email,
+        registered: false,
+        totalOrders: 0,
+        totalSpend: 0,
+      };
+      customerMap.set(email, entry);
+    }
+
+    entry.totalOrders++;
+    const isPaid = ["paid", "shipped", "delivered"].includes(order.status);
+    if (isPaid) {
+      entry.totalSpend += order.total || 0;
+    }
+  }
+
+  // 3. Filter list of emails based on parameters
+  const filteredEmails: string[] = [];
+  for (const [email, stats] of customerMap.entries()) {
+    // A. Target Audience Filter
+    if (targetAudience === "registered" && !stats.registered) continue;
+    if (targetAudience === "guest" && stats.registered) continue;
+
+    // B. Spend Range Filter
+    if (spendRange === "purchased" && stats.totalOrders === 0) continue;
+    if (spendRange === "high_1000" && stats.totalSpend < 1000) continue;
+    if (spendRange === "high_5000" && stats.totalSpend < 5000) continue;
+
+    filteredEmails.push(email);
+  }
+
+  if (filteredEmails.length === 0) {
+    return c.json({ message: "No customers match the selected filters", sentCount: 0 });
   }
 
   // 3. Get store details for the email footer
@@ -161,7 +208,7 @@ app.post("/customers/broadcast", authenticateMerchant, async (c) => {
 
   // 4. Send emails asynchronously to each customer
   let sentCount = 0;
-  for (const recipient of emailsList) {
+  for (const recipient of filteredEmails) {
     try {
       await sendEmail(
         {
