@@ -52,9 +52,8 @@ export async function getTenantProducts(tenantId: string) {
     }
   ];
 
-  // Filter products by tenant; if tenant is unmapped, return both as fallbacks
-  const filtered = allProducts.filter(prod => prod.tenantId === tenantId);
-  return filtered.length > 0 ? filtered : allProducts;
+  // Filter products by tenant; only return products for this tenant
+  return allProducts.filter(prod => prod.tenantId === tenantId);
 }
 
 // Mock product details resolver

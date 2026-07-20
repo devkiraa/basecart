@@ -695,7 +695,7 @@ export default function Storefront() {
   }, [custToken]);
 
   // Pricing calculations
-  const subtotal = cart.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+  const subtotal = cart.reduce((acc, item) => acc + (item.selectedVariant?.price !== undefined && item.selectedVariant?.price !== null ? item.selectedVariant.price : item.product.price) * item.quantity, 0);
   const total = Math.max(0, subtotal - discountAmount);
 
   // --- Loading screen ---
@@ -777,9 +777,9 @@ export default function Storefront() {
   const accentColor = customSettings.colorAccent || "#F59E0B";
   const bgColor = customSettings.colorBg || "#FFFFFF";
   const textColor = customSettings.colorText || "#1F2937";
-
   const logoUrl = customSettings.logoUrl || theme?.logoUrl || storeInfo?.branding?.logoUrl || "";
-  const displayProducts = products.length > 0 ? products : MOCK_WATCH_PRODUCTS;
+  const isThemePreview = typeof window !== "undefined" && (window.location.search.includes("previewThemeBase") || window.location.search.includes("previewPrimaryColor"));
+  const displayProducts = products.length > 0 ? products : (isThemePreview ? MOCK_WATCH_PRODUCTS : []);
   const filteredProducts = displayProducts.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -802,10 +802,10 @@ export default function Storefront() {
     >
       <style>{`
         h1, h2, h3, h4, h5, h6, .store-title {
-          font-family: ${customSettings.fontHeading === "serif" ? "Georgia, serif" : customSettings.fontHeading === "mono" ? "Courier New, monospace" : "Inter, sans-serif"} !important;
+          font-family: ${customSettings.fontHeading === "serif" ? "Georgia, serif" : customSettings.fontHeading === "mono" ? "Courier New, monospace" : "Plus Jakarta Sans, sans-serif"} !important;
         }
         body, p, span, div, a, button, input, select {
-          font-family: ${customSettings.fontBody === "serif" ? "Georgia, serif" : customSettings.fontBody === "mono" ? "Courier New, monospace" : "Inter, sans-serif"};
+          font-family: ${customSettings.fontBody === "serif" ? "Georgia, serif" : customSettings.fontBody === "mono" ? "Courier New, monospace" : "Plus Jakarta Sans, sans-serif"};
         }
         .btn-theme, button {
           border-radius: ${customSettings.buttonRadius || "8px"} !important;
@@ -1064,7 +1064,14 @@ export default function Storefront() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-                  {filteredProducts.map((prod) => (
+                  {filteredProducts.length === 0 ? (
+                    <div className="col-span-full py-16 text-center space-y-3 bg-white border border-slate-200/80 rounded-2xl shadow-xs">
+                      <Package className="h-10 w-10 text-slate-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-800">No products in catalog yet</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">This store currently has no active products listed. Check back soon for new arrivals!</p>
+                    </div>
+                  ) : (
+                    filteredProducts.map((prod) => (
                     <div 
                       key={prod.productId} 
                       className="flex flex-col justify-between text-left group cursor-pointer relative animate-fade-in" 
@@ -1138,7 +1145,8 @@ export default function Storefront() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                  ))
+                )}
                 </div>
                 
                 {/* Show more button */}
@@ -1236,69 +1244,77 @@ export default function Storefront() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {filteredProducts.map((prod) => (
-                    <div 
-                      key={prod.productId} 
-                      onClick={() => {
-                        if (customSettings.enableQuickView !== false) {
-                          setSelectedProductDetails(prod);
-                        }
-                      }}
-                      className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors cursor-pointer relative"
-                    >
-                      <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden relative">
-                        {/* Wishlist Button */}
-                        {customSettings.enableWishlist !== false && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleWishlist(prod.productId);
-                            }}
-                            className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-sm hover:scale-110 transition-transform z-10 text-slate-500 hover:text-rose-500 font-bold"
-                          >
-                            <Heart className={`h-3.5 w-3.5 ${wishlist.includes(prod.productId) ? "fill-rose-500 text-rose-500" : ""}`} />
-                          </button>
-                        )}
-
-                        {prod.images && prod.images[0] ? (
-                          <img src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <Package className="h-12 w-12 text-slate-300" />
-                        )}
-                      </div>
-                      <div className="p-5 flex-1 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
-                        <div>
-                          <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
-                          <div className="flex items-center gap-0.5 text-amber-400 text-[10px] mb-2">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <span key={star} className={star <= Math.round(prod.rating || 0) ? "" : "text-slate-200"}>★</span>
-                            ))}
-                            <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">({prod.reviewCount || 0})</span>
-                          </div>
-                          <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
-                        </div>
-                        <div className="flex items-center justify-between mt-auto">
-                          <div className="flex flex-col">
-                            <span className="text-lg font-extrabold text-slate-900">₹{prod.price}</span>
-                            {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
-                              <span className="text-xs text-slate-400 line-through">₹{prod.compareAtPrice}</span>
-                            )}
-                          </div>
-                          {prod.stockQuantity <= 0 && (!prod.variants || prod.variants.every(v => v.stockQuantity <= 0)) ? (
-                            <span className="text-xs text-red-500 font-bold">Out of stock</span>
-                          ) : (
+                  {filteredProducts.length === 0 ? (
+                    <div className="col-span-full py-16 text-center space-y-3 bg-white border border-slate-200 rounded-2xl shadow-xs">
+                      <Package className="h-10 w-10 text-slate-300 mx-auto" />
+                      <h3 className="text-sm font-bold text-slate-800">No products in catalog yet</h3>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">This store currently has no active products listed. Check back soon for new arrivals!</p>
+                    </div>
+                  ) : (
+                    filteredProducts.map((prod) => (
+                      <div 
+                        key={prod.productId} 
+                        onClick={() => {
+                          if (customSettings.enableQuickView !== false) {
+                            setSelectedProductDetails(prod);
+                          }
+                        }}
+                        className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden flex flex-col justify-between hover:border-slate-300 transition-colors cursor-pointer relative"
+                      >
+                        <div className="aspect-video w-full border-b border-slate-100 bg-slate-50 flex items-center justify-center overflow-hidden relative">
+                          {/* Wishlist Button */}
+                          {customSettings.enableWishlist !== false && (
                             <button
-                              onClick={() => addToCart(prod)}
-                              style={{ backgroundColor: primaryColor }}
-                              className="px-3.5 py-1.5 text-white rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleWishlist(prod.productId);
+                              }}
+                              className="absolute top-3 right-3 bg-white/80 backdrop-blur-sm p-1 rounded-full shadow-sm hover:scale-110 transition-transform z-10 text-slate-500 hover:text-rose-500 font-bold"
                             >
-                              {prod.variants && prod.variants.length > 0 ? "Select Options" : "Add to Cart"}
+                              <Heart className={`h-3.5 w-3.5 ${wishlist.includes(prod.productId) ? "fill-rose-500 text-rose-500" : ""}`} />
                             </button>
                           )}
+
+                          {prod.images && prod.images[0] ? (
+                            <img src={prod.images[0].startsWith("http") ? prod.images[0] : getOptimizedImageUrl(prod.images[0], "small")} alt={prod.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Package className="h-12 w-12 text-slate-300" />
+                          )}
+                        </div>
+                        <div className="p-5 flex-1 flex flex-col justify-between" onClick={(e) => e.stopPropagation()}>
+                          <div>
+                            <h3 className="font-bold text-slate-900 text-base mb-1">{prod.name}</h3>
+                            <div className="flex items-center gap-0.5 text-amber-400 text-[10px] mb-2">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <span key={star} className={star <= Math.round(prod.rating || 0) ? "" : "text-slate-200"}>★</span>
+                              ))}
+                              <span className="text-[9px] text-slate-450 ml-1 font-semibold font-sans">({prod.reviewCount || 0})</span>
+                            </div>
+                            <p className="text-xs text-slate-500 line-clamp-2 mb-4">{prod.description || "No description provided."}</p>
+                          </div>
+                          <div className="flex items-center justify-between mt-auto">
+                            <div className="flex flex-col">
+                              <span className="text-lg font-extrabold text-slate-900">₹{prod.price}</span>
+                              {prod.compareAtPrice && prod.compareAtPrice > prod.price && (
+                                <span className="text-xs text-slate-400 line-through">₹{prod.compareAtPrice}</span>
+                              )}
+                            </div>
+                            {prod.stockQuantity <= 0 && (!prod.variants || prod.variants.every(v => v.stockQuantity <= 0)) ? (
+                              <span className="text-xs text-red-500 font-bold">Out of stock</span>
+                            ) : (
+                              <button
+                                onClick={() => addToCart(prod)}
+                                style={{ backgroundColor: primaryColor }}
+                                className="px-3.5 py-1.5 text-white rounded text-xs font-semibold hover:opacity-90 transition-opacity"
+                              >
+                                {prod.variants && prod.variants.length > 0 ? "Select Options" : "Add to Cart"}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </>
             )}
