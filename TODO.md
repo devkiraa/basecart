@@ -1,29 +1,59 @@
-# Basecart — Completed System Audit & TODO Status
+# Basecart — Platform Master TODO & Audit Register
 
-## 🔴 Critical / Security
-- [x] Remove `"mock-signature-bypass"` from Razorpay webhook — anyone can forge payment confirmations (`packages/backend/src/routes/orders.ts:594`)
-- [x] Admin logout revokes refresh tokens from DB (`packages/backend/src/routes/auth.ts`, `admin.ts`)
-- [x] Admin password reset audit log always shows `"system"` — `c.get("admin")` should be `c.get("user")` (`packages/backend/src/routes/admin.ts:878`)
-- [x] Fix cookie `sameSite`/`secure` for cross-origin — detects HTTPS via `x-forwarded-proto` (`packages/backend/src/routes/auth.ts`, `admin.ts`)
-- [x] Admin cookies include `domain` property — uses `COOKIE_DOMAIN_ADMIN` env var
+## 🟢 Completed Production Milestones
 
-## 🟠 High — Storefront & Engine
-- [x] Storefront architecture connected to Storefront SDK & Storefront API
-- [x] `images.remotePatterns` added to all `next.config.js` files (Unsplash, R2, CDN)
-- [x] Font layout alignment across storefronts
-- [x] Full Razorpay SDK integration for checkout & order verification
+### Security & Authentication
+- [x] **Webhook Security**: Removed `"mock-signature-bypass"` from Razorpay webhook handler to prevent payment forging (`packages/backend/src/routes/orders.ts`)
+- [x] **Session Revocation**: Admin and merchant logout endpoints revoke refresh tokens from D1 database (`packages/backend/src/routes/auth.ts`, `admin.ts`)
+- [x] **Audit Logging**: Admin password reset audit logs capture true admin identity via `c.get("user")`
+- [x] **Cross-Origin Cookies**: Enforced `sameSite`/`secure` dynamic HTTPS detection via `x-forwarded-proto` and explicit `COOKIE_DOMAIN_ADMIN` scoping
+- [x] **Secret Redaction**: Store settings API redacts Razorpay secret keys in responses
+- [x] **Security Headers**: Added `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy` across Next.js apps
 
-## 🟠 High — Admin Panel
-- [x] Storefront Design linked in sidebar navigation under Marketplaces
-- [x] All 26 Admin Panel views connected to live D1 database tables (`basecart-control-prod`)
-- [x] Analytics, Monitoring, and Dashboard cards driven by real SQL aggregations
+### Storefront & Theme Platform
+- [x] **Storefront SDK & API**: Built `@basecart/theme-sdk` and `@basecart/theme-engine` for dynamic hot-swappable themes
+- [x] **Remote Image Domain Config**: Added `images.remotePatterns` to all `next.config.js` files (Unsplash, R2, CDN)
+- [x] **Payment Checkout**: Full Razorpay payment verification flow integrated into storefront checkout
+- [x] **Error Boundaries & Skeletons**: Added React error boundaries and loading skeletons across storefront routes
 
-## 🟡 Medium — Backend & Queues
-- [x] All control DB tables created via `control_schema.sql` and ensured at runtime
-- [x] Durable Object class migrated to clean production `TenantDOProd` namespace
-- [x] Queue consumer `max_retries = 3` configured in `wrangler.toml`
+### Admin Console & System Integration
+- [x] **Navigation Structure**: Linked `Storefront Design` page under *Marketplaces* section in Admin sidebar layout
+- [x] **Live D1 Database Integration**: Connected all 26 Admin Panel views to live SQLite D1 database tables (`basecart-control-prod`)
+- [x] **Dynamic SQL Metrics**: Replaced hardcoded dashboard stats, revenue charts, and operational metrics with real-time SQL queries
+- [x] **Durable Object Architecture**: Provisioned `TenantDOProd` SQLite class with automatic schema migration
 
-## ✅ Verified Production System Checklist
-- [x] All workspace packages (`@basecart/shared`, `@basecart/theme-sdk`, `@basecart/theme-engine`, `@basecart/backend`, `@basecart/merchant-dashboard`, `@basecart/storefront`, `@basecart/admin-panel`) compile cleanly.
-- [x] Production deployment verified on Cloudflare Workers & D1 (`basecart-backend`).
+---
 
+## 🟡 Remaining Enhancement & Polish Backlog
+
+### Security & Infrastructure Safeguards
+- [ ] Implement CSRF middleware protection (double-submit cookie pattern) for sensitive admin POST/PATCH routes
+- [ ] Add CAPTCHA verification and IP allowlisting/rate-limiting on public merchant signup endpoints
+- [ ] Redact sensitive customer PII in production Cloudflare Worker invocation logs
+
+### Storefront & Theme UX
+- [ ] Replace browser `alert()` popups on product detail pages with inline toast notification UI
+- [ ] Expand variant picker on product detail pages to update live subtotal and stock availability indicators
+- [ ] Implement customer address book selection during checkout step
+
+### Admin Panel & Content Management
+- [ ] Upgrade browser `prompt()` dialogs in `/content` (FAQ/Careers) and `/platform/api-keys` (API Keys/Webhooks) to modal forms
+- [ ] Add rich text HTML editor modal for blog post creation and news announcements
+- [ ] Connect System Settings save form (`/settings`) to persistent API endpoint (`POST /admin/system-settings`)
+
+### Merchant Dashboard
+- [ ] Render Terms of Service and Privacy Policy tab contents inside store settings
+- [ ] Add discount expiry date picker input to promotional coupon creation form
+- [ ] Connect Abandoned Cart retargeting campaign trigger to automated ZeptoMail queue worker
+- [ ] Add order line-item drill-down drawer modal in merchant dashboard orders list
+
+---
+
+## ✅ Monorepo Build Status
+- [x] `@basecart/shared` — Compiled cleanly
+- [x] `@basecart/theme-sdk` — Compiled cleanly
+- [x] `@basecart/theme-engine` — Compiled cleanly
+- [x] `@basecart/backend` — Compiled cleanly
+- [x] `@basecart/merchant-dashboard` — Compiled cleanly
+- [x] `@basecart/storefront` — Compiled cleanly
+- [x] `@basecart/admin-panel` — Compiled cleanly
