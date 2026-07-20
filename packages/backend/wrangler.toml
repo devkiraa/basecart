@@ -12,11 +12,7 @@ enabled = true
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["TenantDO"]
-
-[[migrations]]
-tag = "v2"
-new_sqlite_classes = ["TenantDO_Prod"]
+new_sqlite_classes = ["TenantDO", "TenantDOProd", "TenantDO_Prod"]
 
 [[ratelimits]]
 name = "API_RATE_LIMITER"
