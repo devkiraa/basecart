@@ -81,6 +81,8 @@ export const StoreSettingsSchema = z.object({
         .string()
         .regex(/^#[0-9A-F]{6}$/i)
         .optional(),
+      tagline: z.string().optional().or(z.literal("")),
+      emailSignature: z.string().optional().or(z.literal("")),
     })
     .optional(),
   termsOfService: z.string().optional(),

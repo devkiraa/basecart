@@ -58,6 +58,7 @@ import StepPlan from "../../components/StepPlan";
 import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 import EmailsTab from "../../components/EmailsTab";
+import BrandIdentityTab from "../../components/BrandIdentityTab";
 import {
   AreaChart,
   Area,
@@ -322,7 +323,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
+    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "brand" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Marketing / Newsletter campaign states
@@ -866,7 +867,7 @@ export default function MerchantDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setOrders(await res.json());
-      } else if (["settings", "addons", "store-design", "payments"].includes(activeTab)) {
+      } else if (["settings", "addons", "store-design", "payments", "brand"].includes(activeTab)) {
         const res = await fetch(`${API_URL}/store/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1620,6 +1621,7 @@ export default function MerchantDashboard() {
               { id: "customers", name: "Customers", icon: Users },
               { id: "discounts", name: "Discounts", icon: Tag },
               { id: "marketing", name: "Marketing", icon: Megaphone },
+              { id: "brand", name: "Brand & Identity", icon: Sparkles },
               { id: "store-design", name: "Store Design", icon: Palette },
               { id: "emails", name: "Email Settings", icon: Mail },
               { id: "addons", name: "Apps & Integrations", icon: Puzzle },
@@ -5697,6 +5699,10 @@ export default function MerchantDashboard() {
             </div>
           )}
 
+          {activeTab === "brand" && (
+            <BrandIdentityTab token={token} API_URL={API_URL} settings={settings} onUpdateSettings={(newSettings) => setSettings(newSettings)} />
+          )}
+
           {activeTab === "emails" && (
             <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
           )}
@@ -5738,6 +5744,7 @@ export default function MerchantDashboard() {
                 { id: "customers", name: "Customers", icon: Users },
                 { id: "discounts", name: "Discounts", icon: Tag },
                 { id: "marketing", name: "Marketing", icon: Megaphone },
+                { id: "brand", name: "Brand & Identity", icon: Sparkles },
                 { id: "store-design", name: "Store Design", icon: Palette },
                 { id: "emails", name: "Email Settings", icon: Mail },
                 { id: "addons", name: "Apps & Integrations", icon: Puzzle },
