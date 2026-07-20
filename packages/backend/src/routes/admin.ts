@@ -1585,5 +1585,58 @@ app.patch("/admin/support/tickets/:id", authenticateAdmin, async (c) => {
   return c.json({ success: true });
 });
 
+/**
+ * Global platform system settings
+ */
+app.get("/admin/system-settings", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const result = await controlDb.prepare("SELECT * FROM system_settings").all<any>();
+  const rows = result.results || [];
+  
+  const settings: Record<string, string> = {};
+  for (const row of rows) {
+    settings[row.key] = row.value;
+  }
+
+  if (rows.length === 0) {
+    const defaults = {
+      starterPrice: "999",
+      growthPrice: "4999",
+      proPrice: "9999",
+      starterStorage: "1",
+      growthStorage: "5",
+      proStorage: "25",
+      commissionStarter: "2.0",
+      commissionGrowth: "1.0",
+      commissionPro: "0.0",
+      defaultCurrency: "INR",
+      maintenanceMode: "false",
+      edgeRegion: "global",
+    };
+    for (const [key, val] of Object.entries(defaults)) {
+      await controlDb.prepare("INSERT INTO system_settings (key, value, category, updatedAt) VALUES (?, ?, ?, ?)")
+        .bind(key, val, "system", new Date().toISOString())
+        .run();
+      settings[key] = val;
+    }
+  }
+
+  return c.json(settings);
+});
+
+app.post("/admin/system-settings", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const body = await c.req.json().catch(() => ({}));
+  
+  const timestamp = new Date().toISOString();
+  for (const [key, val] of Object.entries(body)) {
+    await controlDb.prepare("INSERT OR REPLACE INTO system_settings (key, value, category, updatedAt) VALUES (?, ?, 'system', ?)")
+      .bind(key, String(val), timestamp)
+      .run();
+  }
+
+  return c.json({ success: true });
+});
+
 export default app;
 
