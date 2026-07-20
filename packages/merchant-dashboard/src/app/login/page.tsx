@@ -211,14 +211,6 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
-
-          <div className="relative pt-2 flex justify-center">
-            <img 
-              src="/basecart_dashboard_mockup.png" 
-              alt="Basecart Dashboard Mockup" 
-              className="w-full max-w-[280px] rounded-xl shadow-xl shadow-blue-900/5 border border-slate-100 bg-white object-contain"
-            />
-          </div>
         </div>
 
         <div className="text-[10px] text-slate-400 font-semibold">

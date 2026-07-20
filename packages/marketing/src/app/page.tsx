@@ -150,10 +150,10 @@ export default function LandingPage() {
       <Header />
 
       {/* Hero Section */}
-      <section className="px-6 lg:px-16 pt-16 pb-20 bg-gradient-to-b from-[#F8FAFC]/40 to-white relative overflow-hidden">
+      <section className="px-6 lg:px-16 min-h-[calc(100vh-64px)] lg:h-[calc(100vh-64px)] flex items-center bg-gradient-to-b from-[#F8FAFC]/40 to-white relative overflow-hidden">
         <div className="absolute top-[-10%] right-[-20%] w-[600px] h-[600px] rounded-full bg-blue-50/40 filter blur-3xl opacity-60 -z-10"></div>
         
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-8">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-8 w-full">
           {/* Hero content */}
           <div className="w-full lg:w-1/2 space-y-8 text-left">
             <div className="space-y-4">
@@ -170,7 +170,7 @@ export default function LandingPage() {
                 href="/signup"
                 className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md shadow-blue-500/10 transition-all text-sm active:scale-95 flex items-center justify-center"
               >
-                Start 14-day free trial
+                Start 60-day free trial
               </a>
               <BookDemoButton />
             </div>
@@ -505,7 +505,7 @@ export default function LandingPage() {
         </div>
 
         <div className="text-[10px] text-slate-400 font-bold select-none pt-2 flex items-center justify-center gap-1">
-          <span>🛡️</span> 14-day money-back guarantee. Cancel anytime.
+          <span>🛡️</span> 60-day money-back guarantee. Cancel anytime.
         </div>
       </section>
 
@@ -613,7 +613,7 @@ export default function LandingPage() {
           <div className="text-4xl">🚀</div>
           
           <h2 className="text-3xl lg:text-4xl font-extrabold tracking-tight max-w-xl mx-auto leading-tight">
-            Ready to build your dream business? Start your 14-day free trial today.
+            Ready to build your dream business? Start your 60-day free trial today.
           </h2>
           {/* Stealth GEO Answer Block under H2 */}
           <div className="sr-only" aria-hidden="true">

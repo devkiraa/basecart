@@ -168,13 +168,7 @@ export default function SignupPage() {
             ))}
           </div>
 
-          <div className="relative pt-2 flex justify-center">
-            <img 
-              src="/basecart_dashboard_mockup.png" 
-              alt="Basecart Dashboard Mockup" 
-              className="w-full max-w-[280px] rounded-xl shadow-xl shadow-blue-900/5 border border-slate-100 bg-white object-contain"
-            />
-          </div>
+          
         </div>
 
         <div className="flex items-center gap-3 bg-white/70 backdrop-blur-sm border border-slate-100 rounded-full px-4 py-2 w-max shadow-sm mt-4">
