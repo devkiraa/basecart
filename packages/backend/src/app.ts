@@ -13,6 +13,8 @@ import dashboardRouter from "./routes/dashboard";
 import adminRouter from "./routes/admin";
 import storefrontDesignRouter from "./routes/storefront-design";
 import reviewsRouter from "./routes/reviews";
+import storefrontApiRouter from "./routes/storefront_api";
+import themeManagerRouter from "./routes/theme_manager";
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
@@ -189,6 +191,12 @@ export function buildApp() {
 
   // Mount Reviews Router
   app.route("/", reviewsRouter);
+
+  // Mount Storefront SDK API Router
+  app.route("/api/storefront", storefrontApiRouter);
+
+  // Mount Theme Manager Router
+  app.route("/", themeManagerRouter);
 
   return app;
 }

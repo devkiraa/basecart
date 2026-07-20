@@ -12,7 +12,11 @@
     "types": ["@cloudflare/workers-types"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "paths": {
+      "@basecart/theme-engine": ["../theme-engine/dist/index.d.ts"],
+      "@basecart/theme-sdk": ["../theme-sdk/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["src/tests/**/*", "src/local.ts"]

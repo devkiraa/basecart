@@ -108,3 +108,40 @@ CREATE TABLE IF NOT EXISTS email_logs (
   duration INTEGER NOT NULL,
   errorMessage TEXT
 );
+
+CREATE TABLE IF NOT EXISTS marketplace_themes (
+  id TEXT PRIMARY KEY,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL,
+  authorName TEXT NOT NULL,
+  category TEXT NOT NULL,
+  description TEXT NOT NULL,
+  price REAL NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'USD',
+  manifestJson TEXT NOT NULL,
+  rating REAL DEFAULT 5.0,
+  downloadsCount INTEGER DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'published',
+  createdAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS merchant_theme_installations (
+  id TEXT PRIMARY KEY,
+  tenantId TEXT NOT NULL,
+  themeId TEXT NOT NULL,
+  installedVersion TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 0,
+  customSettingsJson TEXT,
+  updatedAt TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS theme_versions (
+  id TEXT PRIMARY KEY,
+  themeId TEXT NOT NULL,
+  version TEXT NOT NULL,
+  changelog TEXT,
+  bundleUrl TEXT,
+  createdAt TEXT NOT NULL
+);
+

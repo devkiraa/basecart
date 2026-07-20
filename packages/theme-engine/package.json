@@ -1,0 +1,18 @@
+{
+  "name": "@basecart/theme-engine",
+  "version": "1.0.0",
+  "description": "Basecart Sandboxed Theme Runtime, Linter, Manifest Validator, Section Engine, & Theme Builder",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@basecart/theme-sdk": "workspace:*",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
