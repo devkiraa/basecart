@@ -12,7 +12,7 @@
     "dev:storefront": "npm run dev --workspace=packages/storefront",
     "dev:admin": "npm run dev --workspace=packages/admin-panel",
     "build:backend": "npm run build --workspace=packages/backend",
-    "build:shared": "npm run build --workspace=packages/shared && npm run build --workspace=packages/emails",
+    "build:shared": "npm run build --workspace=packages/shared && npm run build --workspace=packages/theme-sdk && npm run build --workspace=packages/theme-engine && npm run build --workspace=packages/emails",
     "build:emails": "npm run build --workspace=packages/emails",
     "build:admin": "npm run build --workspace=packages/admin-panel",
     "test:backend": "npm run test --workspace=packages/backend",
