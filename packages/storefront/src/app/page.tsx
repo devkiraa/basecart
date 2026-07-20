@@ -1195,12 +1195,12 @@ export default function Storefront() {
                       <div className="overflow-hidden bg-slate-100 aspect-video relative">
                         <img 
                           src="https://images.unsplash.com/photo-1508746829417-e6f548d8d6ed?w=600&auto=format&fit=crop&q=80" 
-                          alt="Autumn trends 2020" 
+                          alt="New season trends" 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         />
                       </div>
-                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">Autumn trends 2020</h3>
-                      <div className="text-xs text-slate-400 font-medium font-sans">August 2, 2020</div>
+                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">New Season Trends to Watch Out For</h3>
+                      <div className="text-xs text-slate-400 font-medium font-sans">January 12, 2026</div>
                     </div>
                     {/* Blog Post 2 */}
                     <div className="space-y-4 cursor-pointer group">
@@ -1211,8 +1211,8 @@ export default function Storefront() {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                         />
                       </div>
-                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">Tips to keep your watch clean and scratch free</h3>
-                      <div className="text-xs text-slate-400 font-medium font-sans">July 22, 2020</div>
+                      <h3 className="font-medium text-slate-900 text-lg group-hover:text-blue-600 transition-colors">How to Keep Your Watch Clean and Scratch Free</h3>
+                      <div className="text-xs text-slate-400 font-medium font-sans">March 5, 2026</div>
                     </div>
                   </div>
                 </div>
@@ -1685,8 +1685,8 @@ export default function Storefront() {
               </div>
               <div className="space-y-3 text-xs text-slate-600 font-medium">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1">Need help?</h4>
-                <div className="text-slate-800 font-sans">123 456 789</div>
-                <div><span className="hover:underline cursor-pointer font-sans">watch@room.com</span></div>
+                <div className="text-slate-800 font-sans">+91 XXXXX XXXXX</div>
+                <div><span className="hover:underline cursor-pointer font-sans">support@{storeInfo.storeName.toLowerCase().replace(/\s+/g, "")}.com</span></div>
               </div>
               <div className="space-y-4">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Join our newsletter</h4>

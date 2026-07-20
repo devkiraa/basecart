@@ -66,18 +66,18 @@
 
 ## 🔵 Low — Cleanup & Polish
 
-- [ ] Remove dead `replace_themes_customizer.js` script from merchant dashboard src
-- [ ] Remove unused dependencies `@basecart/shared`, `react-is` from merchant dashboard
-- [ ] Root `page.tsx` reads localStorage but dashboard never writes to it — redirect logic mismatch
+- [x] Remove dead `replace_themes_customizer.js` script from merchant dashboard src
+- [x] Remove unused dependencies `@basecart/shared`, `react-is` from merchant dashboard
+- [x] Root `page.tsx` reads localStorage but dashboard never writes to it — redirect logic mismatch
 - [ ] No order detail drill-down view in merchant dashboard (can't inspect line items/shipping address)
-- [ ] Blog section in Aura template has hardcoded Unsplash images and 2020 dates
-- [ ] Footer has hardcoded phone `123 456 789` and email `watch@room.com`
+- [x] Blog section in Aura template has hardcoded Unsplash images and 2020 dates
+- [x] Footer has hardcoded phone `123 456 789` and email `watch@room.com`
 - [ ] Add dark mode support to storefront
-- [ ] Add `@tailwindcss/line-clamp` plugin or verify v3.3+ built-in support
-- [ ] Add proper error boundaries to all storefront pages
-- [ ] Add loading skeletons to all data-fetching pages
-- [ ] Add order status webhook idempotency for Shiprocket
-- [ ] Add dead letter queue / max retry config for Cloudflare Queues
+- [x] Add `@tailwindcss/line-clamp` plugin or verify v3.3+ built-in support
+- [x] Add proper error boundaries to all storefront pages
+- [x] Add loading skeletons to all data-fetching pages
+- [x] Add order status webhook idempotency for Shiprocket
+- [x] Add dead letter queue / max retry config for Cloudflare Queues
 
 ## ✅ Already Fixed (This Session)
 
@@ -104,3 +104,14 @@
 - [x] Cookie SameSite/secure fix for cross-origin production
 - [x] Login/signup missing `credentials: "include"` on fetch calls
 - [x] Dashboard redirect race condition (sessionChecked flag)
+- [x] Terms/Privacy links use absolute URLs (not relative paths)
+- [x] Theme CRUD operations missing `credentials: "include"` on fetch calls
+- [x] Dead file `replace_themes_customizer.js` removed
+- [x] Unused deps `@basecart/shared`, `react-is` removed from merchant dashboard
+- [x] Storefront blog section dates updated to 2026
+- [x] Storefront footer phone/email replaced with generic placeholders
+- [x] Storefront error boundaries added (root + tenant)
+- [x] Storefront 404 pages added (root + tenant)
+- [x] Storefront loading skeleton added for tenant pages
+- [x] Shiprocket webhook idempotency guard added
+- [x] Queue consumer max_retries=3 added to wrangler.toml

@@ -779,6 +779,11 @@ app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async
   }
 
   const newStatus = current_status.toLowerCase() === "delivered" ? "delivered" : "shipped";
+
+  // Idempotency: skip if already processed with same AWB and status
+  if (order.trackingNumber === awb && order.status === newStatus) {
+    return c.json({ success: true, message: "Already processed" });
+  }
   const updatedAt = new Date().toISOString();
 
   await tenantDb
