@@ -12,7 +12,7 @@ enabled = true
 
 [[migrations]]
 tag = "v1"
-new_sqlite_classes = ["TenantDO", "TenantDOProd", "TenantDO_Prod"]
+new_sqlite_classes = ["TenantDO", "TenantDOProd"]
 
 [[ratelimits]]
 name = "API_RATE_LIMITER"
@@ -43,7 +43,7 @@ database_id = "5a1c680b-b6d4-4b6d-8283-8bfc8905d227"
 
 [durable_objects]
 bindings = [
-  { name = "TENANT_DO", class_name = "TenantDO_Prod" }
+  { name = "TENANT_DO", class_name = "TenantDOProd" }
 ]
 
 [[r2_buckets]]

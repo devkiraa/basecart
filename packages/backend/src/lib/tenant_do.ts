@@ -119,6 +119,6 @@ export class TenantDO extends DurableObject {
 }
 
 export class TenantDOProd extends TenantDO {}
-export class TenantDO_Prod extends TenantDO {}
+
 
 
