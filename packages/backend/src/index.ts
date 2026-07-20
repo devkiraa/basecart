@@ -1,6 +1,6 @@
 import { buildApp } from "./app";
 import { handleQueueBatch } from "./queue";
-export { TenantDO, TenantDOProd } from "./lib/tenant_do";
+export { TenantDO, TenantDO_Prod } from "./lib/tenant_do";
 
 const app = buildApp();
 
