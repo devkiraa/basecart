@@ -428,6 +428,22 @@ app.get("/admin/auth/me", authenticateAdmin, async (c) => {
 });
 
 /**
+ * Admin Logout
+ */
+app.post("/admin/auth/logout", async (c) => {
+  const refreshToken = getCookie(c, "basecart_admin_refresh_token");
+  if (refreshToken) {
+    try {
+      const controlDb = getControlDb(c.env);
+      await controlDb.prepare("DELETE FROM refresh_tokens WHERE token = ?").bind(refreshToken).run();
+    } catch (e) {}
+  }
+  deleteCookie(c, "basecart_admin_token", getAdminDeleteOptions(c));
+  deleteCookie(c, "basecart_admin_refresh_token", getAdminDeleteOptions(c));
+  return c.json({ message: "Logged out successfully" });
+});
+
+/**
  * List all merchants
  */
 app.get("/admin/merchants", authenticateAdmin, async (c) => {

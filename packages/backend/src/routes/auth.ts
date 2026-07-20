@@ -440,6 +440,13 @@ app.get("/auth/merchant/stores", authenticateMerchant, async (c) => {
  * Merchant Logout
  */
 app.post("/auth/merchant/logout", async (c) => {
+  const refreshToken = getCookie(c, "basecart_merchant_refresh_token");
+  if (refreshToken) {
+    try {
+      const controlDb = getControlDb(c.env);
+      await controlDb.prepare("DELETE FROM refresh_tokens WHERE token = ?").bind(refreshToken).run();
+    } catch (e) {}
+  }
   deleteCookie(c, "basecart_merchant_token", getMerchantDeleteOptions(c));
   deleteCookie(c, "basecart_merchant_refresh_token", getMerchantDeleteOptions(c));
   return c.json({ message: "Logged out successfully" });
