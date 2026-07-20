@@ -104,7 +104,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       "@type": "Brand",
       "name": store.name
     },
-    "sku": product.sku || product.id,
+    "sku": (product as any).sku || product.id,
     "offers": {
       "@type": "Offer",
       "price": product.price.toString(),

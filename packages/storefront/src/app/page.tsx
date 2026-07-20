@@ -892,16 +892,7 @@ export default function Storefront() {
             </div>
           )}
 
-          {/* Local Sandbox Subdomain Switcher */}
-          <div className="hidden lg:flex items-center gap-1 bg-slate-55 border border-slate-200 rounded-full px-2.5 py-1">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Subdomain:</span>
-            <input
-              type="text"
-              value={subdomain}
-              onChange={(e) => setSubdomain(e.target.value)}
-              className="bg-transparent border-none text-[10px] font-bold text-slate-800 focus:outline-none w-16"
-            />
-          </div>
+
 
           {custName ? (
             <div className="flex items-center gap-4 text-sm font-medium">
