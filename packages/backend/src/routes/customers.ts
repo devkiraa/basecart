@@ -193,22 +193,54 @@ app.post("/customers/broadcast", authenticateMerchant, async (c) => {
     return c.json({ message: "No customers match the selected filters", sentCount: 0 });
   }
 
-  // 3. Get store details for the email footer
+  // 3. Get tenant plan and enforce marketing email quotas
   const controlDb = (c.env as any).CONTROL_DB;
   let storeName = "Basecart Store";
+  let tenantPlan = "trial";
+
   if (controlDb) {
     try {
       const store = (await controlDb
-        .prepare("SELECT storeName FROM tenants WHERE tenantId = ?")
+        .prepare("SELECT storeName, plan FROM tenants WHERE tenantId = ?")
         .bind(tenantId)
         .first()) as any;
-      if (store) storeName = store.storeName;
+      if (store) {
+        if (store.storeName) storeName = store.storeName;
+        if (store.plan) tenantPlan = store.plan;
+      }
     } catch (e) {}
   }
 
-  // 4. Send emails asynchronously to each customer
+  // Fetch current sent counter from store_settings
+  let currentSentCount = 0;
+  try {
+    const logRow = (await tenantDb
+      .prepare("SELECT value FROM store_settings WHERE key = 'marketing_emails_sent'")
+      .first()) as any;
+    if (logRow?.value) {
+      currentSentCount = parseInt(logRow.value, 10) || 0;
+    }
+  } catch (e) {}
+
+  let maxLimit = 10; // Free trial cap
+  if (tenantPlan === "starter") maxLimit = 100;
+  else if (tenantPlan === "growth" || tenantPlan === "growth_paid") maxLimit = 5000;
+  else if (tenantPlan === "business" || tenantPlan === "enterprise") maxLimit = 999999;
+
+  if (currentSentCount >= maxLimit) {
+    return c.json({
+      error: `Marketing email quota reached (${currentSentCount}/${maxLimit}). Your plan (${tenantPlan}) allows up to ${maxLimit} promotional emails. Upgrade your subscription to send more.`,
+      currentSent: currentSentCount,
+      limit: maxLimit,
+    }, 403);
+  }
+
+  // 4. Send emails asynchronously to each customer (up to remaining quota)
   let sentCount = 0;
-  for (const recipient of filteredEmails) {
+  const remainingQuota = maxLimit - currentSentCount;
+  const recipientsToSend = filteredEmails.slice(0, remainingQuota);
+
+  for (const recipient of recipientsToSend) {
     try {
       await sendEmail(
         {
@@ -231,9 +263,20 @@ app.post("/customers/broadcast", authenticateMerchant, async (c) => {
     }
   }
 
+  // 5. Update sent counter in store_settings
+  if (sentCount > 0) {
+    await tenantDb
+      .prepare("INSERT OR REPLACE INTO store_settings (key, value) VALUES ('marketing_emails_sent', ?)")
+      .bind(String(currentSentCount + sentCount))
+      .run()
+      .catch(() => {});
+  }
+
   return c.json({
     message: `Newsletter broadcast triggered successfully to ${sentCount} recipients.`,
     sentCount,
+    totalSent: currentSentCount + sentCount,
+    limit: maxLimit,
   });
 });
 
