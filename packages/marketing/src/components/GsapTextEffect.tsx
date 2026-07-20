@@ -13,10 +13,13 @@ declare global {
 
 export default function GsapTextEffect() {
   useEffect(() => {
-    // If scripts are already loaded globally, trigger initialize
-    if (window.gsap && window.SplitText && window.ScrollTrigger) {
-      initGsap();
-    }
+    let interval = setInterval(() => {
+      if (window.gsap && window.SplitText && window.ScrollTrigger) {
+        initGsap();
+        clearInterval(interval);
+      }
+    }, 100);
+    return () => clearInterval(interval);
   }, []);
 
   const initGsap = () => {
@@ -47,7 +50,7 @@ export default function GsapTextEffect() {
                 scrollTrigger: {
                   trigger: container,
                   scrub: true,
-                  start: "clamp(top 80%)",
+                  start: "clamp(top center)",
                   end: "clamp(bottom center)",
                 },
               });
@@ -107,11 +110,13 @@ export default function GsapTextEffect() {
         .container-split {
           width: 90vw;
           max-width: 900px;
-          margin-top: 15vh;
-          margin-bottom: 15vh;
+          margin-top: 40vh;
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+        .spacer-split {
+          height: 40vh;
         }
         .line {
           overflow: hidden;

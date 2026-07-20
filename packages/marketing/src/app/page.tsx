@@ -376,6 +376,8 @@ export default function LandingPage() {
 
       {/* Interactive GSAP SplitText Section */}
       <section className="py-20 bg-slate-50/30 flex flex-col items-center justify-center border-b border-slate-100 overflow-hidden">
+        <div className="spacer-split"></div>
+
         <div className="container-split select-none">
           <h2 className="split text-slate-900">
             This demo shows the correct way to set up your SplitText line animations with ScrollTrigger. It's important to return your animation inside the onSplit callback and set autoSplit to true so that your lines resplit and your animation gets recreated if the browser resizes.
@@ -393,6 +395,8 @@ export default function LandingPage() {
             This demo shows the correct way to set up your SplitText line animations with ScrollTrigger. It's important to return your animation inside the onSplit callback and set autoSplit to true so that your lines resplit and your animation gets recreated if the browser resizes.
           </h2>
         </div>
+
+        <div className="spacer-split"></div>
       </section>
 
       {/* GSAP Client Script Trigger */}
