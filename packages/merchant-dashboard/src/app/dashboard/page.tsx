@@ -1520,7 +1520,7 @@ export default function MerchantDashboard() {
       const billingRes = await fetch(`${API_URL}/store/billing`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (billingRes.ok) setBillingInfo(await billingRes.ok ? billingRes.json() : null);
+      if (billingRes.ok) setBillingInfo(await billingRes.json());
     } catch (err: any) {
       setActionError(err.message);
     } finally {
@@ -3160,7 +3160,7 @@ export default function MerchantDashboard() {
                         {/* Google Result Preview Mockup */}
                         <div className="p-4 border border-slate-100 rounded-card bg-slate-50 space-y-1">
                           <div className="text-xs text-slate-500 truncate">
-                            https://{settings.subdomain || "demo"}.basecart.io/products/{(productForm.name || "slug").toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                            https://{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}/products/{(productForm.name || "slug").toLowerCase().replace(/[^a-z0-9]+/g, "-")}
                           </div>
                           <div className="text-md text-blue-800 hover:underline cursor-pointer truncate font-medium">
                             {productForm.seoTitle || productForm.name || "Product Name Display"}

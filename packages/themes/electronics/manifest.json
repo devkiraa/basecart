@@ -1,0 +1,39 @@
+{
+  "id": "theme_electronics_v1",
+  "slug": "electronics",
+  "name": "Nova Cyber Electronics",
+  "version": "2.0.0",
+  "author": {
+    "name": "CyberTech Labs",
+    "email": "support@cybertech.app",
+    "url": "https://cybertech.app"
+  },
+  "authorWebsite": "https://cybertech.app",
+  "category": "Electronics",
+  "subcategory": "Gadgets & Hardware",
+  "description": "Sleek dark-mode theme designed specifically for electronics, smart gadgets, and tech hardware catalogs.",
+  "price": 79,
+  "currency": "USD",
+  "featured": true,
+  "published": true,
+  "minimumBasecartVersion": "1.0.0",
+  "maximumBasecartVersion": "2.5.0",
+  "preview": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1000&auto=format&fit=crop&q=80",
+  "thumbnail": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80",
+  "screenshots": [
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80"
+  ],
+  "tags": ["electronics", "tech", "dark-mode", "gadgets"],
+  "license": "Basecart Premium Commercial License",
+  "supportedFeatures": ["Dark Mode Aesthetics", "Tech Specification Grid", "Comparison Matrix"],
+  "demoUrl": "https://electronics.basecart.app",
+  "colorPalette": {
+    "primary": "#0F172A",
+    "secondary": "#1E293B",
+    "accent": "#38BDF8",
+    "bg": "#0B0F19",
+    "text": "#F8FAFC"
+  },
+  "createdAt": "2026-07-20T00:00:00Z",
+  "updatedAt": "2026-07-20T00:00:00Z"
+}

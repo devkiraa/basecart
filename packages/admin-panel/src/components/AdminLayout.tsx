@@ -32,6 +32,7 @@ import {
   Loader2,
   PanelLeftClose,
   PanelLeftOpen,
+  Palette,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -181,6 +182,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       group: "Marketplaces",
       items: [
         { name: "Themes & Apps", href: "/marketplace", icon: ShoppingBag },
+        { name: "Storefront Design", href: "/storefront-design", icon: Palette },
       ],
     },
     {

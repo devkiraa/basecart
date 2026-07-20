@@ -2,10 +2,11 @@
 
 ## 🔴 Critical / Security
 
-- [ ] Remove `"mock-signature-bypass"` from Razorpay webhook — anyone can forge payment confirmations (`packages/backend/src/routes/orders.ts:594`)
+- [x] Remove `"mock-signature-bypass"` from Razorpay webhook — anyone can forge payment confirmations (`packages/backend/src/routes/orders.ts:594`)
 - [ ] Admin logout does not revoke refresh tokens from DB — stolen tokens remain valid after logout (`packages/backend/src/routes/auth.ts:442-446`)
-- [ ] Admin password reset audit log always shows `"system"` — `c.get("admin")` should be `c.get("user")` (`packages/backend/src/routes/admin.ts:878`)
-- [ ] Fix cookie `sameSite`/`secure` for cross-origin — must detect HTTPS via `x-forwarded-proto` (`packages/backend/src/routes/auth.ts`, `admin.ts`) — *partially fixed, verify production*
+- [x] Admin password reset audit log always shows `"system"` — `c.get("admin")` should be `c.get("user")` (`packages/backend/src/routes/admin.ts:878`)
+- [x] Fix cookie `sameSite`/`secure` for cross-origin — must detect HTTPS via `x-forwarded-proto` (`packages/backend/src/routes/auth.ts`, `admin.ts`) — *partially fixed, verify production*
+- [x] Admin cookies missing `domain` property — `COOKIE_DOMAIN_ADMIN` env var defined but never read
 
 ## 🟠 High — Storefront (Broken / Non-functional)
 
@@ -72,7 +73,6 @@
 - [ ] No order detail drill-down view in merchant dashboard (can't inspect line items/shipping address)
 - [x] Blog section in Aura template has hardcoded Unsplash images and 2020 dates
 - [x] Footer has hardcoded phone `123 456 789` and email `watch@room.com`
-- [ ] Add dark mode support to storefront
 - [x] Add `@tailwindcss/line-clamp` plugin or verify v3.3+ built-in support
 - [x] Add proper error boundaries to all storefront pages
 - [x] Add loading skeletons to all data-fetching pages

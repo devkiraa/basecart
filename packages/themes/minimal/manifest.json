@@ -1,0 +1,39 @@
+{
+  "id": "theme_minimal_v1",
+  "slug": "minimal",
+  "name": "Minimalist Studio",
+  "version": "1.0.0",
+  "author": {
+    "name": "Basecart Official",
+    "email": "themes@basecart.app",
+    "url": "https://basecart.app"
+  },
+  "authorWebsite": "https://basecart.app",
+  "category": "Minimal",
+  "subcategory": "Artisan & Studio",
+  "description": "Ultra-clean minimalist theme featuring generous whitespace, serene typography, and high-conversion hero banners.",
+  "price": 0,
+  "currency": "USD",
+  "featured": false,
+  "published": true,
+  "minimumBasecartVersion": "1.0.0",
+  "maximumBasecartVersion": "2.5.0",
+  "preview": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=1000&auto=format&fit=crop&q=80",
+  "thumbnail": "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=400&auto=format&fit=crop&q=80",
+  "screenshots": [
+    "https://images.unsplash.com/photo-1513519245088-0e12902e5a38?w=800&auto=format&fit=crop&q=80"
+  ],
+  "tags": ["minimal", "artisan", "clean", "studio"],
+  "license": "Basecart Standard License",
+  "supportedFeatures": ["Whitespace Layout", "SEO Optimized", "Responsive Design"],
+  "demoUrl": "https://minimal.basecart.app",
+  "colorPalette": {
+    "primary": "#18181B",
+    "secondary": "#F4F4F5",
+    "accent": "#E4E4E7",
+    "bg": "#FFFFFF",
+    "text": "#18181B"
+  },
+  "createdAt": "2026-07-20T00:00:00Z",
+  "updatedAt": "2026-07-20T00:00:00Z"
+}

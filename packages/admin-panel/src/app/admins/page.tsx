@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import AdminLayout from "../../components/AdminLayout";
 import {
   ShieldAlert,
   Loader2,

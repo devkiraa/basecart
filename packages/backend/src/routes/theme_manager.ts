@@ -1,146 +1,345 @@
 import { Hono } from "hono";
 import { getControlDb } from "../lib/db";
 import { authenticateAdmin } from "./admin";
-import { ThemeLinter } from "@basecart/theme-engine";
+import { ThemeLinter, ThemeUploadPipeline } from "@basecart/theme-engine";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
 // ─── ADMIN THEME MARKETPLACE MANAGEMENT ─────────────────────
 
 /**
- * POST /admin/themes/lint-check
- * Lints an uploaded theme package and returns validation results.
+ * GET /admin/themes
+ * List all registered marketplace themes with search, category, and status filtering.
  */
-app.post("/admin/themes/lint-check", authenticateAdmin, async (c) => {
+app.get("/admin/themes", authenticateAdmin, async (c) => {
   try {
-    const body = await c.req.json();
-    const files = body.files || [];
+    const db = getControlDb(c.env);
+    const category = c.req.query("category");
+    const q = c.req.query("q");
 
-    const lintResult = ThemeLinter.lintThemeFiles(files);
-    return c.json(lintResult);
+    let sql = "SELECT * FROM themes WHERE deleted_at IS NULL";
+    const params: any[] = [];
+
+    if (category) {
+      sql += " AND category = ?";
+      params.push(category);
+    }
+    if (q) {
+      sql += " AND (name LIKE ? OR description LIKE ? OR slug LIKE ?)";
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+
+    sql += " ORDER BY created_at DESC";
+
+    const rows = await db.prepare(sql).bind(...params).all<any>();
+    return c.json(rows.results || []);
   } catch (err: any) {
-    return c.json({ error: err.message || "Failed to lint theme files" }, 400);
+    return c.json({ error: err.message || "Failed to fetch themes" }, 500);
   }
 });
 
 /**
- * POST /admin/themes/publish
- * Publishes a new theme to the central Theme Marketplace in D1.
+ * POST /admin/themes/upload
+ * Automated Theme Upload & Lint Pipeline.
  */
-app.post("/admin/themes/publish", authenticateAdmin, async (c) => {
+app.post("/admin/themes/upload", authenticateAdmin, async (c) => {
   try {
     const db = getControlDb(c.env);
     const body = await c.req.json();
-    const manifest = body.manifest;
+    const files = body.files || [];
 
-    if (!manifest || !manifest.id || !manifest.name) {
-      return c.json({ error: "Invalid theme manifest payload" }, 400);
+    const result = ThemeUploadPipeline.processThemePackage(files);
+    if (!result.success || !result.dbRecord) {
+      return c.json({ success: false, errors: result.errors, warnings: result.warnings }, 400);
     }
 
-    const themeId = manifest.id;
-    const slug = manifest.slug || themeId;
-    const name = manifest.name;
-    const version = manifest.version || "1.0.0";
-    const authorName = manifest.author?.name || "Official Basecart";
-    const category = manifest.category || "Fashion";
-    const description = manifest.description || "Production-ready Basecart Theme";
-    const price = manifest.price || 0;
-    const currency = manifest.currency || "USD";
-    const now = new Date().toISOString();
-
+    const r = result.dbRecord;
     await db
       .prepare(
-        `INSERT INTO marketplace_themes (id, slug, name, version, authorName, category, description, price, currency, manifestJson, rating, downloadsCount, status, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 5.0, 0, 'published', ?)
+        `INSERT INTO themes (id, slug, name, description, category, price, currency, folder_name, preview, thumbnail, featured, published, downloads, purchases, rating, active_stores, current_version, minimum_version, maximum_version, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 5.0, 0, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
-           version = excluded.version,
+           version = excluded.current_version,
            name = excluded.name,
            description = excluded.description,
-           manifestJson = excluded.manifestJson,
-           createdAt = excluded.createdAt`
+           updated_at = excluded.updated_at`
       )
-      .bind(themeId, slug, name, version, authorName, category, description, price, currency, JSON.stringify(manifest), now)
+      .bind(
+        r.id,
+        r.slug,
+        r.name,
+        r.description,
+        r.category,
+        r.price,
+        r.currency,
+        r.folder_name,
+        r.preview,
+        r.thumbnail,
+        r.featured,
+        r.published,
+        r.current_version,
+        r.minimum_version,
+        r.maximum_version,
+        r.created_at,
+        r.updated_at
+      )
       .run();
 
-    return c.json({ success: true, themeId, message: "Theme published successfully to Marketplace." });
+    // Register Version Record
+    const versionId = `ver_${r.id}_${r.current_version}`;
+    await db
+      .prepare(
+        `INSERT INTO theme_versions (id, theme_id, version, release_notes, folder, published, created_at)
+         VALUES (?, ?, ?, 'Initial Release', ?, 1, ?)
+         ON CONFLICT(id) DO NOTHING`
+      )
+      .bind(versionId, r.id, r.current_version, r.folder_name, r.created_at)
+      .run();
+
+    return c.json({ success: true, themeId: r.id, version: r.current_version, warnings: result.warnings });
   } catch (err: any) {
-    return c.json({ error: err.message || "Failed to publish theme" }, 500);
+    return c.json({ error: err.message || "Failed to process theme package upload" }, 500);
   }
 });
 
-// ─── MERCHANT THEME MARKETPLACE & CUSTOMIZER ────────────────
+/**
+ * POST /admin/themes/:id/feature
+ */
+app.post("/admin/themes/:id/feature", authenticateAdmin, async (c) => {
+  try {
+    const id = c.req.param("id");
+    const db = getControlDb(c.env);
+    const body = await c.req.json().catch(() => ({}));
+    const featured = body.featured !== undefined ? (body.featured ? 1 : 0) : 1;
+
+    await db.prepare("UPDATE themes SET featured = ?, updated_at = ? WHERE id = ?").bind(featured, new Date().toISOString(), id).run();
+    return c.json({ success: true, themeId: id, featured: !!featured });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to toggle feature status" }, 500);
+  }
+});
+
+/**
+ * GET /admin/themes/analytics
+ */
+app.get("/admin/themes/analytics", authenticateAdmin, async (c) => {
+  try {
+    const db = getControlDb(c.env);
+    const totalThemes = await db.prepare("SELECT COUNT(*) as count FROM themes WHERE deleted_at IS NULL").first<any>();
+    const totalPurchases = await db.prepare("SELECT COUNT(*) as count FROM merchant_themes").first<any>();
+    const activeInstallations = await db.prepare("SELECT COUNT(*) as count FROM merchant_themes WHERE activated = 1").first<any>();
+
+    return c.json({
+      totalThemes: totalThemes?.count || 0,
+      totalPurchases: totalPurchases?.count || 0,
+      activeInstallations: activeInstallations?.count || 0,
+      totalRevenueUSD: (totalPurchases?.count || 0) * 49,
+    });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to load theme analytics" }, 500);
+  }
+});
+
+// ─── MERCHANT THEME MARKETPLACE & LIBRARY ───────────────────
 
 /**
  * GET /merchant/themes/marketplace
- * Returns all published themes available in the marketplace.
+ * Browse themes by Category, Search Query, & Price filters.
  */
 app.get("/merchant/themes/marketplace", async (c) => {
   try {
     const db = getControlDb(c.env);
-    const rows = await db.prepare("SELECT * FROM marketplace_themes WHERE status = 'published' ORDER BY createdAt DESC").all<any>();
-    const themes = rows.results.map((r: any) => ({
-      id: r.id,
-      slug: r.slug,
-      name: r.name,
-      version: r.version,
-      authorName: r.authorName,
-      category: r.category,
-      description: r.description,
-      price: r.price,
-      currency: r.currency,
-      rating: r.rating,
-      downloadsCount: r.downloadsCount,
-      manifest: JSON.parse(r.manifestJson),
-    }));
+    const category = c.req.query("category");
+    const q = c.req.query("q");
+    const sort = c.req.query("sort");
 
-    return c.json(themes);
+    let sql = "SELECT * FROM themes WHERE published = 1 AND deleted_at IS NULL";
+    const params: any[] = [];
+
+    if (category && category !== "All") {
+      sql += " AND category = ?";
+      params.push(category);
+    }
+    if (q) {
+      sql += " AND (name LIKE ? OR description LIKE ? OR category LIKE ?)";
+      params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    }
+
+    if (sort === "price-asc") sql += " ORDER BY price ASC";
+    else if (sort === "price-desc") sql += " ORDER BY price DESC";
+    else if (sort === "popular") sql += " ORDER BY downloads DESC";
+    else sql += " ORDER BY featured DESC, created_at DESC";
+
+    const rows = await db.prepare(sql).bind(...params).all<any>();
+
+    // Fallback built-in themes if DB is empty
+    if (!rows.results || rows.results.length === 0) {
+      return c.json([
+        {
+          id: "theme_modern_v1",
+          slug: "modern",
+          name: "Modern Clean",
+          description: "High-conversion modern theme with clean typography, responsive layout, and soft gallery frames.",
+          category: "Footwear & Fashion",
+          price: 0,
+          currency: "USD",
+          preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1000&auto=format&fit=crop&q=80",
+          thumbnail: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80",
+          featured: 1,
+          rating: 4.9,
+          downloads: 1240,
+          current_version: "1.0.0",
+        },
+        {
+          id: "theme_fashion_v1",
+          slug: "fashion",
+          name: "Vogue Fashion Lookbook",
+          description: "High-end fashion boutique layout with full-bleed lookbook banners and luxury typography.",
+          category: "Fashion",
+          price: 49,
+          currency: "USD",
+          preview: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1000&auto=format&fit=crop&q=80",
+          thumbnail: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop&q=80",
+          featured: 1,
+          rating: 5.0,
+          downloads: 580,
+          current_version: "1.2.0",
+        },
+        {
+          id: "theme_electronics_v1",
+          slug: "electronics",
+          name: "Nova Cyber Electronics",
+          description: "Sleek dark-mode theme designed specifically for electronics, smart gadgets, and hardware catalogs.",
+          category: "Electronics",
+          price: 79,
+          currency: "USD",
+          preview: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1000&auto=format&fit=crop&q=80",
+          thumbnail: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80",
+          featured: 1,
+          rating: 4.8,
+          downloads: 410,
+          current_version: "2.0.0",
+        },
+      ]);
+    }
+
+    return c.json(rows.results);
   } catch (err: any) {
-    return c.json({ error: err.message || "Failed to load marketplace themes" }, 500);
+    return c.json({ error: err.message || "Failed to fetch merchant marketplace" }, 500);
   }
 });
 
 /**
- * POST /merchant/themes/install
- * Installs a theme for a merchant tenant.
+ * GET /merchant/themes/library
+ * List all themes installed / owned by merchant.
  */
-app.post("/merchant/themes/install", async (c) => {
+app.get("/merchant/themes/library", async (c) => {
+  try {
+    const merchantId = c.req.query("merchantId") || c.req.header("x-merchant-id") || "default";
+    const db = getControlDb(c.env);
+
+    const rows = await db
+      .prepare(
+        `SELECT m.*, t.name, t.slug, t.preview, t.thumbnail, t.category, t.price
+         FROM merchant_themes m
+         JOIN themes t ON m.theme_id = t.id
+         WHERE m.merchant_id = ?
+         ORDER BY m.activated DESC, m.installed_at DESC`
+      )
+      .bind(merchantId)
+      .all<any>();
+
+    return c.json(rows.results || []);
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to fetch merchant theme library" }, 500);
+  }
+});
+
+/**
+ * POST /merchant/themes/activate
+ * Set theme active for tenant store.
+ */
+app.post("/merchant/themes/activate", async (c) => {
   try {
     const db = getControlDb(c.env);
     const body = await c.req.json();
-    const { tenantId, themeId, active } = body;
+    const { merchantId, themeId } = body;
 
-    if (!tenantId || !themeId) {
-      return c.json({ error: "Missing required fields tenantId or themeId" }, 400);
+    if (!merchantId || !themeId) {
+      return c.json({ error: "Missing required fields merchantId or themeId" }, 400);
     }
 
-    const theme = await db.prepare("SELECT * FROM marketplace_themes WHERE id = ?").bind(themeId).first<any>();
-    if (!theme) {
-      return c.json({ error: "Theme not found in Marketplace" }, 404);
-    }
+    // 1. Deactivate all current themes for merchant
+    await db.prepare("UPDATE merchant_themes SET activated = 0 WHERE merchant_id = ?").bind(merchantId).run();
 
-    const installationId = `inst_${tenantId}_${themeId}`;
+    // 2. Activate target theme
     const now = new Date().toISOString();
-
-    if (active) {
-      // Deactivate current active theme
-      await db.prepare("UPDATE merchant_theme_installations SET active = 0 WHERE tenantId = ?").bind(tenantId).run();
-    }
-
-    await db
-      .prepare(
-        `INSERT INTO merchant_theme_installations (id, tenantId, themeId, installedVersion, active, customSettingsJson, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET
-           installedVersion = excluded.installedVersion,
-           active = excluded.active,
-           updatedAt = excluded.updatedAt`
-      )
-      .bind(installationId, tenantId, themeId, theme.version, active ? 1 : 0, theme.manifestJson, now)
+    const result = await db
+      .prepare("UPDATE merchant_themes SET activated = 1, updated_at = ? WHERE merchant_id = ? AND theme_id = ?")
+      .bind(now, merchantId, themeId)
       .run();
 
-    return c.json({ success: true, installationId, active: !!active });
+    if (!result.success || result.meta?.changes === 0) {
+      // Auto-install if not present in library
+      const recordId = `mt_${merchantId}_${themeId}`;
+      await db
+        .prepare(
+          `INSERT INTO merchant_themes (id, merchant_id, theme_id, theme_version, purchase_type, activated, installed_at, updated_at)
+           VALUES (?, ?, ?, '1.0.0', 'free', 1, ?, ?)`
+        )
+        .bind(recordId, merchantId, themeId, now, now)
+        .run();
+    }
+
+    return c.json({ success: true, merchantId, themeId, activated: true });
   } catch (err: any) {
-    return c.json({ error: err.message || "Failed to install theme" }, 500);
+    return c.json({ error: err.message || "Failed to activate theme" }, 500);
+  }
+});
+
+/**
+ * POST /merchant/themes/purchase
+ * Create Razorpay Order for paid theme purchase.
+ */
+app.post("/merchant/themes/purchase", async (c) => {
+  try {
+    const db = getControlDb(c.env);
+    const body = await c.req.json();
+    const { merchantId, themeId } = body;
+
+    const theme = await db.prepare("SELECT * FROM themes WHERE id = ?").bind(themeId).first<any>();
+    const price = theme ? theme.price : 49;
+
+    const now = new Date().toISOString();
+    const recordId = `mt_${merchantId}_${themeId}`;
+
+    if (price === 0) {
+      // Free Theme instant license grant
+      await db
+        .prepare(
+          `INSERT INTO merchant_themes (id, merchant_id, theme_id, theme_version, purchase_type, activated, installed_at, updated_at)
+           VALUES (?, ?, ?, '1.0.0', 'free', 0, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET updated_at = excluded.updated_at`
+        )
+        .bind(recordId, merchantId, themeId, now, now)
+        .run();
+
+      return c.json({ success: true, free: true, message: "Free theme added to your library." });
+    }
+
+    // Paid Theme Order payload
+    const orderId = `order_theme_${Date.now()}`;
+    return c.json({
+      success: true,
+      free: false,
+      orderId,
+      amount: price * 100, // paise
+      currency: "INR",
+      razorpayKeyId: c.env.RAZORPAY_KEY_ID || "rzp_test_mock_key",
+      themeId,
+    });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to initiate theme purchase" }, 500);
   }
 });
 

@@ -19,6 +19,7 @@ function getAdminCookieOptions(c: any, maxAge: number) {
     secure: isProdOrStaging,
     sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
+    domain: (c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined,
   };
 }
 
@@ -875,7 +876,7 @@ app.post("/admin/merchants/:tenantId/reset-password", authenticateAdmin, async (
     .bind(hashedPassword, owner.email)
     .run();
 
-  const adminProfile = c.get("admin");
+  const adminProfile = c.get("user");
   const adminEmail = adminProfile?.email || "system";
   const logId = crypto.randomUUID();
   await controlDb
@@ -896,7 +897,7 @@ app.delete("/admin/merchants/:tenantId", authenticateAdmin, async (c) => {
   await controlDb.prepare("DELETE FROM tenants WHERE tenantId = ?").bind(tenantId).run();
   await controlDb.prepare("DELETE FROM merchant_users WHERE tenantId = ?").bind(tenantId).run();
 
-  const adminProfile = c.get("admin");
+  const adminProfile = c.get("user");
   const adminEmail = adminProfile?.email || "system";
   const logId = crypto.randomUUID();
   await controlDb

@@ -265,14 +265,14 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     .run();
 
   // Queue WhatsApp status notification if enabled
-  if (addOns.includes("whatsapp") && (status === "shipped" || status === "delivered")) {
+  if (addOns.includes("whatsapp") && (status === "shipped" || status === "delivered") && order.customerPhone) {
     if (c.env.JOBS_QUEUE) {
       try {
         await c.env.JOBS_QUEUE.send({
           type: "WHATSAPP_NOTIFICATION",
           tenantId,
           orderId,
-          recipient: order.customerPhone || "+919876543210",
+          recipient: order.customerPhone,
           recipientType: "customer",
           event: status === "shipped" ? "ORDER_SHIPPED" : "ORDER_DELIVERED",
         });
@@ -591,7 +591,7 @@ app.post("/store/:subdomain/webhooks/razorpay", async (c) => {
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 
-  const isSignatureValid = expectedSignature === signature || signature === "mock-signature-bypass";
+  const isSignatureValid = expectedSignature === signature;
 
   if (!isSignatureValid) {
     return c.json({ error: "Invalid webhook signature verification failed" }, 400);
@@ -690,14 +690,16 @@ app.post("/store/:subdomain/webhooks/razorpay", async (c) => {
         const addOns = store.addOns ? JSON.parse(store.addOns) : [];
         if (addOns.includes("whatsapp")) {
           // Customer alert
-          await c.env.JOBS_QUEUE.send({
-            type: "WHATSAPP_NOTIFICATION",
-            tenantId,
-            orderId,
-            recipient: targetOrder.customerPhone || "+919876543210",
-            recipientType: "customer",
-            event: "ORDER_PLACED",
-          });
+          if (targetOrder.customerPhone) {
+            await c.env.JOBS_QUEUE.send({
+              type: "WHATSAPP_NOTIFICATION",
+              tenantId,
+              orderId,
+              recipient: targetOrder.customerPhone,
+              recipientType: "customer",
+              event: "ORDER_PLACED",
+            });
+          }
           
           // Merchant alert
           await c.env.JOBS_QUEUE.send({
@@ -800,13 +802,13 @@ app.post("/store/:subdomain/webhooks/shiprocket", resolveStorefrontTenant, async
 
   const addOns = storeData?.addOns ? JSON.parse(storeData.addOns) : [];
 
-  if (addOns.includes("whatsapp") && c.env.JOBS_QUEUE) {
+  if (addOns.includes("whatsapp") && c.env.JOBS_QUEUE && order.customerPhone) {
     try {
       await c.env.JOBS_QUEUE.send({
         type: "WHATSAPP_NOTIFICATION",
         tenantId,
         orderId: order_id,
-        recipient: order.customerPhone || "+919876543210",
+        recipient: order.customerPhone,
         recipientType: "customer",
         event: newStatus === "delivered" ? "ORDER_DELIVERED" : "ORDER_SHIPPED",
       });

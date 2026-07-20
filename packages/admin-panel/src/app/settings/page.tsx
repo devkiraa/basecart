@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import AdminLayout from "../../components/AdminLayout";
 import { Settings, Save, Sparkles } from "lucide-react";
 
 export default function SettingsPage() {

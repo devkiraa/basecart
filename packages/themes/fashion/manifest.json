@@ -1,0 +1,39 @@
+{
+  "id": "theme_fashion_v1",
+  "slug": "fashion",
+  "name": "Vogue Fashion Lookbook",
+  "version": "1.2.0",
+  "author": {
+    "name": "Vogue Studios",
+    "email": "designers@vogue.app",
+    "url": "https://vogue.app"
+  },
+  "authorWebsite": "https://vogue.app",
+  "category": "Fashion",
+  "subcategory": "Designer & Apparel",
+  "description": "High-end fashion boutique layout with full-bleed lookbook banners, product quick view overlays, and luxury typography.",
+  "price": 49,
+  "currency": "USD",
+  "featured": true,
+  "published": true,
+  "minimumBasecartVersion": "1.0.0",
+  "maximumBasecartVersion": "2.5.0",
+  "preview": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1000&auto=format&fit=crop&q=80",
+  "thumbnail": "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=400&auto=format&fit=crop&q=80",
+  "screenshots": [
+    "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=800&auto=format&fit=crop&q=80"
+  ],
+  "tags": ["fashion", "apparel", "luxury", "boutique"],
+  "license": "Basecart Premium Commercial License",
+  "supportedFeatures": ["Lookbook Banners", "Quick View Modal", "Wishlist Integration"],
+  "demoUrl": "https://fashion.basecart.app",
+  "colorPalette": {
+    "primary": "#E11D48",
+    "secondary": "#BE123C",
+    "accent": "#FDA4AF",
+    "bg": "#FFFFFF",
+    "text": "#0F172A"
+  },
+  "createdAt": "2026-07-20T00:00:00Z",
+  "updatedAt": "2026-07-20T00:00:00Z"
+}

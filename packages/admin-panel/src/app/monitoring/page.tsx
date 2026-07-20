@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import AdminLayout from "../../components/AdminLayout";
 import { Activity, Server, HeartPulse, RefreshCw } from "lucide-react";
 
 export default function MonitoringPage() {

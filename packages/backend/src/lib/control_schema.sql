@@ -109,39 +109,66 @@ CREATE TABLE IF NOT EXISTS email_logs (
   errorMessage TEXT
 );
 
-CREATE TABLE IF NOT EXISTS marketplace_themes (
+CREATE TABLE IF NOT EXISTS themes (
   id TEXT PRIMARY KEY,
   slug TEXT NOT NULL UNIQUE,
   name TEXT NOT NULL,
-  version TEXT NOT NULL,
-  authorName TEXT NOT NULL,
-  category TEXT NOT NULL,
   description TEXT NOT NULL,
+  category TEXT NOT NULL,
   price REAL NOT NULL DEFAULT 0,
   currency TEXT NOT NULL DEFAULT 'USD',
-  manifestJson TEXT NOT NULL,
+  folder_name TEXT NOT NULL,
+  preview TEXT,
+  thumbnail TEXT,
+  featured INTEGER NOT NULL DEFAULT 0,
+  published INTEGER NOT NULL DEFAULT 1,
+  downloads INTEGER NOT NULL DEFAULT 0,
+  purchases INTEGER NOT NULL DEFAULT 0,
   rating REAL DEFAULT 5.0,
-  downloadsCount INTEGER DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'published',
-  createdAt TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS merchant_theme_installations (
-  id TEXT PRIMARY KEY,
-  tenantId TEXT NOT NULL,
-  themeId TEXT NOT NULL,
-  installedVersion TEXT NOT NULL,
-  active INTEGER NOT NULL DEFAULT 0,
-  customSettingsJson TEXT,
-  updatedAt TEXT NOT NULL
+  active_stores INTEGER NOT NULL DEFAULT 0,
+  current_version TEXT NOT NULL DEFAULT '1.0.0',
+  minimum_version TEXT NOT NULL DEFAULT '1.0.0',
+  maximum_version TEXT NOT NULL DEFAULT '2.5.0',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  deleted_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS theme_versions (
   id TEXT PRIMARY KEY,
-  themeId TEXT NOT NULL,
+  theme_id TEXT NOT NULL,
   version TEXT NOT NULL,
-  changelog TEXT,
-  bundleUrl TEXT,
-  createdAt TEXT NOT NULL
+  release_notes TEXT,
+  folder TEXT NOT NULL,
+  published INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS merchant_themes (
+  id TEXT PRIMARY KEY,
+  merchant_id TEXT NOT NULL,
+  theme_id TEXT NOT NULL,
+  theme_version TEXT NOT NULL,
+  purchase_type TEXT NOT NULL DEFAULT 'free',
+  activated INTEGER NOT NULL DEFAULT 0,
+  installed_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS theme_reviews (
+  id TEXT PRIMARY KEY,
+  theme_id TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  rating INTEGER NOT NULL,
+  review TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS theme_downloads (
+  id TEXT PRIMARY KEY,
+  theme_id TEXT NOT NULL,
+  merchant_id TEXT NOT NULL,
+  downloaded_at TEXT NOT NULL
+);
+
 
