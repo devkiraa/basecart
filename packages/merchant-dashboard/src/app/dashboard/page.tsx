@@ -320,7 +320,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "catalog" | "marketing" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
+    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Sidebar collapse state
@@ -837,7 +837,7 @@ export default function MerchantDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setOrders(await res.json());
-      } else if (["settings", "addons", "store-design", "payments", "catalog"].includes(activeTab)) {
+      } else if (["settings", "addons", "store-design", "payments"].includes(activeTab)) {
         const res = await fetch(`${API_URL}/store/settings`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -1589,7 +1589,6 @@ export default function MerchantDashboard() {
               { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
               { id: "products", name: "Products", icon: Package },
               { id: "customers", name: "Customers", icon: Users },
-              { id: "catalog", name: "Catalog", icon: Globe },
               { id: "discounts", name: "Discounts", icon: Tag },
               { id: "marketing", name: "Marketing", icon: Megaphone },
               { id: "store-design", name: "Store Design", icon: Palette },
@@ -4930,56 +4929,7 @@ export default function MerchantDashboard() {
             </div>
           )}
 
-          {/* 10. Catalog Tab */}
-          {activeTab === "catalog" && (
-            <div className="space-y-6 animate-fade-in">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight mb-2">Store Catalog</h2>
-                <p className="text-sm text-slate-500">Access your live customer-facing storefront, preview catalog links, and view active themes</p>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-bold text-slate-800 text-sm">Storefront Details</h3>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="text-[10px] uppercase font-semibold text-slate-400">Subdomain Host</div>
-                      <div className="text-sm font-mono font-bold text-slate-800 mt-1">{settings.subdomain || "demo"}.basecart.com</div>
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="text-[10px] uppercase font-semibold text-slate-400">Theme Base Color</div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="h-4 w-4 rounded-full border border-slate-300" style={{ backgroundColor: settings.branding?.primaryColor || "#4F46E5" }}></span>
-                        <span className="text-xs font-semibold text-slate-700">{settings.branding?.primaryColor || "#4F46E5"}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <a 
-                    href={getStorefrontLink(settings.subdomain || "demo")} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-[#4338CA] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                  >
-                    <Globe className="h-4 w-4" /> View Live Storefront
-                  </a>
-                </div>
-
-                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm space-y-4">
-                  <h3 className="font-bold text-slate-800 text-sm">Active Template</h3>
-                  <div className="p-4 border border-indigo-100 rounded-lg bg-indigo-50/20 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-slate-800">Basecart Default Theme</span>
-                      <span className="text-[9px] bg-emerald-50 text-emerald-700 font-extrabold px-1.5 py-0.5 rounded uppercase">Active</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-normal">
-                      A premium, hyper-fast single-page storefront template optimized for speed, conversion rate, and Razorpay standard checkout.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* 11. Marketing Tab */}
           {activeTab === "marketing" && (
@@ -5506,7 +5456,6 @@ export default function MerchantDashboard() {
                 { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
                 { id: "products", name: "Products", icon: Package },
                 { id: "customers", name: "Customers", icon: Users },
-                { id: "catalog", name: "Catalog", icon: Globe },
                 { id: "discounts", name: "Discounts", icon: Tag },
                 { id: "marketing", name: "Marketing", icon: Megaphone },
                 { id: "store-design", name: "Store Design", icon: Palette },
