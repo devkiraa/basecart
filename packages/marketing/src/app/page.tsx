@@ -18,7 +18,6 @@ import DashboardRedirector from "../components/DashboardRedirector";
 import BookDemoButton from "../components/BookDemoButton";
 import ContactSalesButton from "../components/ContactSalesButton";
 import FaqAccordionItem from "../components/FaqAccordionItem";
-import GsapTextEffect from "../components/GsapTextEffect";
 
 export default function LandingPage() {
   const merchantDashboardUrl = process.env.NEXT_PUBLIC_MERCHANT_DASHBOARD_URL || "http://localhost:3004";
@@ -374,33 +373,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Interactive GSAP SplitText Section */}
-      <section className="py-20 bg-slate-50/30 flex flex-col items-center justify-center border-b border-slate-100 overflow-hidden">
-        <div className="spacer-split"></div>
 
-        <div className="container-split select-none">
-          <h2 className="split text-slate-900">
-            This demo shows the correct way to set up your SplitText line animations with ScrollTrigger. It's important to return your animation inside the onSplit callback and set autoSplit to true so that your lines resplit and your animation gets recreated if the browser resizes.
-          </h2>
-        </div>
-        
-        <div className="container-split select-none">
-          <h2 className="split text-slate-900">
-            This demo shows the correct way to set up your SplitText line animations with ScrollTrigger. It's important to return your animation inside the onSplit callback and set autoSplit to true so that your lines resplit and your animation gets recreated if the browser resizes.
-          </h2>
-        </div>
-        
-        <div className="container-split select-none">
-          <h2 className="split text-slate-900">
-            This demo shows the correct way to set up your SplitText line animations with ScrollTrigger. It's important to return your animation inside the onSplit callback and set autoSplit to true so that your lines resplit and your animation gets recreated if the browser resizes.
-          </h2>
-        </div>
-
-        <div className="spacer-split"></div>
-      </section>
-
-      {/* GSAP Client Script Trigger */}
-      <GsapTextEffect />
 
       {/* Pricing section */}
       <section id="pricing" className="py-20 px-6 max-w-7xl mx-auto text-center space-y-16">
