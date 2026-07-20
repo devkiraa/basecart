@@ -1,17 +1,46 @@
 import { DurableObject } from "cloudflare:workers";
+import { tenantSchema } from "./tenant_schema";
 
 /**
  * TenantDO is a Durable Object class managing an isolated SQLite database per tenant.
  */
 export class TenantDO extends DurableObject {
+  private schemaEnsured = false;
+
   constructor(ctx: DurableObjectState, env: any) {
     super(ctx, env);
+  }
+
+  private ensureSchema() {
+    if (this.schemaEnsured) return;
+    try {
+      const statements = tenantSchema
+        .split(";")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const sql of statements) {
+        const cleanSql = sql
+          .split("\n")
+          .filter((line) => !line.trim().startsWith("--"))
+          .join(" ")
+          .trim();
+
+        if (cleanSql.length > 0) {
+          this.ctx.storage.sql.exec(cleanSql + ";");
+        }
+      }
+      this.schemaEnsured = true;
+    } catch (e) {
+      console.error("Failed to auto-ensure tenant schema in Durable Object:", e);
+    }
   }
 
   /**
    * Execute schema migrations or parameterized write statements.
    */
   async exec(sql: string, params: any[] = []): Promise<any> {
+    this.ensureSchema();
     // Normalise boolean values for SQLite storage (map true/false to 1/0)
     const boundParams = params.map(val => {
       if (typeof val === "boolean") return val ? 1 : 0;
@@ -44,6 +73,7 @@ export class TenantDO extends DurableObject {
    * Execute parameterized SELECT / UPDATE / INSERT queries and return row objects.
    */
   async query(sql: string, params: any[]): Promise<any[]> {
+    this.ensureSchema();
     // Normalise boolean values for SQLite storage (map true/false to 1/0)
     const boundParams = params.map(val => {
       if (typeof val === "boolean") return val ? 1 : 0;
@@ -74,6 +104,7 @@ export class TenantDO extends DurableObject {
    * Run multiple statements atomically in a single execution queue batch.
    */
   async batch(statements: { sql: string; params: any[] }[]): Promise<any[][]> {
+    this.ensureSchema();
     const results: any[][] = [];
     for (const stmt of statements) {
       const boundParams = stmt.params.map(val => {
