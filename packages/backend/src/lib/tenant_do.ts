@@ -117,3 +117,6 @@ export class TenantDO extends DurableObject {
     return results;
   }
 }
+
+export class TenantDOProd extends TenantDO {}
+

@@ -14,6 +14,10 @@ enabled = true
 tag = "v1"
 new_sqlite_classes = ["TenantDO"]
 
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["TenantDOProd"]
+
 [[ratelimits]]
 name = "API_RATE_LIMITER"
 namespace_id = "1001"
@@ -43,7 +47,7 @@ database_id = "5a1c680b-b6d4-4b6d-8283-8bfc8905d227"
 
 [durable_objects]
 bindings = [
-  { name = "TENANT_DO", class_name = "TenantDO", script_name = "basecart-backend" }
+  { name = "TENANT_DO", class_name = "TenantDOProd" }
 ]
 
 [[r2_buckets]]
