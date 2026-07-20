@@ -13,12 +13,12 @@ export default function PricingPage() {
       {/* Hero Section */}
       <section className="px-6 lg:px-16 pt-16 pb-20 bg-gradient-to-b from-[#F8FAFC]/50 to-white text-center">
         <div className="max-w-4xl mx-auto space-y-6">
-          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase">PRICING</span>
+          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase">PRICING & TRIALS</span>
           <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Simple, predictable plans for businesses of all sizes
+            Start with a 60-Day Free Trial. Upgrade when you're ready.
           </h1>
           <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed">
-            All plans include high-performance storefronts, secure checkout, and isolated database storage. Start free and scale as you grow.
+            No credit card required. Every new merchant receives full access to our Growth Plan features for 60 days to launch, sell, and experience Basecart with zero risk.
           </p>
         </div>
       </section>
@@ -28,36 +28,69 @@ export default function PricingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             {
-              title: "Free",
+              title: "60-Day Free Trial",
               price: "₹0",
-              desc: "Perfect for testing out ideas.",
-              features: ["1 Online Store", "Up to 5 Products", "Basic Store Analytics", "Basecart Subdomain"],
+              period: "for 60 days",
+              desc: "Full Growth Plan experience.",
+              features: [
+                "No credit card required",
+                "Growth Tier full access",
+                "Unlimited Products & Orders",
+                "Custom Domain mapping",
+                "AI Description Writer",
+                "Razorpay Payments"
+              ],
               popular: false,
-              btn: "Get started"
+              btn: "Start 60-Day Trial",
+              highlight: "Trial Period"
             },
             {
               title: "Starter",
               price: "₹299",
-              desc: "For launch and basic setup.",
-              features: ["1 Online Store", "Up to 50 Products", "Custom domain setup", "Discount Coupons", "Email support"],
+              period: "/ month",
+              desc: "Essential store for launch.",
+              features: [
+                "1 Online Store",
+                "Up to 100 Products",
+                "Custom domain setup",
+                "Standard Themes",
+                "Discount Coupons",
+                "Email Support"
+              ],
               popular: false,
-              btn: "Start free trial"
+              btn: "Choose Starter"
             },
             {
-              title: "Growth",
-              price: "₹699",
-              desc: "For fast-scaling stores.",
-              features: ["1 Online Store", "Up to 500 Products", "Abandoned Cart recovery", "Advanced reporting", "Priority support"],
+              title: "Growth ⭐",
+              price: "₹799",
+              period: "/ month",
+              desc: "For fast-scaling brands.",
+              features: [
+                "Everything in Starter",
+                "Unlimited Products & Orders",
+                "AI Description Writer",
+                "Abandoned Cart recovery",
+                "Advanced Analytics",
+                "Priority Support"
+              ],
               popular: true,
-              btn: "Start free trial"
+              btn: "Choose Growth"
             },
             {
-              title: "Pro",
-              price: "₹1499",
-              desc: "For advanced operations.",
-              features: ["1 Online Store", "Unlimited Products", "API Access credentials", "Team Roles (5 members)", "SLA Support Agreement"],
+              title: "Business",
+              price: "₹1,499",
+              period: "/ month",
+              desc: "For high-volume operations.",
+              features: [
+                "Everything in Growth",
+                "Multi-Staff Accounts (5 Seats)",
+                "Full API Access",
+                "High-Volume Automation",
+                "Dedicated Account Manager",
+                "Custom Theme Support"
+              ],
               popular: false,
-              btn: "Start free trial"
+              btn: "Choose Business"
             }
           ].map((plan, idx) => (
             <div 
@@ -70,7 +103,12 @@ export default function PricingPage() {
             >
               {plan.popular && (
                 <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white font-black uppercase text-[8px] tracking-widest px-3 py-1 rounded-full">
-                  Most Popular
+                  Recommended
+                </span>
+              )}
+              {plan.highlight && (
+                <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-emerald-600 text-white font-black uppercase text-[8px] tracking-widest px-3 py-1 rounded-full">
+                  {plan.highlight}
                 </span>
               )}
               
@@ -80,7 +118,7 @@ export default function PricingPage() {
                   <p className="text-[11px] text-slate-400 font-bold mb-4">{plan.desc}</p>
                   <div className="flex items-baseline gap-1 select-none">
                     <span className="text-3xl font-black text-slate-900 tracking-tight">{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-bold">/ month</span>
+                    <span className="text-xs text-slate-400 font-bold">{plan.period}</span>
                   </div>
                 </div>
 
@@ -99,6 +137,8 @@ export default function PricingPage() {
                 className={`w-full mt-8 py-2.5 rounded-lg text-xs font-bold text-center block transition-all active:scale-95 ${
                   plan.popular 
                     ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10" 
+                    : plan.highlight
+                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/10"
                     : "border border-slate-200 text-slate-800 hover:bg-slate-50"
                 }`}
               >
@@ -112,15 +152,23 @@ export default function PricingPage() {
       {/* FAQ block */}
       <section className="bg-slate-50/50 border-y border-slate-100 py-16 px-6">
         <div className="max-w-4xl mx-auto space-y-8 text-left">
-          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-8">Pricing FAQ</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-8">Pricing & Trial FAQ</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">Are there transaction setup fees?</h4>
-              <p className="text-xs text-slate-550 text-slate-500 leading-relaxed font-semibold">No, Basecart does not charge any setup or subscription transaction fees. You only pay standard gateway processing fees to Stripe/Razorpay.</p>
+              <h4 className="text-sm font-bold text-slate-900 mb-2">How does the 60-Day Free Trial work?</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">Every new signup automatically starts with a 60-day trial of our Growth Plan with no credit card required. You get 100% full access to build, test, and accept payments on your store.</p>
             </div>
             <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">Can I cancel my subscription?</h4>
-              <p className="text-xs text-slate-550 text-slate-500 leading-relaxed font-semibold">Yes, you can downgrade, upgrade, or cancel your subscription at any time directly in your account billing settings.</p>
+              <h4 className="text-sm font-bold text-slate-900 mb-2">What happens after 60 days if I don't upgrade?</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">If you don't choose a plan after 60 days, your public storefront is paused, but your merchant dashboard, products, and customer data remain intact. You can upgrade anytime to reactivate your store.</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 mb-2">Are there transaction setup fees?</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">No, Basecart does not charge setup fees or per-transaction platform commissions. You only pay standard payment processing fees to your payment gateway (Razorpay).</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-900 mb-2">Can I upgrade or downgrade anytime?</h4>
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">Yes, you can switch between Starter (₹299/mo), Growth (₹799/mo), or Business (₹1,499/mo) at any time directly in your account billing settings.</p>
             </div>
           </div>
         </div>

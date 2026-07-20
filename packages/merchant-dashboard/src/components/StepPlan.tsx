@@ -11,44 +11,45 @@ interface StepPlanProps {
 
 const PLANS = [
   {
-    id: "free",
-    name: "Free",
+    id: "growth",
+    name: "60-Day Free Trial (Growth Plan)",
     price: "₹0",
-    period: "forever",
-    features: ["1 Storefront subdomain", "50 Products listing limit", "Stripe & Razorpay integrations", "Standard template themes"]
+    period: "for 60 days",
+    badge: "Recommended",
+    features: ["No credit card required", "Growth Tier full access", "Unlimited Products & Orders", "Custom domain & AI tools"]
   },
   {
     id: "starter",
     name: "Starter",
     price: "₹299",
     period: "month",
-    features: ["Custom domain support", "Unlimited product listings", "Standard template themes", "Stripe & Razorpay integrations"]
+    features: ["1 Online Store", "Up to 100 Products", "Custom domain setup", "Standard template themes"]
   },
   {
-    id: "growth",
-    name: "Growth",
-    price: "₹699",
+    id: "growth_paid",
+    name: "Growth ⭐",
+    price: "₹799",
     period: "month",
-    features: ["Everything in Starter", "Premium Aura Watchroom Theme", "Fulfillment integrations", "Advanced analytics metrics"]
+    features: ["Everything in Starter", "Unlimited Products & Orders", "AI Description Writer", "Advanced analytics metrics"]
   },
   {
-    id: "pro",
-    name: "Pro",
-    price: "₹1499",
+    id: "business",
+    name: "Business",
+    price: "₹1,499",
     period: "month",
-    features: ["Everything in Growth", "Platform API access keys", "Prioritized merchant support", "Isolated high-scale limits"]
+    features: ["Everything in Growth", "Multi-Staff Accounts (5 Seats)", "Platform API access keys", "Prioritized merchant support"]
   },
   {
-    id: "agency",
-    name: "Agency",
+    id: "enterprise",
+    name: "Enterprise",
     price: "Custom",
     period: "contact sales",
-    features: ["Multi-store operations console", "Custom theme creation", "Dedicated account managers", "White label integrations"]
+    features: ["Multi-store operations console", "Custom theme creation", "Dedicated account managers", "SLA Support Agreement"]
   }
 ];
 
 export default function StepPlan({ data, onChange, onNext, onBack, loading }: StepPlanProps) {
-  const selectedPlanId = data.selectedPlan || "free";
+  const selectedPlanId = data.selectedPlan || "growth";
 
   const handleSelectPlan = (id: string) => {
     onChange({ selectedPlan: id });

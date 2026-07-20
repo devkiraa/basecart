@@ -381,55 +381,59 @@ export default function LandingPage() {
           </span>
           
           <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight">
-            Choose the perfect plan for your business
+            Start with a 60-Day Free Trial. Upgrade when ready.
           </h2>
           {/* Stealth GEO Answer Block under H2 */}
           <div className="sr-only" aria-hidden="true">
-            Basecart offers flexible, transparent pricing tiers custom-built to support Indian micro-enterprises at every growth stage. Plans range from a free-tier online store to starter custom domain setups and high-volume pro API integrations. Every pricing level features zero hidden transaction fees and native support for localized payments and Indian shipping channels.
+            Basecart offers flexible, transparent pricing tiers custom-built to support Indian micro-enterprises at every growth stage. Every merchant starts with a 60-Day Free Trial of the Growth Plan with no credit card required. Post-trial plans range from Starter at ₹299 monthly to Growth at ₹799 monthly and Business at ₹1,499 monthly. Every pricing level features zero hidden transaction fees and native support for localized payment gateways and Indian shipping channels.
           </div>
 
           <p className="text-sm text-slate-500 leading-relaxed font-semibold">
-            Start free and upgrade anytime. No hidden fees.
+            No credit card required • Full access to Growth Plan features • Cancel or upgrade anytime
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
           {[
             {
-              title: "Free",
+              title: "60-Day Free Trial",
               price: "₹0",
-              desc: "Perfect for trying out.",
-              answer: "The Basecart Free plan provides home businesses with a fully functional online storefront catalog at zero monthly subscription cost. Merchants can host unlimited products, accept manual payment instructions, and access basic visitor analytics. It offers an ideal entry point for Instagram sellers testing automated storefront checkout configurations in India.",
-              features: ["Online Store", "Unlimited Products", "Basic Analytics"],
+              period: "for 60 days",
+              desc: "Full Growth Plan experience.",
+              answer: "The Basecart 60-Day Free Trial provides merchants with full Growth Plan capabilities for 60 days at zero cost and without requiring a credit card. Merchants can host products, connect custom domains, use AI description tools, and process live Razorpay orders.",
+              features: ["Growth Tier Full Access", "No Credit Card Required", "Unlimited Products & Orders", "Custom Domain & AI Tools"],
               popular: false,
-              btn: "Get started"
+              btn: "Start 60-Day Trial"
             },
             {
               title: "Starter",
               price: "₹299",
-              desc: "For growing businesses.",
-              answer: "The Starter plan is configured for active home businesses seeking to establish a professional digital brand identity. Priced at ₹299 monthly, it incorporates custom domain mapping and priority email support. This tier enables Instagram sellers to deploy automated discount coupons, driving higher conversion rates on social commerce storefronts.",
-              features: ["All Free features", "Custom Domain", "Email Support", "Discount Coupons"],
+              period: "/ month",
+              desc: "For launch and basic setup.",
+              answer: "The Starter plan is configured for active home businesses seeking to establish a professional digital brand identity. Priced at ₹299 monthly, it incorporates custom domain mapping and priority email support.",
+              features: ["1 Online Store", "Up to 100 Products", "Custom Domain Setup", "Standard Templates"],
               popular: false,
-              btn: "Start free trial"
+              btn: "Choose Starter"
             },
             {
-              title: "Growth",
-              price: "₹699",
-              desc: "For scaling businesses.",
-              answer: "The Growth plan supports scaling social commerce merchants who require deep optimization of their online transaction workflows. At ₹699 monthly, it introduces advanced business analytics and automated abandoned cart recovery campaigns. The system automatically prompts incomplete checkout customers on WhatsApp, reclaiming lost revenue for regional boutiques.",
-              features: ["All Starter features", "Advanced Analytics", "Priority Support", "Abandoned Cart"],
+              title: "Growth ⭐",
+              price: "₹799",
+              period: "/ month",
+              desc: "For scaling online brands.",
+              answer: "The Growth plan supports scaling social commerce merchants who require deep optimization of their online transaction workflows. At ₹799 monthly, it introduces AI description tools, advanced analytics, and abandoned cart recovery.",
+              features: ["Everything in Starter", "Unlimited Products & Orders", "AI Description Writer", "Abandoned Cart Recovery"],
               popular: true,
-              btn: "Start free trial"
+              btn: "Choose Growth"
             },
             {
-              title: "Pro",
-              price: "₹1499",
-              desc: "For advanced teams.",
-              answer: "The Pro plan is designed for high-volume social storefront operators demanding custom technical integrations and multi-user configurations. Priced at ₹1499 monthly, it grants direct API access and unlocks comprehensive team management controls. Merchants can integrate third-party billing, connect complex shipping tools, and allocate dedicated logins for staff members.",
-              features: ["All Growth features", "Team Management", "API Access", "Dedicated Onboarding"],
+              title: "Business",
+              price: "₹1,499",
+              period: "/ month",
+              desc: "For high-volume operations.",
+              answer: "The Business plan is designed for high-volume store operators demanding custom technical integrations, team management, and API access. Priced at ₹1,499 monthly.",
+              features: ["Everything in Growth", "Multi-Staff Accounts (5 Seats)", "Full API Access Keys", "Dedicated Account Manager"],
               popular: false,
-              btn: "Start free trial"
+              btn: "Choose Business"
             }
           ].map((plan, i) => (
             <div 

@@ -4755,89 +4755,103 @@ export default function MerchantDashboard() {
                 </div>
               )}
 
+              {/* Trial Status Banner */}
+              <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 p-5 rounded-2xl flex items-center justify-between shadow-sm">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-indigo-600 shrink-0" />
+                    <h4 className="font-bold text-slate-900 text-sm">60-Day Free Trial Active (Growth Tier)</h4>
+                    <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">No Credit Card Required</span>
+                  </div>
+                  <p className="text-xs text-slate-600">
+                    You have full access to Growth Plan features including unlimited products, AI tools, custom domain setup, and Razorpay checkout.
+                  </p>
+                </div>
+              </div>
+
               {/* Plans Selection Matrix */}
               <div>
                 <h3 className="font-bold text-base text-slate-900 mb-4">Subscription Tiers</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Starter Tier */}
-                  <div className={`bg-white border rounded-card shadow-card p-6 flex flex-col justify-between hover:shadow-lg transition-shadow relative ${billingInfo.plan === "starter" ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-200"}`}>
+                  <div className={`bg-white border rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition-all relative ${billingInfo.plan === "starter" ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-slate-200"}`}>
                     {billingInfo.plan === "starter" && (
-                      <span className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
+                      <span className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">Active</span>
                     )}
                     <div>
                       <h4 className="font-bold text-lg text-slate-900">Starter Plan</h4>
-                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹0 <span className="text-xs font-medium text-slate-400">/ month</span></p>
-                      <ul className="mt-6 space-y-3 text-sm text-slate-600">
-                        <li className="flex items-center gap-2">✓ Up to 50 Products</li>
-                        <li className="flex items-center gap-2">✓ Up to 100 Orders / mo</li>
-                        <li className="flex items-center gap-2 text-blue-600 font-semibold">✓ 3% platform commission markup</li>
+                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹299 <span className="text-xs font-medium text-slate-400">/ month</span></p>
+                      <ul className="mt-6 space-y-3 text-xs font-medium text-slate-600">
+                        <li className="flex items-center gap-2">✓ 1 Online Store</li>
+                        <li className="flex items-center gap-2">✓ Up to 100 Products</li>
+                        <li className="flex items-center gap-2">✓ Custom Domain Setup</li>
+                        <li className="flex items-center gap-2 text-slate-500">✓ Zero platform commission markup</li>
                       </ul>
                     </div>
                     <button
                       disabled={billingInfo.plan === "starter"}
                       onClick={() => changePlan("starter")}
-                      className={`w-full py-2 text-xs font-bold rounded-button mt-8 border transition-all ${
+                      className={`w-full py-2 text-xs font-bold rounded-xl mt-8 border transition-all ${
                         billingInfo.plan === "starter"
                           ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
-                          : "border-blue-600 text-blue-600 hover:bg-blue-50"
+                          : "border-indigo-600 text-indigo-600 hover:bg-indigo-50"
                       }`}
                     >
-                      {billingInfo.plan === "starter" ? "Current Subscription" : "Downgrade to Starter"}
+                      {billingInfo.plan === "starter" ? "Current Subscription" : "Select Starter (₹299/mo)"}
                     </button>
                   </div>
 
                   {/* Growth Tier */}
-                  <div className={`bg-white border rounded-card shadow-card p-6 flex flex-col justify-between hover:shadow-lg transition-shadow relative ${billingInfo.plan === "growth" ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-200"}`}>
-                    {billingInfo.plan === "growth" && (
-                      <span className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
-                    )}
+                  <div className={`bg-white border rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition-all relative ${billingInfo.plan === "growth" || billingInfo.plan === "growth_paid" || !billingInfo.plan ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-slate-200"}`}>
+                    <span className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">Recommended</span>
                     <div>
-                      <h4 className="font-bold text-lg text-slate-900">Growth Plan</h4>
-                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹999 <span className="text-xs font-medium text-slate-400">/ month</span></p>
-                      <ul className="mt-6 space-y-3 text-sm text-slate-600">
-                        <li className="flex items-center gap-2">✓ Up to 500 Products</li>
-                        <li className="flex items-center gap-2">✓ Up to 1000 Orders / mo</li>
-                        <li className="flex items-center gap-2 text-blue-600 font-semibold">✓ 1% platform commission markup</li>
+                      <h4 className="font-bold text-lg text-slate-900">Growth Plan ⭐</h4>
+                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹799 <span className="text-xs font-medium text-slate-400">/ month</span></p>
+                      <ul className="mt-6 space-y-3 text-xs font-medium text-slate-600">
+                        <li className="flex items-center gap-2 font-bold text-slate-800">✓ Unlimited Products & Orders</li>
+                        <li className="flex items-center gap-2">✓ AI Product Description Writer</li>
+                        <li className="flex items-center gap-2">✓ Abandoned Cart Recovery</li>
+                        <li className="flex items-center gap-2 text-indigo-600 font-bold">✓ Priority Merchant Support</li>
                       </ul>
                     </div>
                     <button
-                      disabled={billingInfo.plan === "growth"}
+                      disabled={billingInfo.plan === "growth" || billingInfo.plan === "growth_paid"}
                       onClick={() => changePlan("growth")}
-                      className={`w-full py-2 text-xs font-bold rounded-button mt-8 border transition-all ${
-                        billingInfo.plan === "growth"
+                      className={`w-full py-2 text-xs font-bold rounded-xl mt-8 border transition-all ${
+                        billingInfo.plan === "growth" || billingInfo.plan === "growth_paid"
                           ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
-                          : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+                          : "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700"
                       }`}
                     >
-                      {billingInfo.plan === "growth" ? "Current Subscription" : "Switch to Growth"}
+                      {billingInfo.plan === "growth" || billingInfo.plan === "growth_paid" ? "Current Subscription" : "Select Growth (₹799/mo)"}
                     </button>
                   </div>
 
-                  {/* Pro Tier */}
-                  <div className={`bg-white border rounded-card shadow-card p-6 flex flex-col justify-between hover:shadow-lg transition-shadow relative ${billingInfo.plan === "pro" ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-200"}`}>
-                    {billingInfo.plan === "pro" && (
-                      <span className="absolute top-0 right-6 -translate-y-1/2 bg-blue-600 text-white font-bold text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">Active</span>
+                  {/* Business Tier */}
+                  <div className={`bg-white border rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-md transition-all relative ${billingInfo.plan === "business" || billingInfo.plan === "pro" ? "border-indigo-600 ring-2 ring-indigo-500/20" : "border-slate-200"}`}>
+                    {billingInfo.plan === "business" && (
+                      <span className="absolute top-0 right-6 -translate-y-1/2 bg-indigo-600 text-white font-bold text-[9px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">Active</span>
                     )}
                     <div>
-                      <h4 className="font-bold text-lg text-slate-900">Pro Plan</h4>
-                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹4,999 <span className="text-xs font-medium text-slate-400">/ month</span></p>
-                      <ul className="mt-6 space-y-3 text-sm text-slate-600">
-                        <li className="flex items-center gap-2">✓ Unlimited Products</li>
-                        <li className="flex items-center gap-2">✓ Unlimited Orders</li>
-                        <li className="flex items-center gap-2">✓ Custom Domains unlocked</li>
-                        <li className="flex items-center gap-2 text-blue-600 font-semibold">✓ 0.5% platform commission markup</li>
+                      <h4 className="font-bold text-lg text-slate-900">Business Plan</h4>
+                      <p className="text-2xl font-black mt-2 text-slate-950 font-mono">₹1,499 <span className="text-xs font-medium text-slate-400">/ month</span></p>
+                      <ul className="mt-6 space-y-3 text-xs font-medium text-slate-600">
+                        <li className="flex items-center gap-2">✓ Everything in Growth</li>
+                        <li className="flex items-center gap-2 font-bold text-slate-800">✓ Multi-Staff Accounts (5 Seats)</li>
+                        <li className="flex items-center gap-2">✓ Platform API Access Keys</li>
+                        <li className="flex items-center gap-2 text-indigo-600 font-bold">✓ Dedicated Account Manager</li>
                       </ul>
                     </div>
                     <button
-                      disabled={billingInfo.plan === "pro"}
-                      onClick={() => changePlan("pro")}
-                      className={`w-full py-2 text-xs font-bold rounded-button mt-8 border transition-all ${
-                        billingInfo.plan === "pro"
+                      disabled={billingInfo.plan === "business"}
+                      onClick={() => changePlan("business")}
+                      className={`w-full py-2 text-xs font-bold rounded-xl mt-8 border transition-all ${
+                        billingInfo.plan === "business"
                           ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
-                          : "bg-blue-600 border-blue-600 text-white hover:bg-blue-700"
+                          : "bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700"
                       }`}
                     >
-                      {billingInfo.plan === "pro" ? "Current Subscription" : "Upgrade to Pro"}
+                      {billingInfo.plan === "business" ? "Current Subscription" : "Upgrade to Business (₹1,499/mo)"}
                     </button>
                   </div>
                 </div>
