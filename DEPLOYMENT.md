@@ -49,6 +49,33 @@ Execute these commands from `packages/backend` to provision production storage, 
 
 ---
 
+## 🛢️ Local D1 Database Setup & Remote Replication
+
+### 1. Initialize Local SQLite Schema
+To resolve `no such table` SQLite errors locally, initialize the local D1 database migration schema:
+```bash
+npx wrangler d1 migrations apply basecart-control-prod --local
+```
+
+### 2. Copy/Replicate Remote Data Locally
+To download a snapshot replica of your remote D1 production/staging data and load it into your local developer database:
+1. **Export Remote Data to SQL File**:
+   ```bash
+   npx wrangler d1 export basecart-control-prod --remote --output=d1-prod-export.sql
+   ```
+2. **Import SQL File to Local Database**:
+   ```bash
+   npx wrangler d1 execute basecart-control-prod --local --file=d1-prod-export.sql
+   ```
+
+### 3. Binding Local Worker to Remote Cloudflare Data
+To run the Hono API worker locally but connect it directly to your live remote Cloudflare resources (D1, KV, R2) for debugging:
+```bash
+npx wrangler dev --remote
+```
+
+---
+
 ## ⚙️ Phase 3: Bind Secrets
 
 Configure the production secrets in Cloudflare by running the following commands (or adding them under the backend Worker's **Settings > Variables** tab in the Cloudflare Dashboard):
