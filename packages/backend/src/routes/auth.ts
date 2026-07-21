@@ -559,6 +559,19 @@ app.post("/auth/merchant/reset-password", async (c) => {
     return c.json({ error: "Reset token has expired (tokens are valid for 10 minutes)" }, 400);
   }
 
+  // Prevent reusing previous password
+  const currentUser = await controlDb
+    .prepare("SELECT hashedPassword FROM merchant_users WHERE email = ? AND tenantId = ?")
+    .bind(resetToken.email, resetToken.tenantId)
+    .first<{ hashedPassword: string }>();
+
+  if (currentUser?.hashedPassword) {
+    const isSamePassword = await authService.comparePassword(newPassword, currentUser.hashedPassword);
+    if (isSamePassword) {
+      return c.json({ error: "New password cannot be the same as your previous password. Please choose a different password." }, 400);
+    }
+  }
+
   const hashedPassword = await authService.hashPassword(newPassword);
 
   // Update password and invalidate ALL reset tokens & active sessions for this email in control DB
@@ -1095,12 +1108,20 @@ app.post("/auth/customer/reset-password", resolveStorefrontTenant, async (c) => 
 
   const tenantDb = await getTenantDb(tenantId, c.env);
   const customer = await tenantDb
-    .prepare("SELECT customerId FROM customers WHERE email = ?")
+    .prepare("SELECT customerId, hashedPassword FROM customers WHERE email = ?")
     .bind(resetToken.email)
-    .first<{ customerId: string }>();
+    .first<{ customerId: string; hashedPassword?: string }>();
 
   if (!customer) {
     return c.json({ error: "Customer profile not found" }, 400);
+  }
+
+  // Prevent reusing previous password
+  if (customer.hashedPassword) {
+    const isSamePassword = await authService.comparePassword(newPassword, customer.hashedPassword);
+    if (isSamePassword) {
+      return c.json({ error: "New password cannot be the same as your previous password. Please choose a different password." }, 400);
+    }
   }
 
   const hashedPassword = await authService.hashPassword(newPassword);
