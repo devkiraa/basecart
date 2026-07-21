@@ -39,10 +39,8 @@ export function buildApp() {
         if (!origin) return null;
         
         // Always allow localhost/127.0.0.1 in local dev/test environments
-        if (c.env && (c.env.NODE_ENV === "development" || c.env.NODE_ENV === "test")) {
-          if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
-            return origin;
-          }
+        if (origin.includes("localhost") || origin.includes("127.0.0.1")) {
+          return origin;
         }
 
         const allowedOriginsStr = (c.env && c.env.ALLOWED_ORIGINS) || "https://basecart.app,https://admin.basecart.app,https://*.basecart.app";
