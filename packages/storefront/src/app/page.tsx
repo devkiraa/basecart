@@ -1032,175 +1032,79 @@ export default function Storefront() {
           <div className="space-y-6">
             {/* Template Base Hero Banner Layout */}
             {templateBase === "Satoshi" ? (
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-10 mb-10 shadow-xs font-sans space-y-6 select-none">
-                {/* Breadcrumbs */}
-                <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
-                  <span className="hover:text-slate-700 cursor-pointer">Clothes and shoes</span>
-                  <span>•</span>
-                  <span className="hover:text-slate-700 cursor-pointer">Shoes</span>
-                  <span>•</span>
-                  <span className="text-slate-900 font-bold">Reebok</span>
+              <div className="space-y-10">
+                {/* 1. Satoshi High-Impact Hero Banner */}
+                <div className="bg-[#F2F0EA] rounded-3xl p-8 md:p-14 relative overflow-hidden border border-slate-200/60 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8 text-left">
+                  <div className="space-y-4 max-w-xl relative z-10">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-[10px] font-extrabold text-slate-800 tracking-wider uppercase border border-slate-200/80 shadow-2xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span>Satoshi New Collection '26</span>
+                    </div>
+                    <h1 className="text-3xl md:text-5xl font-black text-slate-950 font-sans tracking-tight leading-none">
+                      {getHeroTitle()}
+                    </h1>
+                    <p className="text-slate-600 text-sm md:text-base leading-relaxed font-sans max-w-md">
+                      {getHeroSubtext()}
+                    </p>
+                    <div className="flex flex-wrap items-center gap-3 pt-2">
+                      <button
+                        onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                        className="bg-[#010101] hover:bg-slate-800 text-white font-bold py-3.5 px-7 rounded-full text-xs tracking-wider uppercase shadow-md transition-all cursor-pointer"
+                      >
+                        Shop Collection
+                      </button>
+                      <button
+                        onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                        className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-3.5 px-6 rounded-full text-xs tracking-wider uppercase border border-slate-200 shadow-xs transition-all cursor-pointer"
+                      >
+                        Explore Catalog
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Right Hero Spotlight Showcase */}
+                  <div className="relative w-full md:w-80 h-72 bg-white rounded-2xl p-6 border border-slate-200/60 shadow-lg flex items-center justify-center group overflow-hidden shrink-0">
+                    <img
+                      src={displayProducts[0]?.images?.[0] || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80"}
+                      alt="Featured Storefront Spotlight"
+                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+                      <div className="overflow-hidden">
+                        <div className="text-[10px] font-extrabold text-slate-400 uppercase">Featured Arrival</div>
+                        <div className="text-xs font-black text-slate-900 truncate max-w-[140px]">
+                          {displayProducts[0]?.name || "Zig Kinetica 3"}
+                        </div>
+                      </div>
+                      <span className="text-xs font-black text-slate-950">
+                        ₹{displayProducts[0]?.price || 199}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Main Product Spotlight Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                  
-                  {/* Left Gallery Column */}
-                  <div className="lg:col-span-6 space-y-4">
-                    {/* Main Display Box */}
-                    <div className="bg-[#F2F0EA] rounded-3xl p-8 aspect-square flex items-center justify-center relative border border-slate-200/40 overflow-hidden shadow-xs">
-                      <img 
-                        src={
-                          displayProducts[0]?.images?.[selectedSatoshiImgIdx] || 
-                          displayProducts[0]?.images?.[0] || 
-                          "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80"
-                        } 
-                        alt={displayProducts[0]?.name || "Shoes Reebok Zig Kinetica 3"} 
-                        className="w-full h-full object-contain max-h-[400px] transform hover:scale-105 transition-transform duration-500" 
-                      />
-                    </div>
-
-                    {/* Gallery Thumbnails */}
-                    <div className="flex items-center gap-3 overflow-x-auto pt-1 pb-2">
-                      {(displayProducts[0]?.images && displayProducts[0].images.length > 0
-                        ? displayProducts[0].images
-                        : [
-                            "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80",
-                            "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&auto=format&fit=crop&q=80",
-                            "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600&auto=format&fit=crop&q=80",
-                            "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=80"
-                          ]
-                      ).map((imgUrl, idx) => (
-                        <div 
-                          key={idx}
-                          onClick={() => setSelectedSatoshiImgIdx(idx)}
-                          className={`w-20 h-20 bg-[#F2F0EA] rounded-2xl p-2 cursor-pointer flex items-center justify-center border-2 transition-all flex-shrink-0 ${
-                            selectedSatoshiImgIdx === idx ? "border-slate-950 shadow-xs scale-95" : "border-transparent opacity-80 hover:opacity-100"
-                          }`}
-                        >
-                          <img src={imgUrl} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-contain" />
-                        </div>
-                      ))}
-                      <div className="w-20 h-20 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-xs font-bold text-slate-700 shadow-xs cursor-pointer hover:bg-slate-50 flex-shrink-0">
-                        +4 more
+                {/* 2. Featured Categories Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {[
+                    { title: "Sneakers & Footwear", count: "12 Items", img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80" },
+                    { title: "Apparel & Activewear", count: "24 Items", img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&auto=format&fit=crop&q=80" },
+                    { title: "Streetwear Accessories", count: "8 Items", img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80" },
+                    { title: "Limited Editions", count: "5 Items", img: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=400&auto=format&fit=crop&q=80" }
+                  ].map((cat) => (
+                    <div
+                      key={cat.title}
+                      onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
+                      className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3"
+                    >
+                      <div className="w-12 h-12 bg-[#F2F0EA] rounded-xl p-1 shrink-0 overflow-hidden">
+                        <img src={cat.img} alt={cat.title} className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform" />
+                      </div>
+                      <div className="text-left overflow-hidden">
+                        <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{cat.title}</h4>
+                        <span className="text-[10px] text-slate-400 font-bold block">{cat.count}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Right Specification Column */}
-                  <div className="lg:col-span-6 space-y-6 text-left">
-                    {/* Brand Badge & Code */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center text-white text-[10px] font-black">
-                          R
-                        </div>
-                        <span className="text-xs font-bold text-slate-800 tracking-tight">Reebok</span>
-                      </div>
-                      <span className="text-xs font-mono font-medium text-slate-400">HR1325R00-.-8</span>
-                    </div>
-
-                    {/* Title & Ratings */}
-                    <div className="space-y-2">
-                      <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-950 font-sans tracking-tight leading-tight">
-                        {displayProducts[0]?.name || "Shoes Reebok Zig Kinetica 3"}
-                      </h1>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center text-[#EDCF5D] text-sm">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <span key={star}>★</span>
-                          ))}
-                        </div>
-                        <span className="text-xs font-bold text-slate-400 font-sans">
-                          {displayProducts[0]?.reviewCount || 42} reviews
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Price Display */}
-                    <div className="text-4xl font-black text-slate-950 font-sans tracking-tight">
-                      ${displayProducts[0]?.price || 199}.00
-                    </div>
-
-                    {/* Color Selector */}
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                        <span>Color</span>
-                        <span>•</span>
-                        <span className="text-slate-900">{selectedSatoshiColor}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {[
-                          { name: "White", bg: "bg-[#F2F0EA]", img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=200&auto=format&fit=crop&q=80" },
-                          { name: "Grey", bg: "bg-slate-200", img: "https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=200&auto=format&fit=crop&q=80" },
-                          { name: "Black", bg: "bg-slate-900", img: "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=200&auto=format&fit=crop&q=80" }
-                        ].map((c) => (
-                          <div 
-                            key={c.name}
-                            onClick={() => setSelectedSatoshiColor(c.name)}
-                            className={`w-12 h-12 rounded-xl p-1 cursor-pointer border-2 transition-all flex items-center justify-center ${
-                              selectedSatoshiColor === c.name ? "border-slate-950 shadow-xs" : "border-slate-200 opacity-70 hover:opacity-100"
-                            }`}
-                          >
-                            <div className={`w-full h-full rounded-lg ${c.bg} flex items-center justify-center overflow-hidden`}>
-                              <img src={c.img} alt={c.name} className="w-full h-full object-cover" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Size Selector */}
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
-                          <span>Size</span>
-                          <span>•</span>
-                          <span className="text-slate-900">EU Men</span>
-                        </div>
-                        <span className="text-xs font-bold text-[#EDCF5D] cursor-pointer hover:underline">
-                          Size guide
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 sm:grid-cols-6 gap-2">
-                        {["40.5", "41", "42", "43", "43.5", "44", "44.5", "45", "46"].map((sz) => (
-                          <button 
-                            key={sz}
-                            onClick={() => setSelectedSatoshiSize(sz)}
-                            className={`py-3 rounded-xl text-xs font-bold border transition-all ${
-                              selectedSatoshiSize === sz 
-                                ? "bg-[#010101] text-white border-black shadow-xs" 
-                                : "bg-white text-slate-900 border-slate-200 hover:border-slate-400"
-                            }`}
-                          >
-                            {sz}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-3 pt-2">
-                      <button 
-                        onClick={() => addToCart(displayProducts[0] || MOCK_SATO_PRODUCTS[0])}
-                        className="flex-1 bg-[#010101] hover:bg-slate-900 text-white font-bold py-4 px-8 rounded-full flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all text-xs tracking-wide uppercase"
-                      >
-                        <ShoppingCart className="h-4 w-4" /> Add to cart
-                      </button>
-                      <button 
-                        onClick={() => toggleWishlist(displayProducts[0]?.productId || "sato-1")}
-                        className="bg-[#F2F0EA] hover:bg-slate-200 text-slate-900 p-4 rounded-2xl flex items-center justify-center transition-colors shadow-xs"
-                      >
-                        <Heart className={`h-5 w-5 ${wishlist.includes(displayProducts[0]?.productId || "sato-1") ? "fill-rose-500 text-rose-500" : ""}`} />
-                      </button>
-                    </div>
-
-                    {/* Perks */}
-                    <div className="flex items-center gap-2 pt-2 text-xs font-semibold text-slate-500">
-                      <span>🚚</span>
-                      <span>Free delivery on orders over $30.00</span>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             ) : templateBase === "Pulse" ? (
