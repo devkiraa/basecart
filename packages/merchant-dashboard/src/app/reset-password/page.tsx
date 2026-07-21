@@ -48,6 +48,10 @@ export default function ResetPasswordPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Password reset failed");
       setSuccess(true);
+      setToken(null);
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to reset password.");
     } finally {
@@ -88,7 +92,7 @@ export default function ResetPasswordPage() {
             <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto" />
             <div className="space-y-1">
               <h2 className="text-xl font-black text-slate-900">Password Reset Complete</h2>
-              <p className="text-xs text-slate-500 font-semibold font-sans">Your password has been successfully updated.</p>
+              <p className="text-xs text-slate-500 font-semibold font-sans">Your password has been updated and the reset token has been closed.</p>
             </div>
             <button
               onClick={() => { window.location.href = "/login"; }}
@@ -101,7 +105,7 @@ export default function ResetPasswordPage() {
           <div className="space-y-6">
             <div className="space-y-1 text-center">
               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Reset Password</h2>
-              <p className="text-xs text-slate-500 font-semibold font-sans">Choose a new secure password for your account</p>
+              <p className="text-xs text-slate-500 font-semibold font-sans">Choose a new secure password for your account (tokens expire in 10 minutes)</p>
             </div>
 
             {errorMsg && (

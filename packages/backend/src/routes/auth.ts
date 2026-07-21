@@ -494,9 +494,15 @@ app.post("/auth/merchant/forgot-password", async (c) => {
     .first<{ tenantId: string }>();
 
   if (user) {
+    // Delete any existing reset tokens for this email first
+    await controlDb
+      .prepare("DELETE FROM reset_tokens WHERE email = ? AND tenantId = ?")
+      .bind(lowerEmail, user.tenantId)
+      .run();
+
     const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // Expire in 10 minutes
+    const ttl = Math.floor(Date.now() / 1000) + 10 * 60;
 
     await controlDb
       .prepare(
@@ -512,7 +518,7 @@ app.post("/auth/merchant/forgot-password", async (c) => {
         to: lowerEmail,
         data: {
           resetLink,
-          expiresMinutes: 30,
+          expiresMinutes: 10,
           storeName: "Basecart",
         },
       },
@@ -545,12 +551,17 @@ app.post("/auth/merchant/reset-password", async (c) => {
   }
 
   if (new Date(resetToken.expiresAt) < new Date()) {
-    return c.json({ error: "Reset token has expired" }, 400);
+    // Immediately clean up expired token
+    await controlDb
+      .prepare("DELETE FROM reset_tokens WHERE token = ?")
+      .bind(token)
+      .run();
+    return c.json({ error: "Reset token has expired (tokens are valid for 10 minutes)" }, 400);
   }
 
   const hashedPassword = await authService.hashPassword(newPassword);
 
-  // Update password and invalidate reset token & sessions in control DB
+  // Update password and invalidate ALL reset tokens & active sessions for this email in control DB
   const updatePass = controlDb
     .prepare("UPDATE merchant_users SET hashedPassword = ? WHERE email = ? AND tenantId = ?")
     .bind(hashedPassword, resetToken.email, resetToken.tenantId);
@@ -560,8 +571,8 @@ app.post("/auth/merchant/reset-password", async (c) => {
     .bind(resetToken.tenantId, resetToken.email);
 
   const deleteToken = controlDb
-    .prepare("DELETE FROM reset_tokens WHERE token = ?")
-    .bind(token);
+    .prepare("DELETE FROM reset_tokens WHERE email = ? AND tenantId = ?")
+    .bind(resetToken.email, resetToken.tenantId);
 
   await controlDb.batch([updatePass, deleteSession, deleteToken]);
 
@@ -1011,11 +1022,18 @@ app.post("/auth/customer/forgot-password", resolveStorefrontTenant, async (c) =>
     .first<{ customerId: string }>();
 
   if (customer) {
-    const token = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const ttl = Math.floor(Date.now() / 1000) + 30 * 60;
-
     const controlDb = getControlDb(c.env);
+
+    // Delete any existing reset tokens for this customer first
+    await controlDb
+      .prepare("DELETE FROM reset_tokens WHERE email = ? AND tenantId = ?")
+      .bind(lowerEmail, tenantId)
+      .run();
+
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
+    const ttl = Math.floor(Date.now() / 1000) + 10 * 60;
+
     await controlDb
       .prepare(
         "INSERT INTO reset_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
@@ -1033,7 +1051,7 @@ app.post("/auth/customer/forgot-password", resolveStorefrontTenant, async (c) =>
         to: lowerEmail,
         data: {
           resetLink,
-          expiresMinutes: 30,
+          expiresMinutes: 10,
           storeName: tenant?.storeName || subdomain,
         },
       },
@@ -1067,7 +1085,12 @@ app.post("/auth/customer/reset-password", resolveStorefrontTenant, async (c) => 
   }
 
   if (new Date(resetToken.expiresAt) < new Date()) {
-    return c.json({ error: "Reset token has expired" }, 400);
+    // Delete expired token immediately
+    await controlDb
+      .prepare("DELETE FROM reset_tokens WHERE token = ?")
+      .bind(token)
+      .run();
+    return c.json({ error: "Reset token has expired (tokens are valid for 10 minutes)" }, 400);
   }
 
   const tenantDb = await getTenantDb(tenantId, c.env);
@@ -1088,14 +1111,14 @@ app.post("/auth/customer/reset-password", resolveStorefrontTenant, async (c) => 
     .bind(hashedPassword, customer.customerId)
     .run();
 
-  // Invalidate sessions and cleanup reset token in control DB
+  // Invalidate sessions and delete ALL reset tokens for this customer in control DB
   const deleteSessions = controlDb
     .prepare("DELETE FROM refresh_tokens WHERE tenantId = ? AND email = ?")
     .bind(tenantId, resetToken.email);
 
   const deleteToken = controlDb
-    .prepare("DELETE FROM reset_tokens WHERE token = ?")
-    .bind(token);
+    .prepare("DELETE FROM reset_tokens WHERE email = ? AND tenantId = ?")
+    .bind(resetToken.email, tenantId);
 
   await controlDb.batch([deleteSessions, deleteToken]);
 
