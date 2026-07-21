@@ -1917,32 +1917,38 @@ export default function MerchantDashboard() {
               </button>
 
               {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-3 space-y-2.5">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-bold text-slate-800">Notifications</span>
-                    <button
-                      onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
-                      className="text-[10px] text-[#4F46E5] font-bold hover:underline"
-                    >
-                      Mark all read
-                    </button>
-                  </div>
-                  <div className="divide-y divide-slate-50 max-h-52 overflow-y-auto space-y-2">
-                    {notifications.map((n) => (
-                      <div
-                        key={n.id}
-                        onClick={() => setNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item))}
-                        className={`pt-2 first:pt-0 cursor-pointer group ${n.read ? "opacity-60" : ""}`}
+                <>
+                  <div
+                    onClick={() => setIsNotificationsOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/10 sm:hidden"
+                  />
+                  <div className="fixed inset-x-4 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-50 p-4 space-y-3 animate-fade-in select-none">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                      <span className="text-xs font-bold text-slate-900">Notifications</span>
+                      <button
+                        onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
+                        className="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer"
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-[#4F46E5] transition-colors">{n.title}</h4>
-                          {!n.read && <span className="h-1.5 w-1.5 rounded-full bg-[#4F46E5] shrink-0 mt-1" />}
+                        Mark all read
+                      </button>
+                    </div>
+                    <div className="divide-y divide-slate-100 max-h-72 overflow-y-auto space-y-2.5 pr-1">
+                      {notifications.map((n) => (
+                        <div
+                          key={n.id}
+                          onClick={() => setNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item))}
+                          className={`pt-2.5 first:pt-0 cursor-pointer group ${n.read ? "opacity-60" : ""}`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-xs font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{n.title}</h4>
+                            {!n.read && <span className="h-2 w-2 rounded-full bg-blue-600 shrink-0 mt-1" />}
+                          </div>
+                          <p className="text-xs text-slate-500 leading-relaxed mt-0.5">{n.desc}</p>
                         </div>
-                        <p className="text-[10px] text-slate-500 leading-normal mt-0.5">{n.desc}</p>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
+                </>
               )}
             </div>
 
@@ -1964,7 +1970,12 @@ export default function MerchantDashboard() {
               </div>
 
               {isStoreSwitcherOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-2 space-y-0.5">
+                <>
+                  <div
+                    onClick={() => setIsStoreSwitcherOpen(false)}
+                    className="fixed inset-0 z-40 bg-black/10 sm:hidden"
+                  />
+                  <div className="fixed inset-x-4 top-14 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 bg-white border border-slate-200/90 rounded-2xl shadow-2xl z-50 p-3 space-y-1 animate-fade-in select-none">
                   <div className="px-3 py-2 border-b border-slate-100 mb-1">
                     <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Active Store</p>
                     <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{settings.storeName || "My Store"}</p>
@@ -2022,7 +2033,8 @@ export default function MerchantDashboard() {
                     <span>Copy Store Link</span>
                   </button>
                 </div>
-              )}
+              </>
+            )}
             </div>
 
             {/* Date & Time — desktop only */}
