@@ -316,7 +316,7 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     }, 400);
   }
 
-  const { status } = parseResult.data;
+  const { status, trackingNumber: reqTracking, carrier: reqCarrier } = parseResult.data;
   const tenantDb = await getTenantDb(tenantId, c.env);
 
   const order = await tenantDb
@@ -349,8 +349,8 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
 
   const addOns = store?.addOns ? JSON.parse(store.addOns) : [];
 
-  let trackingNumber = order.trackingNumber;
-  let carrier = order.carrier;
+  let trackingNumber = reqTracking || order.trackingNumber;
+  let carrier = reqCarrier || order.carrier;
 
   if (status === "shipped" && addOns.includes("shiprocket") && !order.trackingNumber) {
     try {

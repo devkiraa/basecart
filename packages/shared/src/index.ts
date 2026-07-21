@@ -188,10 +188,11 @@ export const CustomerLoginSchema = z.object({
 
 export type CustomerLoginInput = z.infer<typeof CustomerLoginSchema>;
 
-// --- Order Status Update (Merchant) ---
 export const OrderStatusUpdateSchema = z.object({
   status: z.enum(["pending", "paid", "shipped", "delivered", "cancelled"]),
-}).strict();
+  trackingNumber: z.string().optional(),
+  carrier: z.string().optional(),
+});
 
 export type OrderStatusUpdateInput = z.infer<typeof OrderStatusUpdateSchema>;
 
