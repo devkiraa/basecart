@@ -155,6 +155,7 @@ interface StoreSettings {
   razorpaySecret: string;
   addOns?: string[];
   plan?: string;
+  createdAt?: string;
   branding: {
     logoUrl?: string;
     primaryColor?: string;
@@ -163,6 +164,21 @@ interface StoreSettings {
   termsOfService?: string;
   privacyPolicy?: string;
   refundPolicy?: string;
+}
+
+function calculateTrialDaysRemaining(createdAtStr?: string) {
+  if (!createdAtStr) return 60;
+  try {
+    const createdDate = new Date(createdAtStr).getTime();
+    if (isNaN(createdDate)) return 60;
+    const now = new Date().getTime();
+    const elapsedMs = now - createdDate;
+    const elapsedDays = Math.floor(elapsedMs / (1000 * 60 * 60 * 24));
+    const remainingDays = 60 - elapsedDays;
+    return Math.max(0, Math.min(60, remainingDays));
+  } catch (e) {
+    return 60;
+  }
 }
 
 // PREMIUM SKELETON PRIMITIVES
@@ -1855,24 +1871,51 @@ export default function MerchantDashboard() {
 
         {/* Profile & Upgrade */}
         <div className="border-t border-slate-100">
-          {/* Upgrade card - hidden when collapsed */}
+          {/* Upgrade & Free Trial Card - hidden when collapsed */}
           {!sidebarCollapsed && (
             <div className="p-3">
-              <div className="p-3 bg-gradient-to-br from-indigo-50 to-violet-50 rounded-xl border border-indigo-100/80 space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] bg-amber-100 text-amber-700 font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wide">PRO</span>
-                  <span className="text-xs font-bold text-slate-700">Upgrade your plan</span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-normal">
-                  Unlock premium features and grow faster.
-                </p>
-                <button
-                  onClick={() => setActiveTab("billing")}
-                  className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-                >
-                  Upgrade Now
-                </button>
-              </div>
+              {(() => {
+                const daysRemaining = calculateTrialDaysRemaining(settings.createdAt);
+                return (
+                  <div className="p-3 bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-violet-50/90 rounded-xl border border-indigo-100/90 space-y-2.5 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
+                          FREE TRIAL
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-extrabold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full">
+                        {daysRemaining} {daysRemaining === 1 ? "day" : "days"} left
+                      </span>
+                    </div>
+
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-800">60-Day Trial Active ⚡</p>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        You have <strong className="text-indigo-600 font-bold">{daysRemaining} days remaining</strong> on your Growth Plan trial.
+                      </p>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div className="w-full bg-slate-200/70 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-indigo-600 h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, Math.max(5, (daysRemaining / 60) * 100))}%`,
+                        }}
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => setActiveTab("billing")}
+                      className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 mt-1"
+                    >
+                      <span>Upgrade Plan</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
