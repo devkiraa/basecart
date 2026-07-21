@@ -589,6 +589,25 @@ export default function MerchantDashboard() {
   const [actionSuccess, setActionSuccess] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  // Auto-dismiss action feedback banners after 4 seconds
+  useEffect(() => {
+    if (actionSuccess) {
+      const timer = setTimeout(() => {
+        setActionSuccess("");
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionSuccess]);
+
+  useEffect(() => {
+    if (actionError) {
+      const timer = setTimeout(() => {
+        setActionError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [actionError]);
+
   // Themes state
   const [themes, setThemes] = useState<any[]>([]);
   const [selectedTheme, setSelectedTheme] = useState<any | null>(null);
@@ -2983,13 +3002,35 @@ export default function MerchantDashboard() {
 
         <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto pb-24 lg:pb-8">
           {actionError && (
-            <div className="mb-6 bg-red-50 border border-red-100 text-red-700 p-4 rounded-card text-sm">
-              {actionError}
+            <div className="mb-6 bg-red-50 border border-red-200/80 text-red-700 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 shadow-xs animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+                <span>{actionError}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionError("")}
+                className="text-red-400 hover:text-red-700 p-1 rounded-md transition-colors cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
           {actionSuccess && (
-            <div className="mb-6 bg-emerald-50 border border-emerald-100 text-emerald-700 p-4 rounded-card text-sm flex items-center gap-2">
-              <CheckCircle className="h-4 w-4 text-emerald-600" /> {actionSuccess}
+            <div className="mb-6 bg-emerald-50 border border-emerald-200/80 text-emerald-800 p-3.5 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 shadow-xs animate-fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span>{actionSuccess}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActionSuccess("")}
+                className="text-emerald-400 hover:text-emerald-800 p-1 rounded-md transition-colors cursor-pointer"
+                title="Dismiss"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
 
