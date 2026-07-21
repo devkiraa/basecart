@@ -90,11 +90,11 @@ export async function provisionTenantDatabase(
 
   // 3. Seed default storefront theme
   const defaultTheme = {
-    themeId: "default",
-    name: "Default Aura Theme",
+    themeId: "satoshi",
+    name: "Satoshi",
     status: "published",
-    templateBase: "Aura",
-    colors: JSON.stringify({ primary: "#2563EB", accent: "#1D4ED8" }),
+    templateBase: "Satoshi",
+    colors: JSON.stringify({ primary: "#010101", accent: "#EDCF5D" }),
     logoUrl: "",
     pageContent: JSON.stringify({
       home: {

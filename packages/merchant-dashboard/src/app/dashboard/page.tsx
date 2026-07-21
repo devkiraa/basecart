@@ -7405,8 +7405,8 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">{activeTheme ? activeTheme.name : "Vogue"}</h2>
-                        <span className="text-[9px] font-extrabold bg-[#4F46E5]/10 text-[#4F46E5] px-1.5 py-0.5 rounded uppercase tracking-wide">v{activeTheme?.version || 1}</span>
+                        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">{activeTheme ? activeTheme.name : "Satoshi"}</h2>
+                        <span className="text-[9px] font-extrabold bg-[#4F46E5]/10 text-[#4F46E5] px-1.5 py-0.5 rounded uppercase tracking-wide">V2</span>
                       </div>
                       <p className="text-xs text-slate-500 leading-relaxed max-w-md">Clean and modern fashion theme built for conversion rates and merchant trust.</p>
                       <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 font-bold pt-2">
@@ -7451,12 +7451,12 @@ export default function MerchantDashboard() {
                           </div>
                           <span className="truncate w-32 font-mono text-center mx-auto">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</span>
                         </div>
-                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50 pointer-events-none scale-90 origin-top" />
+                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Satoshi"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#010101")}`} className="w-full flex-1 border-none bg-slate-50 pointer-events-none scale-90 origin-top" />
                       </div>
                     ) : (
                       <div className="w-36 h-[220px] bg-white rounded-2xl shadow-md border-4 border-slate-800 flex flex-col overflow-hidden relative animate-fade-in">
                         <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 w-10 h-1.5 rounded-full z-10 flex items-center justify-end px-1"><span className="w-0.5 h-0.5 rounded-full bg-blue-500"></span></div>
-                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`} className="w-full h-full border-none bg-slate-50 pt-3 pointer-events-none scale-90 origin-top" />
+                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Satoshi"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#010101")}`} className="w-full h-full border-none bg-slate-50 pt-3 pointer-events-none scale-90 origin-top" />
                       </div>
                     )}
                   </div>

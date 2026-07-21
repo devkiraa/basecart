@@ -509,13 +509,13 @@ app.get("/store/themes", authenticateMerchant, async (c) => {
     }
 
     const defaultTheme = {
-      themeId: "default",
-      name: "Horizon (Default)",
+      themeId: "satoshi",
+      name: "Satoshi",
       status: "published",
-      templateBase: "Aura",
+      templateBase: "Satoshi",
       colors: JSON.stringify({
-        primary: branding.primaryColor || "#2563EB",
-        accent: branding.accentColor || "#1D4ED8",
+        primary: branding.primaryColor || "#010101",
+        accent: branding.accentColor || "#EDCF5D",
       }),
       logoUrl: branding.logoUrl || "",
       pageContent: JSON.stringify({
