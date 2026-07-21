@@ -260,24 +260,28 @@ app.post("/auth/merchant/signup", async (c) => {
     .prepare(
       "INSERT INTO merchant_users (email, tenantId, userId, hashedPassword, role, emailVerified, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
-    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 1, createdAt);
+    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 0, createdAt);
 
   await controlDb.batch([tStmt, uStmt]);
 
   // 6. Run migrations & seed default configuration inside the tenant database
   await provisionTenantDatabase(tenantId, storeName, c.env);
 
-  // 7. Create email verification token
+  // 7. Create email verification token & 6-digit OTP code
   const verificationToken = crypto.randomUUID();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 
-  await controlDb
-    .prepare(
-      "INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
-    )
-    .bind(verificationToken, lowerEmail, tenantId, verificationExpiry, verificationTtl)
-    .run();
+  const insertToken = controlDb
+    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
+    .bind(verificationToken, lowerEmail, tenantId, verificationExpiry, verificationTtl);
+
+  const insertOtp = controlDb
+    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
+    .bind(otpCode, lowerEmail, tenantId, verificationExpiry, verificationTtl);
+
+  await controlDb.batch([insertToken, insertOtp]);
 
   const verifyLink = `${c.env.MERCHANT_DASHBOARD_URL}/verify?token=${verificationToken}`;
   await sendEmailSafely(
@@ -287,6 +291,7 @@ app.post("/auth/merchant/signup", async (c) => {
       data: {
         userName: storeName,
         verifyLink,
+        otpCode,
         storeName: "Basecart",
       },
     },
@@ -585,15 +590,19 @@ app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) =
   }
 
   const verificationToken = crypto.randomUUID();
+  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
   const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
   const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
 
-  await controlDb
-    .prepare(
-      "INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)"
-    )
-    .bind(verificationToken, email, tenantId, verificationExpiry, verificationTtl)
-    .run();
+  const insertToken = controlDb
+    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
+    .bind(verificationToken, email, tenantId, verificationExpiry, verificationTtl);
+
+  const insertOtp = controlDb
+    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
+    .bind(otpCode, email, tenantId, verificationExpiry, verificationTtl);
+
+  await controlDb.batch([insertToken, insertOtp]);
 
   const verifyLink = `${c.env.MERCHANT_DASHBOARD_URL}/verify?token=${verificationToken}`;
   await sendEmailSafely(
@@ -602,6 +611,7 @@ app.post("/auth/merchant/resend-verification", authenticateMerchant, async (c) =
       to: email,
       data: {
         verifyLink,
+        otpCode,
         storeName: "Basecart",
       },
     },

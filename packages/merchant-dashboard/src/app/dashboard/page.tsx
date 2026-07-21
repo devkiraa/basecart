@@ -311,8 +311,8 @@ export default function MerchantDashboard() {
     setOnboardingData((prev) => ({ ...prev, ...fields }));
   };
 
-  // Auth Recovery states
-  const [emailVerified, setEmailVerified] = useState<boolean>(true);
+  // Auth Recovery & Email Verification states
+  const [emailVerified, setEmailVerified] = useState<boolean>(false);
   const [showForgotView, setShowForgotView] = useState<boolean>(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
@@ -320,6 +320,13 @@ export default function MerchantDashboard() {
   const [newPasswordInput, setNewPasswordInput] = useState("");
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
   const [emailVerificationResent, setEmailVerificationResent] = useState(false);
+
+  // OTP Verification Modal state
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [inputOtp, setInputOtp] = useState("");
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpSuccess, setOtpSuccess] = useState("");
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
@@ -980,7 +987,7 @@ export default function MerchantDashboard() {
 
       setToken(data.accessToken);
       setTenantId(data.tenantId);
-      setEmailVerified(true); // Verification code verified client-side (mock OTP = 000000)
+      setEmailVerified(false); // Account unverified until 6-digit OTP code or link verification
       
       // Reset wizard fields
       setOnboardingData({
@@ -1064,6 +1071,34 @@ export default function MerchantDashboard() {
       setAuthError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerifyOtpSubmit = async () => {
+    if (inputOtp.length !== 6) return;
+    setVerifyingOtp(true);
+    setOtpError("");
+    setOtpSuccess("");
+
+    try {
+      const res = await fetch(`${API_URL}/auth/merchant/verify-email?token=${inputOtp}`, {
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Invalid verification code");
+
+      setEmailVerified(true);
+      setOtpSuccess("Email verified successfully! Store is now active and online.");
+      setTimeout(() => {
+        setShowOtpModal(false);
+        setInputOtp("");
+        setOtpSuccess("");
+      }, 1500);
+    } catch (err: any) {
+      setOtpError(err.message || "Failed to verify OTP code.");
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -1782,20 +1817,30 @@ export default function MerchantDashboard() {
       <main className="flex-1 flex flex-col min-w-0 bg-[#F8FAFC] h-full overflow-hidden">
         {/* Email Verification Banner */}
         {!emailVerified && (
-          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-xs text-amber-800 shrink-0 font-medium animate-fade-in select-none">
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5 flex items-center justify-between text-xs text-amber-900 shrink-0 font-medium animate-fade-in select-none">
             <div className="flex items-center gap-2">
               <span className="text-sm">⚠️</span>
               <span>
-                <strong>Verify your email:</strong> Please check your inbox for the verification email. A verified account is required to enable payment gateways.
+                <strong>Store Sandbox Mode (Offline):</strong> Check your email for your 6-digit OTP code. Verify your email to activate live storefront access.
               </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => {
+                  setShowOtpModal(true);
+                  setOtpError("");
+                  setOtpSuccess("");
+                }}
+                className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded shadow-sm transition-all text-xs flex items-center gap-1 cursor-pointer"
+              >
+                Enter OTP Code
+              </button>
               {emailVerificationResent ? (
-                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 uppercase tracking-wide text-[10px]">Email Resent!</span>
+                <span className="text-emerald-700 font-bold bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200 uppercase tracking-wide text-[10px]">Email Resent!</span>
               ) : (
                 <button
                   onClick={handleResendVerification}
-                  className="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded shadow-sm transition-all"
+                  className="px-2.5 py-1 bg-white border border-amber-300 hover:bg-amber-100 text-amber-800 font-bold rounded shadow-sm transition-all text-xs cursor-pointer"
                 >
                   Resend Email
                 </button>
@@ -5911,6 +5956,81 @@ export default function MerchantDashboard() {
           );
         })}
       </div>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in select-none">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold">
+                  <CheckCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Verify Email Address</h3>
+                  <p className="text-xs text-slate-500">Type the 6-digit OTP received in your email</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowOtpModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {otpError && (
+              <div className="bg-red-50 text-red-700 border border-red-100 p-3 rounded-xl text-xs flex items-center gap-2 font-medium">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{otpError}</span>
+              </div>
+            )}
+
+            {otpSuccess && (
+              <div className="bg-emerald-50 text-emerald-700 border border-emerald-100 p-3 rounded-xl text-xs flex items-center gap-2 font-medium">
+                <CheckCircle className="h-4 w-4 shrink-0" />
+                <span>{otpSuccess}</span>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-slate-700">
+                6-Digit OTP Code
+              </label>
+              <input
+                type="text"
+                maxLength={6}
+                placeholder="e.g. 892147"
+                value={inputOtp}
+                onChange={(e) => setInputOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                className="w-full px-4 py-3 border border-slate-300 rounded-xl text-center text-2xl font-mono tracking-[0.25em] text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-bold"
+              />
+              <p className="text-[10px] text-slate-400 text-center">
+                Didn't receive code? Check spam or click <button onClick={handleResendVerification} className="text-blue-600 font-bold hover:underline">Resend Email</button>
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowOtpModal(false)}
+                className="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-button transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={verifyingOtp || inputOtp.length !== 6}
+                onClick={handleVerifyOtpSubmit}
+                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold rounded-button text-xs transition-all shadow-sm disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                {verifyingOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {verifyingOtp ? "Verifying..." : "Verify & Activate Store"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

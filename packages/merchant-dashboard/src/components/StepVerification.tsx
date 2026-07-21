@@ -85,11 +85,6 @@ export default function StepVerification({ data, onChange, onSubmit, onBack, loa
       return;
     }
 
-    if (otpCode !== "000000") {
-      setLocalError("Invalid verification code. Please use 000000 for mock verification.");
-      return;
-    }
-
     onSubmit();
   };
 
@@ -97,7 +92,7 @@ export default function StepVerification({ data, onChange, onSubmit, onBack, loa
     <form onSubmit={handleSubmit} className="space-y-5 text-left font-sans animate-fade-in">
       <div className="space-y-1">
         <h2 className="text-lg font-bold text-slate-900 tracking-tight">Verify email</h2>
-        <p className="text-xs text-slate-500 font-sans">We have sent a mock 6-digit verification code to <span className="font-semibold text-slate-800">{data.email}</span>.</p>
+        <p className="text-xs text-slate-500 font-sans">We have sent a 6-digit verification code to <span className="font-semibold text-slate-800">{data.email}</span>.</p>
       </div>
 
       {(localError || error) && (
@@ -134,7 +129,7 @@ export default function StepVerification({ data, onChange, onSubmit, onBack, loa
           </div>
           
           <span className="text-[10px] text-slate-400 mt-3 block text-center leading-normal">
-            Enter the default sandbox verification code: <strong className="text-indigo-650 text-indigo-600">000000</strong>
+            Check your email inbox or spam folder for the 6-digit OTP code.
           </span>
         </div>
 
