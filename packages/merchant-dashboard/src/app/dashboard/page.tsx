@@ -532,6 +532,32 @@ export default function MerchantDashboard() {
     link.click();
     document.body.removeChild(link);
   };
+
+  const handleExportProductsCSV = () => {
+    if (!products || products.length === 0) return;
+    const headers = ["Product ID", "Name", "SKU", "Category", "Product Type", "Vendor", "Price (INR)", "Compare At Price (INR)", "Cost (INR)", "Stock Quantity", "Status"];
+    const rows = products.map((p) => [
+      p.productId,
+      `"${(p.name || "").replace(/"/g, '""')}"`,
+      `"${(p.sku || "").replace(/"/g, '""')}"`,
+      `"${(p.category || "Other").replace(/"/g, '""')}"`,
+      `"${(p.productType || "").replace(/"/g, '""')}"`,
+      `"${(p.vendor || "").replace(/"/g, '""')}"`,
+      p.price || 0,
+      p.compareAtPrice || "",
+      p.costPerItem || "",
+      p.stockQuantity || 0,
+      p.status,
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `basecart-products-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
   const [settings, setSettings] = useState<StoreSettings>({
     storeName: "",
     subdomain: "",
@@ -3655,45 +3681,107 @@ export default function MerchantDashboard() {
           {/* 2. Products Tab */}
           {activeTab === "products" && (
             <div className="space-y-6">
-              {/* Header */}
-              <div className="flex items-center justify-between">
+              {/* Header & Main Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight">Products</h2>
-                  <p className="text-sm text-slate-500">Manage your catalog, stock details, pricing, and variants</p>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Product Catalog Management</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
+                      Catalog Engine
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-0.5">Manage your store products, pricing margins, stock inventory, variants, and SEO listing previews</p>
                 </div>
                 {!productForm && (
-                  <button
-                    onClick={() => {
-                      setProductForm({
-                        name: "",
-                        price: 0,
-                        stockQuantity: 0,
-                        status: "active",
-                        category: "Other",
-                        images: [],
-                        variants: [],
-                        compareAtPrice: null,
-                        costPerItem: null,
-                        sku: "",
-                        barcode: "",
-                        productType: "",
-                        vendor: "",
-                        weight: null,
-                        seoTitle: "",
-                        seoDescription: "",
-                        continueSellingOutOfStock: false,
-                      });
-                      setOptionInputs([
-                        { name: "Size", values: [] },
-                        { name: "Color", values: [] },
-                      ]);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-button shadow-sm transition-colors animate-fade-in"
-                  >
-                    <Plus className="h-4 w-4" /> Add Product
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleExportProductsCSV}
+                      disabled={products.length === 0}
+                      className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <Download className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Export CSV</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setProductForm({
+                          name: "",
+                          price: 0,
+                          stockQuantity: 0,
+                          status: "active",
+                          category: "Other",
+                          images: [],
+                          variants: [],
+                          compareAtPrice: null,
+                          costPerItem: null,
+                          sku: "",
+                          barcode: "",
+                          productType: "",
+                          vendor: "",
+                          weight: null,
+                          seoTitle: "",
+                          seoDescription: "",
+                          continueSellingOutOfStock: false,
+                        });
+                        setOptionInputs([
+                          { name: "Size", values: [] },
+                          { name: "Color", values: [] },
+                        ]);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> Add Product
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Product Catalog Metrics Bar */}
+              {!productForm && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                      <span>TOTAL CATALOG</span>
+                      <Package className="h-4 w-4 text-slate-400" />
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">{products.length}</div>
+                    <p className="text-[11px] text-slate-400 font-medium">All products in store</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
+                      <span>ACTIVE LIVE</span>
+                      <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {products.filter((p) => p.status === "active").length}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium">Published on storefront</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-amber-600">
+                      <span>DRAFT CATALOG</span>
+                      <Tag className="h-4 w-4 text-amber-500" />
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {products.filter((p) => p.status === "draft").length}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium">Hidden from search</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-red-600">
+                      <span>OUT OF STOCK</span>
+                      <AlertCircle className="h-4 w-4 text-red-500" />
+                    </div>
+                    <div className="text-2xl font-black text-slate-900">
+                      {products.filter((p) => (p.stockQuantity || 0) <= 0).length}
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-medium">Items requiring restock</p>
+                  </div>
+                </div>
+              )}
 
               {/* Product Form (Two-Column Layout) */}
               {productForm ? (
