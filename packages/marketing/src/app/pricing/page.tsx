@@ -31,31 +31,34 @@ export default function PricingPage() {
               title: "60-Day Free Trial",
               price: "₹0",
               period: "for 60 days",
-              desc: "Full Growth Plan experience.",
+              desc: "Full Growth Plan experience with zero risk.",
               features: [
-                "No credit card required",
-                "Growth Tier full access",
-                "Unlimited Products & Orders",
-                "Custom Domain mapping",
-                "AI Description Writer",
-                "Razorpay Payments"
+                "Growth Tier Full Access (60 Days)",
+                "No Credit Card Required",
+                "Up to 250 Product Listings",
+                "Free Subdomain (store.basecart.app)",
+                "Standard & Premium Themes",
+                "Razorpay & Stripe Gateways",
+                "AI Description Writer (50 Credits)"
               ],
               popular: false,
-              btn: "Start 60-Day Trial",
+              btn: "Start 60-Day Free Trial",
               highlight: "Trial Period"
             },
             {
               title: "Starter",
               price: "₹299",
               period: "/ month",
-              desc: "Essential store for launch.",
+              desc: "Perfect for home businesses & new stores.",
               features: [
-                "1 Online Store",
-                "Up to 100 Products",
-                "Custom domain setup",
-                "Standard Themes",
-                "Discount Coupons",
-                "Email Support"
+                "1 Active Online Storefront",
+                "Up to 250 Active Products",
+                "Custom Domain Mapping (yourbrand.com)",
+                "Free Automatic SSL Certificate",
+                "Standard & Modern Templates",
+                "Discount Coupons & Promo Engine",
+                "Basic Sales & Order Analytics",
+                "Direct S3 Image Uploading"
               ],
               popular: false,
               btn: "Choose Starter"
@@ -64,14 +67,16 @@ export default function PricingPage() {
               title: "Growth ⭐",
               price: "₹799",
               period: "/ month",
-              desc: "For fast-scaling brands.",
+              desc: "Built for scaling D2C brands & social commerce.",
               features: [
-                "Everything in Starter",
+                "Everything in Starter, plus:",
                 "Unlimited Products & Orders",
-                "AI Description Writer",
-                "Abandoned Cart recovery",
-                "Advanced Analytics",
-                "Priority Support"
+                "AI Description Writer (Unlimited)",
+                "Abandoned Cart Recovery Emails",
+                "Shiprocket Automated Shipping & AWB",
+                "Product Options Matrix (Sizes & Colors)",
+                "Auto-Generate SKU & Barcode Helper",
+                "Priority 24/7 Merchant Support"
               ],
               popular: true,
               btn: "Choose Growth"
@@ -80,14 +85,16 @@ export default function PricingPage() {
               title: "Business",
               price: "₹1,499",
               period: "/ month",
-              desc: "For high-volume operations.",
+              desc: "For high-volume operations & team workflows.",
               features: [
-                "Everything in Growth",
-                "Multi-Staff Accounts (5 Seats)",
-                "Full API Access",
-                "High-Volume Automation",
+                "Everything in Growth, plus:",
+                "Multi-Staff Accounts (5 Team Seats)",
+                "Full Developer REST API & Webhooks",
+                "Custom CSS / JS Code Injection",
+                "Automated GST Invoices & PDF Export",
+                "Custom Storefront Theme Engine",
                 "Dedicated Account Manager",
-                "Custom Theme Support"
+                "0% Platform Transaction Fees"
               ],
               popular: false,
               btn: "Choose Business"
@@ -115,7 +122,7 @@ export default function PricingPage() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-black text-slate-900 mb-1">{plan.title}</h3>
-                  <p className="text-[11px] text-slate-400 font-bold mb-4">{plan.desc}</p>
+                  <p className="text-[11px] text-slate-400 font-bold mb-4 leading-snug">{plan.desc}</p>
                   <div className="flex items-baseline gap-1 select-none">
                     <span className="text-3xl font-black text-slate-900 tracking-tight">{plan.price}</span>
                     <span className="text-xs text-slate-400 font-bold">{plan.period}</span>
@@ -124,8 +131,8 @@ export default function PricingPage() {
 
                 <div className="space-y-2.5 pt-4 border-t border-slate-100">
                   {plan.features.map((feat, j) => (
-                    <div key={j} className="flex items-center gap-2 text-xs font-semibold text-slate-600">
-                      <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                    <div key={j} className="flex items-start gap-2 text-xs font-semibold text-slate-700">
+                      <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
                       <span>{feat}</span>
                     </div>
                   ))}
@@ -146,6 +153,91 @@ export default function PricingPage() {
               </a>
             </div>
           ))}
+        </div>
+
+        {/* Detailed Feature Comparison Table */}
+        <div className="mt-16 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm overflow-x-auto text-left">
+          <div className="mb-6 space-y-1">
+            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Full Plan Feature Matrix</h3>
+            <p className="text-xs text-slate-500 font-medium">Detailed side-by-side comparison of tools, limits, and capabilities across all plans.</p>
+          </div>
+
+          <table className="w-full min-w-[640px] text-left text-xs border-collapse">
+            <thead>
+              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-900 uppercase text-[10px] font-black tracking-wider">
+                <th className="py-3 px-4 w-1/3">Feature Category</th>
+                <th className="py-3 px-4">Free Trial (₹0)</th>
+                <th className="py-3 px-4">Starter (₹299)</th>
+                <th className="py-3 px-4 text-blue-600">Growth (₹799)</th>
+                <th className="py-3 px-4">Business (₹1,499)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Products & Orders</td>
+                <td className="py-3 px-4">Up to 250</td>
+                <td className="py-3 px-4">Up to 250</td>
+                <td className="py-3 px-4 font-bold text-blue-600">Unlimited</td>
+                <td className="py-3 px-4 font-bold text-slate-900">Unlimited</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Custom Domain & SSL</td>
+                <td className="py-3 px-4 text-slate-400">Subdomain Only</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">AI Description Writer</td>
+                <td className="py-3 px-4">50 Credits</td>
+                <td className="py-3 px-4 text-slate-400">Basic</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Unlimited AI Generation</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Unlimited AI Generation</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Abandoned Cart Recovery</td>
+                <td className="py-3 px-4 text-slate-400">Disabled</td>
+                <td className="py-3 px-4 text-slate-400">Disabled</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Automated Email Recovery</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Automated Email & WhatsApp</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Shiprocket Automated Shipping</td>
+                <td className="py-3 px-4 text-slate-400">Manual</td>
+                <td className="py-3 px-4 text-slate-400">Manual</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Automated AWB & Tracking</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Automated AWB & Tracking</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Auto SKU & Barcode Generator</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
+                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Multi-Staff Accounts</td>
+                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
+                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
+                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
+                <td className="py-3 px-4 font-bold text-purple-700">5 Team Member Seats</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Developer API & Webhooks</td>
+                <td className="py-3 px-4 text-slate-400">Disabled</td>
+                <td className="py-3 px-4 text-slate-400">Disabled</td>
+                <td className="py-3 px-4 text-slate-400">Read-Only</td>
+                <td className="py-3 px-4 font-bold text-purple-700">Full REST API & Webhooks</td>
+              </tr>
+              <tr>
+                <td className="py-3 px-4 font-bold text-slate-900">Transaction Fees</td>
+                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
+                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
+                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
+                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
