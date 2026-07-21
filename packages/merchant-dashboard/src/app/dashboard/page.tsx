@@ -2337,6 +2337,19 @@ export default function MerchantDashboard() {
     }
   };
 
+  // ESC Key listener to close active popups & modals
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (selectedOrderForDetail) setSelectedOrderForDetail(null);
+        if (fulfillingOrder) setFulfillingOrder(null);
+        if (showOtpModal) setShowOtpModal(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedOrderForDetail, fulfillingOrder, showOtpModal]);
+
   // --- Loading / Hydration Splash ---
   if (!isHydrated || !sessionChecked) {
     return (
@@ -7242,8 +7255,14 @@ export default function MerchantDashboard() {
 
       {/* DEDICATED FULFILL ORDER MODAL */}
       {fulfillingOrder && (
-        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5">
+        <div
+          onClick={() => setFulfillingOrder(null)}
+          className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-5 cursor-default text-left"
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
@@ -7376,8 +7395,14 @@ export default function MerchantDashboard() {
 
       {/* Order Detail Modal */}
       {selectedOrderForDetail && (
-        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
-          <div className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6">
+        <div
+          onClick={() => setSelectedOrderForDetail(null)}
+          className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 space-y-5 cursor-default text-left"
+          >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-4">
               <div>
@@ -7429,7 +7454,7 @@ export default function MerchantDashboard() {
             {/* Line Items Table */}
             <div className="space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Ordered Items</h4>
-              <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+              <div className="border border-slate-200 rounded-xl overflow-x-auto text-xs">
                 <table className="min-w-full divide-y divide-slate-100 text-left">
                   <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
                     <tr>
@@ -7485,8 +7510,8 @@ export default function MerchantDashboard() {
               </div>
             </div>
 
-            {/* Actions Footer */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            {/* Actions Footer - Responsive flex layout on mobile */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <div className="flex items-center gap-2 w-full sm:w-auto">
                 <label className="text-xs font-bold text-slate-500 flex items-center gap-1">
                   <span>Status:</span>
@@ -7518,7 +7543,7 @@ export default function MerchantDashboard() {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto justify-end">
                 {(selectedOrderForDetail.status === "paid" || selectedOrderForDetail.status === "pending") && (
                   <button
                     onClick={() => {
@@ -7528,7 +7553,7 @@ export default function MerchantDashboard() {
                       setFulfillmentCarrier("Shiprocket");
                       setFulfillmentTracking("");
                     }}
-                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                    className="flex-1 sm:flex-initial px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                   >
                     <Package className="h-3.5 w-3.5" />
                     <span>Fulfill Order</span>
@@ -7536,14 +7561,14 @@ export default function MerchantDashboard() {
                 )}
                 <button
                   onClick={() => handleDownloadOrderInvoice(selectedOrderForDetail)}
-                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="flex-1 sm:flex-initial px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
                   <Download className="h-3.5 w-3.5" />
                   <span>GST Invoice</span>
                 </button>
                 <button
                   onClick={() => setSelectedOrderForDetail(null)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors cursor-pointer w-full sm:w-auto"
                 >
                   Close
                 </button>
@@ -7555,8 +7580,14 @@ export default function MerchantDashboard() {
 
       {/* OTP Verification Modal */}
       {showOtpModal && (
-        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5">
+        <div
+          onClick={() => setShowOtpModal(false)}
+          className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-fade-in select-none cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5 cursor-default text-left"
+          >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold">
