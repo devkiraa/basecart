@@ -64,13 +64,13 @@ async function ensureAdminTables(db: any) {
     version TEXT NOT NULL
   )`).run();
 
+  // Clean up any legacy dummy themes and ensure Satoshi is the sole seeded theme
+  await db.prepare("DELETE FROM marketplace_themes WHERE id != 'satoshi'").run();
+
   const themeCount = await db.prepare("SELECT COUNT(*) as total FROM marketplace_themes").first();
   if (!themeCount || themeCount.total === 0) {
     const seedThemes = [
-      { id: "thm_1", name: "Minimalist Craft", developer: "Basecart Team", status: "published", rating: 4.8, downloads: 1420, isFeatured: 1, version: "1.2.0" },
-      { id: "thm_2", name: "Vintage Velvet", developer: "Studio Kerala", status: "pending", rating: 0.0, downloads: 0, isFeatured: 0, version: "1.0.0" },
-      { id: "thm_3", name: "Modern Spices", developer: "ApparelLabs", status: "published", rating: 4.5, downloads: 890, isFeatured: 0, version: "2.1.0" },
-      { id: "thm_4", name: "Aroma Cafe Theme", developer: "NicheStyles", status: "pending", rating: 0.0, downloads: 0, isFeatured: 0, version: "1.0.0" },
+      { id: "satoshi", name: "Satoshi", developer: "Basecart Team", status: "published", rating: 5.0, downloads: 2450, isFeatured: 1, version: "1.0.0" },
     ];
     for (const t of seedThemes) {
       await db.prepare("INSERT INTO marketplace_themes (id, name, developer, status, rating, downloads, isFeatured, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
