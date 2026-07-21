@@ -4,6 +4,7 @@ import { decrypt } from "../lib/crypto";
 import { validateDiscountCode } from "./discounts";
 import { CheckoutSchema, OrderStatusUpdateSchema } from "@basecart/shared";
 import { createShiprocketShipment, verifyShiprocketSignature } from "../services/shiprocket";
+import { generateInvoicePdf } from "../lib/pdf";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
@@ -327,6 +328,16 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     return c.json({ error: "Order not found" }, 404);
   }
 
+  // Prevent modifying settled or cancelled orders to preserve order transaction integrity
+  if (order.status === "delivered" || order.status === "cancelled") {
+    return c.json(
+      {
+        error: `Order status is locked because it is already '${order.status}'. Modifying settled transactions violates store audit integrity rules.`,
+      },
+      400
+    );
+  }
+
   const updatedAt = new Date().toISOString();
 
   // Fetch store metadata to check add-ons
@@ -351,7 +362,7 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
         customerState: "Delhi",
         customerPostalCode: "110001",
         totalWeightKg: 1.0,
-      }, store.gstin || "N/A");
+      }, store?.gstin || "N/A");
       trackingNumber = shipment.trackingNumber;
       carrier = shipment.carrier;
     } catch (shiprocketErr) {
@@ -407,7 +418,68 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     }
   }
 
-  return c.json({ message: `Order status updated to ${status}` });
+  return c.json({ success: true, status, trackingNumber, carrier, message: `Order status updated to ${status}` });
+});
+
+/**
+ * Download / View GST Invoice PDF (Merchant-only)
+ */
+app.get("/orders/:id/invoice", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const orderId = c.req.param("id");
+
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const controlDb = getControlDb(c.env);
+
+  const order = await tenantDb
+    .prepare("SELECT * FROM orders WHERE orderId = ?")
+    .bind(orderId)
+    .first<any>();
+
+  if (!order) {
+    return c.json({ error: "Order not found" }, 404);
+  }
+
+  const items = await tenantDb
+    .prepare("SELECT * FROM order_items WHERE orderId = ?")
+    .bind(orderId)
+    .all();
+
+  const store = await controlDb
+    .prepare("SELECT * FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<any>();
+
+  const invoiceNumber = order.invoiceNumber || `INV-2026-${order.orderNumber || orderId.substring(0, 6).toUpperCase()}`;
+
+  const pdfBuffer = await generateInvoicePdf({
+    invoiceNumber,
+    date: new Date(order.createdAt).toISOString().split("T")[0],
+    storeName: store?.storeName || "Basecart Store",
+    storeGstin: store?.gstin || "29AAAAA0000A1Z5",
+    storeAddress: store?.registeredBusinessAddress || "Bangalore, India",
+    storeState: store?.registeredState || "Karnataka",
+    customerName: order.customerName || "Valued Customer",
+    customerEmail: order.customerEmail || "customer@example.com",
+    customerAddress: order.shippingAddress || "India",
+    customerState: "Karnataka",
+    lineItems: (items.results || []).map((item: any) => ({
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+    taxType: "intrastate",
+    subtotal: order.subtotal || order.total,
+    taxAmount: order.taxAmount || 0,
+    total: order.total,
+  });
+
+  return new Response(pdfBuffer as any, {
+    headers: {
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `inline; filename="invoice-${invoiceNumber}.pdf"`,
+    },
+  });
 });
 
 // -------------------------------------------------------------

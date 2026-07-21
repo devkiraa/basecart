@@ -156,6 +156,8 @@ interface StoreSettings {
   addOns?: string[];
   plan?: string;
   createdAt?: string;
+  gstin?: string;
+  registeredBusinessAddress?: string;
   branding: {
     logoUrl?: string;
     primaryColor?: string;
@@ -1574,6 +1576,16 @@ export default function MerchantDashboard() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const targetOrder = orders.find((o) => o.orderId === orderId);
+    if (targetOrder && (targetOrder.status === "delivered" || targetOrder.status === "cancelled")) {
+      setActionError(`Order #${orderId.substring(0, 8).toUpperCase()} status is locked because it is already '${targetOrder.status}'. Altering completed/cancelled orders violates user transaction integrity.`);
+      return;
+    }
+
+    if (newStatus === "cancelled" && !confirm(`Are you sure you want to cancel Order #${orderId.substring(0, 8).toUpperCase()}? This action cannot be undone.`)) {
+      return;
+    }
+
     setLoading(true);
     setActionError("");
     setActionSuccess("");
@@ -1598,6 +1610,148 @@ export default function MerchantDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDownloadOrderInvoice = async (order: any) => {
+    if (!token || !order) return;
+    try {
+      setActionSuccess("Generating GST Tax Invoice PDF...");
+      const res = await fetch(`${API_URL}/orders/${order.orderId}/invoice`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed generating invoice PDF");
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const invNo = order.invoiceNumber || `INV-2026-${order.orderNumber || order.orderId.substring(0, 6).toUpperCase()}`;
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice-${invNo}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      setActionSuccess(`Invoice ${invNo} downloaded successfully!`);
+    } catch (err: any) {
+      console.error("PDF Download error, opening printable invoice window fallback:", err);
+      openPrintableInvoiceWindow(order);
+    }
+  };
+
+  const openPrintableInvoiceWindow = (order: any) => {
+    const invNo = order.invoiceNumber || `INV-2026-${order.orderNumber || order.orderId.substring(0, 6).toUpperCase()}`;
+    const dateStr = new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
+    const storeName = settings.storeName || "Basecart Merchant Store";
+    const gstin = settings.gstin || "29AAAAA0000A1Z5";
+    const address = settings.registeredBusinessAddress || "Bangalore, India";
+    const customerName = order.customerInfo?.name || "Valued Customer";
+    const customerEmail = order.customerInfo?.email || "";
+    const customerPhone = order.customerInfo?.phone || "";
+    const items = order.lineItems || [];
+    const subtotal = order.subtotal || order.total;
+    const tax = order.tax || Math.round(subtotal * 0.05);
+    const total = order.total;
+
+    const printWin = window.open("", "_blank");
+    if (!printWin) {
+      alert("Please allow popups to open the Tax Invoice.");
+      return;
+    }
+
+    printWin.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>GST Tax Invoice - ${invNo}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #1e293b; background: #fff; }
+          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; pb: 20px; margin-bottom: 20px; }
+          .title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 1px; }
+          .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
+          .grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .box { font-size: 12px; leading-height: 1.5; }
+          .box h4 { margin: 0 0 6px 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
+          th { background: #f8fafc; text-transform: uppercase; font-size: 10px; color: #475569; padding: 10px; text-align: left; border-bottom: 1px solid #cbd5e1; }
+          td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
+          .total-box { margin-left: auto; width: 260px; font-size: 12px; border-top: 2px solid #0f172a; pt: 10px; }
+          .total-row { display: flex; justify-content: space-between; padding: 4px 0; }
+          .grand-total { font-size: 16px; font-weight: 900; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px; }
+          .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; pt: 20px; text-align: center; font-size: 11px; color: #94a3b8; }
+          .btn-print { background: #2563eb; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
+          @media print { .btn-print { display: none; } }
+        </style>
+      </head>
+      <body>
+        <button class="btn-print" onclick="window.print()">🖨️ Print / Save PDF Invoice</button>
+        <div class="header">
+          <div>
+            <div class="title">${storeName}</div>
+            <div class="subtitle">GSTIN: ${gstin}</div>
+            <div class="subtitle">${address}</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 18px; font-weight: 800; color: #2563eb;">TAX INVOICE</div>
+            <div class="subtitle" style="font-weight: 700;">Invoice No: ${invNo}</div>
+            <div class="subtitle">Date: ${dateStr}</div>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div class="box">
+            <h4>Billed To (Customer)</h4>
+            <strong>${customerName}</strong><br/>
+            ${customerEmail}<br/>
+            ${customerPhone}
+          </div>
+          <div class="box" style="text-align: right;">
+            <h4>Payment Method</h4>
+            <strong>${order.paymentMethod || "Razorpay / Online"}</strong><br/>
+            Status: <span style="color: #16a34a; font-weight: bold; text-transform: uppercase;">${order.status}</span>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Item Description</th>
+              <th>SKU</th>
+              <th style="text-align: center;">Qty</th>
+              <th style="text-align: right;">Unit Price</th>
+              <th style="text-align: right;">Total Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map((it: any) => `
+              <tr>
+                <td><strong>${it.name}</strong></td>
+                <td style="font-family: monospace; color: #64748b;">${it.sku || "N/A"}</td>
+                <td style="text-align: center;">${it.quantity || 1}</td>
+                <td style="text-align: right;">₹${(it.price || 0).toLocaleString("en-IN")}</td>
+                <td style="text-align: right; font-weight: bold;">₹${((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+
+        <div class="total-box">
+          <div class="total-row"><span>Subtotal:</span> <span>₹${subtotal.toLocaleString("en-IN")}</span></div>
+          <div class="total-row"><span>GST Tax:</span> <span>₹${tax.toLocaleString("en-IN")}</span></div>
+          <div class="total-row grand-total"><span>Total Amount:</span> <span>₹${total.toLocaleString("en-IN")}</span></div>
+        </div>
+
+        <div class="footer">
+          Thank you for shopping with ${storeName}! This is a computer-generated tax invoice issued via Basecart OS.
+        </div>
+      </body>
+      </html>
+    `);
+    printWin.document.close();
   };
 
   const saveDiscount = async (e: React.FormEvent) => {
@@ -4361,29 +4515,29 @@ export default function MerchantDashboard() {
                         <label className="text-xs font-bold text-slate-500">Status:</label>
                         <select
                           value={selectedOrderForDetail.status}
+                          disabled={selectedOrderForDetail.status === "delivered" || selectedOrderForDetail.status === "cancelled"}
                           onChange={async (e) => {
                             const newStatus = e.target.value;
                             await updateOrderStatus(selectedOrderForDetail.orderId, newStatus);
                             setSelectedOrderForDetail((prev: any) => ({ ...prev, status: newStatus }));
                           }}
-                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white"
+                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
                         >
                           <option value="pending">Pending</option>
                           <option value="paid">Paid</option>
                           <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered</option>
-                          <option value="cancelled">Cancelled</option>
+                          <option value="delivered">Delivered (Locked)</option>
+                          <option value="cancelled">Cancelled (Locked)</option>
                         </select>
                       </div>
 
                       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                         <button
-                          onClick={() => {
-                            alert(`Downloading GST Invoice PDF for Order #${selectedOrderForDetail.orderId.substring(0, 8)}...`);
-                          }}
-                          className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                          onClick={() => handleDownloadOrderInvoice(selectedOrderForDetail)}
+                          className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                         >
-                          Download Invoice
+                          <Download className="h-3.5 w-3.5" />
+                          <span>Download GST Invoice</span>
                         </button>
                         <button
                           onClick={() => setSelectedOrderForDetail(null)}
