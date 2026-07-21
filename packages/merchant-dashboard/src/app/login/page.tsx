@@ -21,6 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
+  const [backendReady, setBackendReady] = useState(false);
   
   // Forgot password flow
   const [showForgotView, setShowForgotView] = useState(false);
@@ -28,26 +29,40 @@ export default function LoginPage() {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   useEffect(() => {
-    // If already logged in via httpOnly cookie or localStorage token, go to dashboard
-    const checkExistingSession = async () => {
-      try {
-        const res = await fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" });
-        if (res.ok) { window.location.href = "/dashboard"; return; }
-      } catch {}
-
-      // Fallback: check localStorage token (local dev)
-      const storedToken = localStorage.getItem("basecart_token");
-      if (storedToken) {
+    // Wait for backend to be reachable, then check existing session
+    let cancelled = false;
+    const waitForBackend = async () => {
+      const maxRetries = 15;
+      for (let i = 0; i < maxRetries; i++) {
+        if (cancelled) return;
         try {
-          const res = await fetch(`${API_URL}/auth/merchant/me`, {
-            headers: { Authorization: `Bearer ${storedToken}` },
-          });
+          const res = await fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" });
           if (res.ok) { window.location.href = "/dashboard"; return; }
-          else { localStorage.removeItem("basecart_token"); }
-        } catch {}
+          // Got a response (401 etc.) — backend is up
+          setBackendReady(true);
+
+          // Fallback: check localStorage token (local dev)
+          const storedToken = localStorage.getItem("basecart_token");
+          if (storedToken) {
+            try {
+              const meRes = await fetch(`${API_URL}/auth/merchant/me`, {
+                headers: { Authorization: `Bearer ${storedToken}` },
+              });
+              if (meRes.ok) { window.location.href = "/dashboard"; return; }
+              else { localStorage.removeItem("basecart_token"); }
+            } catch {}
+          }
+          return;
+        } catch {
+          // Connection refused — backend not ready yet, retry
+          await new Promise(r => setTimeout(r, 1500));
+        }
       }
+      // After all retries, show the form anyway
+      setBackendReady(true);
     };
-    checkExistingSession();
+    waitForBackend();
+    return () => { cancelled = true; };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -78,7 +93,11 @@ export default function LoginPage() {
       // Redirect to dashboard on success
       window.location.href = "/dashboard";
     } catch (err: any) {
-      setAuthError(err.message);
+      if (err.message === "Failed to fetch") {
+        setAuthError("Server is starting up, please try again in a few seconds...");
+      } else {
+        setAuthError(err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -104,6 +123,18 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Show connecting splash while waiting for backend
+  if (!backendReady) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans">
+        <div className="flex flex-col items-center gap-3 animate-pulse">
+          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+          <p className="text-sm text-slate-500 font-medium">Connecting to server...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showForgotView) {
     return (
