@@ -53,6 +53,11 @@ import {
   Building,
   Landmark,
   ShieldCheck,
+  Layers,
+  Warehouse,
+  Truck,
+  ArrowRightLeft,
+  Gift,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -573,6 +578,24 @@ export default function MerchantDashboard() {
     paidOrders: 0,
     last7Days: [],
   });
+
+  // Products sub-tab & Collections state
+  const [productsSubTab, setProductsSubTab] = useState<"catalog" | "collections" | "inventory" | "purchase-orders" | "transfers" | "gift-cards">("catalog");
+  const [collections, setCollections] = useState<any[]>([
+    { id: "col-1", name: "Sneakers & Footwear", description: "High-performance sneakers and footwear catalog", productCount: 12, isAutomated: true, status: "Active" },
+    { id: "col-2", name: "Apparel & Activewear", description: "Streetwear hoodies, t-shirts, and gym activewear", productCount: 24, isAutomated: false, status: "Active" },
+    { id: "col-3", name: "Streetwear Accessories", description: "Caps, backpacks, socks, and fitness gear", productCount: 8, isAutomated: true, status: "Active" },
+    { id: "col-4", name: "Limited Edition Drops", description: "Exclusive seasonal streetwear releases", productCount: 5, isAutomated: false, status: "Active" }
+  ]);
+  const [collectionForm, setCollectionForm] = useState<{ id?: string; name: string; description: string; status: string } | null>(null);
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([
+    { poNumber: "PO-2026-001", vendor: "Reebok Distribution", expectedDate: "2026-08-05", status: "Ordered", totalAmount: 45000, itemsCount: 50 },
+    { poNumber: "PO-2026-002", vendor: "Nike India Logistics", expectedDate: "2026-08-12", status: "Draft", totalAmount: 82000, itemsCount: 120 }
+  ]);
+  const [giftCards, setGiftCards] = useState<any[]>([
+    { code: "GC-8849-2026", initialValue: 2000, balance: 2000, customerEmail: "priya@gmail.com", status: "Active", createdAt: new Date().toISOString() },
+    { code: "GC-9102-2026", initialValue: 5000, balance: 1250, customerEmail: "rahul@outlook.com", status: "Active", createdAt: new Date().toISOString() }
+  ]);
 
   // Settings sub-tab navigation state
   const [settingsSubTab, setSettingsSubTab] = useState<string>("general");
@@ -2519,26 +2542,61 @@ export default function MerchantDashboard() {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
               return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
-                  title={sidebarCollapsed ? item.name : undefined}
-                  className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
-                    sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
-                  } ${
-                    isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                  }`}
-                >
-                  <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                  {!sidebarCollapsed && <span>{item.name}</span>}
-                  {!sidebarCollapsed && item.badge !== undefined && (
-                    <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
-                      {item.badge}
-                    </span>
+                <React.Fragment key={item.id}>
+                  <button
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      if (item.id === "products") {
+                        setProductsSubTab("catalog");
+                      }
+                    }}
+                    title={sidebarCollapsed ? item.name : undefined}
+                    className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
+                      sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
+                    } ${
+                      isActive
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                    }`}
+                  >
+                    <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                    {!sidebarCollapsed && <span>{item.name}</span>}
+                    {!sidebarCollapsed && item.badge !== undefined && (
+                      <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Sub-items for Products */}
+                  {item.id === "products" && isActive && !sidebarCollapsed && (
+                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                      {[
+                        { id: "collections", label: "Collections" },
+                        { id: "inventory", label: "Inventory" },
+                        { id: "purchase-orders", label: "Purchase orders" },
+                        { id: "transfers", label: "Transfers" },
+                        { id: "gift-cards", label: "Gift cards" },
+                      ].map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            setActiveTab("products");
+                            setProductsSubTab(sub.id as any);
+                            setProductForm(null);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                            productsSubTab === sub.id
+                              ? "bg-slate-100 text-slate-900 font-bold"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                </button>
+                </React.Fragment>
               );
             })}
           </nav>
@@ -3681,23 +3739,45 @@ export default function MerchantDashboard() {
           {/* 2. Products Tab */}
           {activeTab === "products" && (
             <div className="space-y-6">
-              {/* Header & Main Actions */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Product Catalog Management</h2>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
-                      Catalog Engine
-                    </span>
-                  </div>
-                  <p className="text-sm text-slate-500 mt-0.5">Manage your store products, pricing margins, stock inventory, variants, and SEO listing previews</p>
+              {/* Products Sub-Nav Bar (Shopify Standard Sub-Tabs) */}
+              <div className="bg-white p-1.5 border border-slate-200/90 rounded-2xl shadow-2xs flex flex-wrap items-center justify-between gap-3 select-none">
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
+                  {[
+                    { id: "catalog", label: "Products", icon: Package },
+                    { id: "collections", label: "Collections", icon: Layers },
+                    { id: "inventory", label: "Inventory", icon: Warehouse },
+                    { id: "purchase-orders", label: "Purchase Orders", icon: Truck },
+                    { id: "transfers", label: "Transfers", icon: ArrowRightLeft },
+                    { id: "gift-cards", label: "Gift Cards", icon: Gift },
+                  ].map((subTab) => {
+                    const SubIcon = subTab.icon;
+                    const isSubActive = productsSubTab === subTab.id;
+                    return (
+                      <button
+                        key={subTab.id}
+                        onClick={() => {
+                          setProductsSubTab(subTab.id as any);
+                          setProductForm(null);
+                        }}
+                        className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
+                          isSubActive
+                            ? "bg-slate-900 text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                        }`}
+                      >
+                        <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? "text-white" : "text-slate-400"}`} />
+                        <span>{subTab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
-                {!productForm && (
+
+                {productsSubTab === "catalog" && !productForm && (
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleExportProductsCSV}
                       disabled={products.length === 0}
-                      className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                      className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                     >
                       <Download className="h-3.5 w-3.5 text-slate-500" />
                       <span>Export CSV</span>
@@ -3728,11 +3808,20 @@ export default function MerchantDashboard() {
                           { name: "Color", values: [] },
                         ]);
                       }}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      className="flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
                     >
                       <Plus className="h-3.5 w-3.5" /> Add Product
                     </button>
                   </div>
+                )}
+
+                {productsSubTab === "collections" && (
+                  <button
+                    onClick={() => setCollectionForm({ name: "", description: "", status: "Active" })}
+                    className="flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Create Collection
+                  </button>
                 )}
               </div>
 
