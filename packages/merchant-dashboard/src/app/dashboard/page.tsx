@@ -7453,22 +7453,22 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
 
-                      {/* Mobile Phone Mockup Overlay Frame using Iphone14.svg */}
-                      <div className="hidden sm:block absolute right-4 -bottom-6 w-48 h-[310px] relative pointer-events-none drop-shadow-2xl transform rotate-1 hover:rotate-0 transition-transform duration-300">
-                        <div className="relative w-full h-full flex items-center justify-center">
-                          <img
-                            src="/Iphone14.svg"
-                            alt="iPhone 14 Mockup Frame"
-                            className="absolute inset-0 w-full h-full object-contain pointer-events-none z-20"
+                      {/* Mobile Phone Mockup Overlay Frame (iPhone 14 Dynamic Island Frame) */}
+                      <div className="hidden sm:block absolute right-4 -bottom-6 w-44 h-[300px] bg-slate-950 rounded-[38px] shadow-2xl border-[5px] border-slate-800 flex flex-col overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-300 ring-1 ring-slate-900/50">
+                        {/* Dynamic Island Notch */}
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black w-14 h-3.5 rounded-full z-20 flex items-center justify-end px-1.5 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600/80"></span>
+                        </div>
+                        {/* Speaker Earpiece Line */}
+                        <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 w-8 h-0.5 rounded-full z-20"></div>
+
+                        {/* Live Mobile Storefront Container */}
+                        <div className="relative w-full h-full pt-6 bg-white overflow-hidden rounded-[32px]">
+                          <iframe
+                            src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
+                            className="w-[375px] h-[667px] border-none bg-white origin-top-left scale-[0.40] pointer-events-none"
+                            title="Mobile Storefront Preview"
                           />
-                          {/* Inner Screen Area for Live Mobile Iframe */}
-                          <div className="absolute inset-x-[11%] top-[5.5%] bottom-[5.5%] rounded-[24px] overflow-hidden bg-white z-10">
-                            <iframe
-                              src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
-                              className="w-[375px] h-[667px] border-none bg-white origin-top-left scale-[0.38] pointer-events-none"
-                              title="Mobile Storefront Preview"
-                            />
-                          </div>
                         </div>
                       </div>
 
