@@ -62,7 +62,7 @@ export default function StepStore({ data, onChange, onNext, onBack }: StepStoreP
 
     const timeout = setTimeout(async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
         const res = await fetch(`${API_URL}/auth/merchant/check-subdomain?subdomain=${cleanSub}`);
         if (!res.ok) throw new Error();
         const resData = await res.json();

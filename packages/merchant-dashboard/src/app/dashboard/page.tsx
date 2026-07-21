@@ -70,7 +70,7 @@ import {
   Legend,
 } from "recharts";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
 const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "https";
 const getStorefrontLink = (subdomain: string) => {
@@ -1579,10 +1579,6 @@ export default function MerchantDashboard() {
     const targetOrder = orders.find((o) => o.orderId === orderId);
     if (targetOrder && (targetOrder.status === "delivered" || targetOrder.status === "cancelled")) {
       setActionError(`Order #${orderId.substring(0, 8).toUpperCase()} status is locked because it is already '${targetOrder.status}'. Altering completed/cancelled orders violates user transaction integrity.`);
-      return;
-    }
-
-    if (newStatus === "cancelled" && !confirm(`Are you sure you want to cancel Order #${orderId.substring(0, 8).toUpperCase()}? This action cannot be undone.`)) {
       return;
     }
 

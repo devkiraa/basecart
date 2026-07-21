@@ -17,7 +17,7 @@ export function getOptimizedImageUrl(
     return keyOrUrl;
   }
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
   const zoneUrl = process.env.NEXT_PUBLIC_CLOUDFLARE_ZONE_URL;
 
   const optionsMap: Record<string, ImageTransformOptions> = {
