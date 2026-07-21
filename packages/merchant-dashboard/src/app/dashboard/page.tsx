@@ -1083,6 +1083,40 @@ export default function MerchantDashboard() {
     }
   };
 
+  // Helper to auto-generate SKU based on product title or random string
+  const handleAutoGenerateSku = () => {
+    if (!productForm) return;
+    const namePart = (productForm.name || "ITEM")
+      .replace(/[^a-zA-Z0-9]/g, "")
+      .slice(0, 4)
+      .toUpperCase();
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const newSku = `SKU-${namePart || "PROD"}-${randomNum}`;
+    setProductForm((prev: any) => ({ ...prev, sku: newSku }));
+  };
+
+  // Helper to auto-generate 13-digit EAN-13 barcode with valid check digit
+  const handleAutoGenerateBarcode = () => {
+    if (!productForm) return;
+    const randomDigits = Math.floor(100000000 + Math.random() * 900000000).toString();
+    const raw12 = `890${randomDigits}`;
+    let sumEven = 0;
+    let sumOdd = 0;
+    for (let i = 0; i < 12; i++) {
+      const digit = parseInt(raw12[i], 10);
+      if (i % 2 === 0) {
+        sumOdd += digit;
+      } else {
+        sumEven += digit;
+      }
+    }
+    const total = sumOdd + sumEven * 3;
+    const checkDigit = (10 - (total % 10)) % 10;
+    const newBarcode = `${raw12}${checkDigit}`;
+
+    setProductForm((prev: any) => ({ ...prev, barcode: newBarcode }));
+  };
+
   // S3 Presigned Direct Image Upload implementation
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, prodId: string) => {
     const file = e.target.files?.[0];
@@ -2942,9 +2976,18 @@ export default function MerchantDashboard() {
                             )}
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">
-                              SKU
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-xs font-semibold text-slate-600">
+                                SKU
+                              </label>
+                              <button
+                                type="button"
+                                onClick={handleAutoGenerateSku}
+                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Sparkles className="h-3 w-3" /> Auto-generate
+                              </button>
+                            </div>
                             <input
                               type="text"
                               placeholder="SKU-POLO-M"
@@ -2954,12 +2997,21 @@ export default function MerchantDashboard() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">
-                              Barcode
-                            </label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-xs font-semibold text-slate-600">
+                                Barcode
+                              </label>
+                              <button
+                                type="button"
+                                onClick={handleAutoGenerateBarcode}
+                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"
+                              >
+                                <Sparkles className="h-3 w-3" /> Auto-generate
+                              </button>
+                            </div>
                             <input
                               type="text"
-                              placeholder="8901234567"
+                              placeholder="8901234567890"
                               value={productForm.barcode || ""}
                               onChange={(e) => setProductForm({ ...productForm, barcode: e.target.value })}
                               className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
@@ -3145,28 +3197,55 @@ export default function MerchantDashboard() {
                       </div>
 
                       {/* Card 7: Search Engine Listing Preview */}
-                      <div className="bg-white p-6 rounded-card border border-slate-200 shadow-sm space-y-4">
-                        <div>
-                          <h3 className="text-sm font-semibold text-slate-900">Search Engine Listing Preview</h3>
-                          <p className="text-xs text-slate-500">Configure page meta tags showing on Google search queries.</p>
+                      <div className="bg-white p-6 rounded-card border border-slate-200 shadow-sm space-y-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-900">Search Engine Listing Preview</h3>
+                            <p className="text-xs text-slate-500">Configure page meta tags showing on Google search queries.</p>
+                          </div>
+                          <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-100 uppercase tracking-wider">
+                            Google SERP Preview
+                          </span>
                         </div>
 
-                        {/* Google Result Preview Mockup */}
-                        <div className="p-4 border border-slate-100 rounded-card bg-slate-50 space-y-1">
-                          <div className="text-xs text-slate-500 truncate">
-                            https://{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}/products/{(productForm.name || "slug").toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                        {/* Pixel-perfect Google Result Preview Mockup */}
+                        <div className="p-5 border border-slate-200/80 rounded-xl bg-slate-50/50 space-y-2 select-none">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5 overflow-hidden">
+                              <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 text-[11px] font-bold shrink-0 border border-slate-300">
+                                {(settings.storeName || "B").charAt(0).toUpperCase()}
+                              </div>
+                              <div className="flex flex-col min-w-0">
+                                <span className="text-[13px] font-medium text-slate-900 truncate leading-none">
+                                  {settings.storeName || "Basecart Store"}
+                                </span>
+                                <span className="text-[11px] text-slate-500 truncate leading-normal">
+                                  https://{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN} › products › {(productForm.name || "product-slug").toLowerCase().replace(/[^a-z0-9]+/g, "-")}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-slate-400 p-1 shrink-0">
+                              <MoreVertical className="h-4 w-4" />
+                            </div>
                           </div>
-                          <div className="text-md text-blue-800 hover:underline cursor-pointer truncate font-medium">
-                            {productForm.seoTitle || productForm.name || "Product Name Display"}
-                          </div>
-                          <div className="text-xs text-slate-600 line-clamp-2">
-                            {productForm.seoDescription || productForm.description || "Describe your product attributes to improve listing clicks."}
-                          </div>
+
+                          <h4 className="text-[18px] font-normal text-[#1a0dab] hover:underline cursor-pointer truncate tracking-tight pt-1 leading-snug">
+                            {productForm.seoTitle || productForm.name || "Product Name Display - Buy Online"}
+                          </h4>
+
+                          <p className="text-[13px] text-[#4d5156] line-clamp-2 leading-relaxed font-normal">
+                            {productForm.seoDescription || (productForm.description ? productForm.description.replace(/<[^>]*>?/gm, "").trim() : "Describe your product attributes to improve search engine listing clicks and drive organic storefront traffic.")}
+                          </p>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">SEO Title</label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-xs font-semibold text-slate-600">SEO Title</label>
+                              <span className={`text-[10px] font-medium ${(productForm.seoTitle?.length || 0) > 70 ? 'text-red-500 font-bold' : (productForm.seoTitle?.length || 0) > 60 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                {productForm.seoTitle?.length || 0} / 70 chars
+                              </span>
+                            </div>
                             <input
                               type="text"
                               maxLength={70}
@@ -3175,18 +3254,21 @@ export default function MerchantDashboard() {
                               onChange={(e) => setProductForm({ ...productForm, seoTitle: e.target.value })}
                               className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600"
                             />
-                            <span className="text-[10px] text-slate-400">Max 70 chars</span>
                           </div>
                           <div>
-                            <label className="block text-xs font-semibold text-slate-600 mb-1">SEO Description</label>
+                            <div className="flex items-center justify-between mb-1">
+                              <label className="block text-xs font-semibold text-slate-600">SEO Description</label>
+                              <span className={`text-[10px] font-medium ${(productForm.seoDescription?.length || 0) > 160 ? 'text-red-500 font-bold' : (productForm.seoDescription?.length || 0) > 150 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                {productForm.seoDescription?.length || 0} / 160 chars
+                              </span>
+                            </div>
                             <textarea
                               maxLength={160}
-                              placeholder={productForm.description || "Fall back to product description"}
+                              placeholder={productForm.description ? productForm.description.replace(/<[^>]*>?/gm, "").trim() : "Fall back to product description"}
                               value={productForm.seoDescription || ""}
                               onChange={(e) => setProductForm({ ...productForm, seoDescription: e.target.value })}
-                              className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600 h-16"
+                              className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600 h-20"
                             />
-                            <span className="text-[10px] text-slate-400">Max 160 chars</span>
                           </div>
                         </div>
                       </div>
