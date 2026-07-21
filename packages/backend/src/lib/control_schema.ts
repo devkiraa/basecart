@@ -110,6 +110,17 @@ CREATE TABLE IF NOT EXISTS email_logs (
   errorMessage TEXT
 );
 
+CREATE TABLE IF NOT EXISTS merchant_notifications (
+  id TEXT PRIMARY KEY,
+  tenantId TEXT NOT NULL,
+  title TEXT NOT NULL,
+  desc TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'info',
+  actionUrl TEXT,
+  read INTEGER NOT NULL DEFAULT 0,
+  createdAt TEXT NOT NULL
+);
+
 -- B-Tree Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants (subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
@@ -124,4 +135,5 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens (userId);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens (expiresAt);
 CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs (recipient);
 CREATE INDEX IF NOT EXISTS idx_email_logs_template ON email_logs (template);
+CREATE INDEX IF NOT EXISTS idx_merchant_notifications_tenant ON merchant_notifications (tenantId, createdAt DESC);
 `;

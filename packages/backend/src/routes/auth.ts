@@ -664,6 +664,127 @@ app.get("/auth/merchant/verify-email", async (c) => {
   return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?verified=true`);
 });
 
+/**
+ * Fetch Merchant Notifications (D1 + Smart System Triggers)
+ */
+app.get("/merchant/notifications", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const email = c.get("user")!.email;
+  const controlDb = getControlDb(c.env);
+
+  // 1. Fetch user & tenant details from control DB
+  const user = await controlDb
+    .prepare("SELECT emailVerified FROM merchant_users WHERE email = ? AND tenantId = ?")
+    .bind(email, tenantId)
+    .first<{ emailVerified: number }>();
+
+  const tenant = await controlDb
+    .prepare("SELECT plan, razorpayKeyId, createdAt FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ plan: string; razorpayKeyId: string; createdAt: string }>();
+
+  // 2. Fetch DB stored notifications
+  const dbNotifs = await controlDb
+    .prepare("SELECT * FROM merchant_notifications WHERE tenantId = ? ORDER BY createdAt DESC LIMIT 20")
+    .bind(tenantId)
+    .all<any>();
+
+  const result: any[] = (dbNotifs.results || []).map((n) => ({
+    id: n.id,
+    title: n.title,
+    desc: n.desc,
+    type: n.type || "info",
+    actionUrl: n.actionUrl || null,
+    read: n.read === 1,
+    createdAt: n.createdAt,
+  }));
+
+  // 3. Auto-generate smart system notifications if missing
+  const isEmailVerified = user?.emailVerified === 1;
+  const nowStr = new Date().toISOString();
+
+  if (!isEmailVerified && !result.some((n) => n.id === "sys-verify")) {
+    result.unshift({
+      id: "sys-verify",
+      title: "Email Verification Required ⚠️",
+      desc: "Please enter your 6-digit OTP code to verify your email and activate live storefront access.",
+      type: "warning",
+      actionUrl: "#verify",
+      read: false,
+      createdAt: nowStr,
+    });
+  }
+
+  if (!tenant?.razorpayKeyId && !result.some((n) => n.id === "sys-razorpay")) {
+    result.push({
+      id: "sys-razorpay",
+      title: "Razorpay Integration Pending 💳",
+      desc: "Configure your Razorpay Key ID in Settings to accept live payments on your storefront.",
+      type: "info",
+      actionUrl: "#settings",
+      read: false,
+      createdAt: tenant?.createdAt || nowStr,
+    });
+  }
+
+  if ((tenant?.plan === "free" || tenant?.plan === "starter") && !result.some((n) => n.id === "sys-plan")) {
+    result.push({
+      id: "sys-plan",
+      title: "Plan Upgrade Available ⚡",
+      desc: "Upgrade to the Growth or Pro plan to unlock custom domain mapping and automated Shiprocket shipping.",
+      type: "plan",
+      actionUrl: "#billing",
+      read: false,
+      createdAt: tenant?.createdAt || nowStr,
+    });
+  }
+
+  if (!result.some((n) => n.id === "sys-welcome")) {
+    result.push({
+      id: "sys-welcome",
+      title: "Welcome to Basecart! 🛍️",
+      desc: "Your store design and isolated SQLite database are fully provisioned and ready.",
+      type: "system",
+      actionUrl: "#summary",
+      read: true,
+      createdAt: tenant?.createdAt || nowStr,
+    });
+  }
+
+  return c.json({ notifications: result });
+});
+
+/**
+ * Mark Single Notification as Read
+ */
+app.post("/merchant/notifications/:id/read", authenticateMerchant, async (c) => {
+  const notifId = c.req.param("id");
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+
+  await controlDb
+    .prepare("UPDATE merchant_notifications SET read = 1 WHERE id = ? AND tenantId = ?")
+    .bind(notifId, tenantId)
+    .run();
+
+  return c.json({ success: true });
+});
+
+/**
+ * Mark All Merchant Notifications as Read
+ */
+app.post("/merchant/notifications/read-all", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+
+  await controlDb
+    .prepare("UPDATE merchant_notifications SET read = 1 WHERE tenantId = ?")
+    .bind(tenantId)
+    .run();
+
+  return c.json({ success: true });
+});
+
 // -------------------------------------------------------------
 // 2. Customer Auth Endpoints (Storefront-scoped)
 // -------------------------------------------------------------

@@ -372,10 +372,8 @@ export default function MerchantDashboard() {
   const [themeToPreview, setThemeToPreview] = useState<any>(null);
   const [previewDevice, setPreviewDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   
-  const [notifications, setNotifications] = useState([
-    { id: 1, title: "Welcome to Basecart! 🎉", desc: "Start by adding your first product to list it on your storefront.", read: false },
-    { id: 2, title: "Razorpay integration pending", desc: "Configure your Razorpay key ID and secret key in settings to accept active payments.", read: false },
-    { id: 3, title: "Store launch ready", desc: "Your store design is ready! Share your subdomain URL with customers.", read: false }
+  const [notifications, setNotifications] = useState<any[]>([
+    { id: "sys-welcome", title: "Welcome to Basecart! 🛍️", desc: "Your store design and isolated SQLite database are fully provisioned and ready.", read: true, type: "system", actionUrl: "#summary" },
   ]);
 
   const [isHydrated, setIsHydrated] = useState(false);
@@ -562,8 +560,49 @@ export default function MerchantDashboard() {
           if (Array.isArray(data)) setMerchantStores(data);
         })
         .catch(console.error);
+
+      // Fetch persistent & smart system merchant notifications
+      fetch(`${API_URL}/merchant/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.notifications && Array.isArray(data.notifications)) {
+            setNotifications(data.notifications);
+          }
+        })
+        .catch(console.error);
     }
   }, [token]);
+
+  const handleMarkAllNotificationsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    if (!token) return;
+    try {
+      await fetch(`${API_URL}/merchant/notifications/read-all`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleMarkNotificationRead = async (id: string | number) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    if (!token) return;
+    try {
+      await fetch(`${API_URL}/merchant/notifications/${id}/read`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Fetch data when token is loaded
   useEffect(() => {
@@ -1926,7 +1965,7 @@ export default function MerchantDashboard() {
                     <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                       <span className="text-xs font-bold text-slate-900">Notifications</span>
                       <button
-                        onClick={() => setNotifications(notifications.map(n => ({ ...n, read: true })))}
+                        onClick={handleMarkAllNotificationsRead}
                         className="text-[11px] text-blue-600 font-bold hover:underline cursor-pointer"
                       >
                         Mark all read
@@ -1936,7 +1975,16 @@ export default function MerchantDashboard() {
                       {notifications.map((n) => (
                         <div
                           key={n.id}
-                          onClick={() => setNotifications(notifications.map(item => item.id === n.id ? { ...item, read: true } : item))}
+                          onClick={() => {
+                            handleMarkNotificationRead(n.id);
+                            if (n.actionUrl === "#verify") {
+                              setShowOtpModal(true);
+                              setIsNotificationsOpen(false);
+                            } else if (n.actionUrl && n.actionUrl.startsWith("#")) {
+                              setActiveTab(n.actionUrl.replace("#", "") as any);
+                              setIsNotificationsOpen(false);
+                            }
+                          }}
                           className={`pt-2.5 first:pt-0 cursor-pointer group ${n.read ? "opacity-60" : ""}`}
                         >
                           <div className="flex items-start justify-between gap-2">
