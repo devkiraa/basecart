@@ -4998,319 +4998,6 @@ export default function MerchantDashboard() {
                   </>
                 );
               })()}
-
-              {/* DEDICATED FULFILL ORDER MODAL */}
-              {fulfillingOrder && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5">
-                    {/* Modal Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                          <Package className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">Fulfill & Dispatch Order</h3>
-                          <p className="text-xs text-slate-400 font-mono">#{fulfillingOrder.orderId.substring(0, 12).toUpperCase()}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setFulfillingOrder(null)}
-                        className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    {/* Customer & Address Summary */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
-                      <div className="flex justify-between items-center font-bold text-slate-900">
-                        <span>Recipient: {fulfillingOrder.customerInfo?.name || "Customer"}</span>
-                        <span className="text-slate-500 font-mono">{fulfillingOrder.customerInfo?.phone || "No phone"}</span>
-                      </div>
-                      {fulfillingOrder.customerInfo?.address && (
-                        <div className="text-slate-600 text-[11px] leading-snug pt-1 border-t border-slate-200/60">
-                          📍 {fulfillingOrder.customerInfo.address.street}, {fulfillingOrder.customerInfo.address.city}, {fulfillingOrder.customerInfo.address.state} - {fulfillingOrder.customerInfo.address.pincode}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Items to ship */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Items to Dispatch ({fulfillingOrder.lineItems?.length || 0})</label>
-                      <div className="bg-white border border-slate-200 rounded-xl max-h-36 overflow-y-auto divide-y divide-slate-100 text-xs">
-                        {(fulfillingOrder.lineItems || []).map((item: any, idx: number) => (
-                          <div key={idx} className="p-2.5 flex justify-between items-center">
-                            <div>
-                              <p className="font-bold text-slate-900">{item.name}</p>
-                              {item.sku && <p className="text-[10px] text-slate-400 font-mono">SKU: {item.sku}</p>}
-                            </div>
-                            <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-bold">Qty: {item.quantity || 1}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Fulfillment Inputs */}
-                    <div className="space-y-3 pt-1">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Logistics / Courier Partner
-                        </label>
-                        <select
-                          value={fulfillmentCarrier}
-                          onChange={(e) => setFulfillmentCarrier(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="Shiprocket">Shiprocket (Automated API / Partner)</option>
-                          <option value="Blue Dart">Blue Dart</option>
-                          <option value="Delhivery">Delhivery</option>
-                          <option value="DTDC">DTDC</option>
-                          <option value="FedEx">FedEx</option>
-                          <option value="India Post">India Post</option>
-                          <option value="DHL">DHL Express</option>
-                          <option value="Custom Courier">Custom Courier / Local Logistics</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Tracking Number / AWB Code
-                        </label>
-                        <input
-                          type="text"
-                          value={fulfillmentTracking}
-                          onChange={(e) => setFulfillmentTracking(e.target.value)}
-                          placeholder="e.g. AWB9876543210"
-                          className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                        />
-                      </div>
-
-                      <div className="flex items-center gap-2 pt-1">
-                        <input
-                          type="checkbox"
-                          id="notifyCustomer"
-                          checked={fulfillmentNotify}
-                          onChange={(e) => setFulfillmentNotify(e.target.checked)}
-                          className="rounded text-blue-600 focus:ring-blue-500"
-                        />
-                        <label htmlFor="notifyCustomer" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                          Send dispatch notification with tracking details via Email & WhatsApp
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => setFulfillingOrder(null)}
-                        className="px-4 py-2 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-lg transition-colors cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!fulfillingOrder) return;
-                          await updateOrderStatus(
-                            fulfillingOrder.orderId,
-                            "shipped",
-                            fulfillmentTracking || undefined,
-                            fulfillmentCarrier || undefined
-                          );
-                          setFulfillingOrder(null);
-                          setFulfillmentTracking("");
-                        }}
-                        disabled={loading}
-                        className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
-                      >
-                        <Package className="h-4 w-4" />
-                        <span>{loading ? "Fulfilling..." : "Confirm & Dispatch Order"}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Order Detail Slide-Over / Modal */}
-              {selectedOrderForDetail && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-                  <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-black text-slate-900 font-mono">
-                            Order #{selectedOrderForDetail.orderId.substring(0, 12).toUpperCase()}
-                          </h3>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
-                            selectedOrderForDetail.status === "paid" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-700"
-                          }`}>
-                            {selectedOrderForDetail.status}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-400 font-medium mt-0.5">
-                          Placed on {new Date(selectedOrderForDetail.createdAt).toLocaleString("en-IN")}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => setSelectedOrderForDetail(null)}
-                        className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    {/* Customer & Shipping Address Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                      <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Customer Details</p>
-                        <p className="font-bold text-slate-900 text-sm">{selectedOrderForDetail.customerInfo?.name || "N/A"}</p>
-                        <p className="text-slate-600">{selectedOrderForDetail.customerInfo?.email || "No email"}</p>
-                        <p className="text-slate-600 font-mono">{selectedOrderForDetail.customerInfo?.phone || "No phone"}</p>
-                      </div>
-
-                      <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 space-y-1">
-                        <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Delivery Address</p>
-                        {selectedOrderForDetail.customerInfo?.address ? (
-                          <div className="text-slate-700 leading-snug">
-                            <p className="font-semibold">{selectedOrderForDetail.customerInfo.address.street}</p>
-                            <p>{selectedOrderForDetail.customerInfo.address.city}, {selectedOrderForDetail.customerInfo.address.state} - {selectedOrderForDetail.customerInfo.address.pincode}</p>
-                            <p className="font-bold text-slate-500 text-[10px] uppercase">{selectedOrderForDetail.customerInfo.address.country}</p>
-                          </div>
-                        ) : (
-                          <p className="text-slate-400 italic">No delivery address provided.</p>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Line Items Table */}
-                    <div className="space-y-2">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Ordered Items</h4>
-                      <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
-                        <table className="min-w-full divide-y divide-slate-100 text-left">
-                          <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
-                            <tr>
-                              <th className="p-3">Product</th>
-                              <th className="p-3">SKU</th>
-                              <th className="p-3">Qty</th>
-                              <th className="p-3 text-right">Price</th>
-                              <th className="p-3 text-right">Total</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                            {(selectedOrderForDetail.lineItems || []).map((item: any, idx: number) => (
-                              <tr key={idx}>
-                                <td className="p-3 font-bold text-slate-900">{item.name}</td>
-                                <td className="p-3 font-mono text-[10px] text-slate-400">{item.sku || "N/A"}</td>
-                                <td className="p-3 font-bold text-slate-800">{item.quantity || 1}</td>
-                                <td className="p-3 text-right">{formatINR(item.price)}</td>
-                                <td className="p-3 text-right font-black text-slate-900">{formatINR(item.price * (item.quantity || 1))}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                    {/* Price Breakdown */}
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
-                      <div className="flex justify-between text-slate-600">
-                        <span>Subtotal</span>
-                        <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.subtotal || selectedOrderForDetail.total)}</span>
-                      </div>
-                      {selectedOrderForDetail.shippingFee > 0 && (
-                        <div className="flex justify-between text-slate-600">
-                          <span>Shipping Fee</span>
-                          <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.shippingFee)}</span>
-                        </div>
-                      )}
-                      {selectedOrderForDetail.tax > 0 && (
-                        <div className="flex justify-between text-slate-600">
-                          <span>GST Tax</span>
-                          <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.tax)}</span>
-                        </div>
-                      )}
-                      {selectedOrderForDetail.discount > 0 && (
-                        <div className="flex justify-between text-emerald-600 font-bold">
-                          <span>Discount Applied</span>
-                          <span>-{formatINR(selectedOrderForDetail.discount)}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-slate-900 font-extrabold text-sm border-t border-slate-200 pt-2">
-                        <span>Total Paid</span>
-                        <span className="text-blue-600">{formatINR(selectedOrderForDetail.total)}</span>
-                      </div>
-                    </div>
-
-                    {/* Actions Footer */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <label className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                          <span>Status:</span>
-                          {selectedOrderForDetail.status === "paid" && (
-                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                              🔒 Payment Confirmed
-                            </span>
-                          )}
-                        </label>
-                        <select
-                          value={selectedOrderForDetail.status}
-                          disabled={selectedOrderForDetail.status === "delivered" || selectedOrderForDetail.status === "cancelled"}
-                          onChange={async (e) => {
-                            const newStatus = e.target.value;
-                            await updateOrderStatus(selectedOrderForDetail.orderId, newStatus);
-                            setSelectedOrderForDetail((prev: any) => ({ ...prev, status: newStatus }));
-                          }}
-                          className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
-                        >
-                          <option value="pending" disabled={selectedOrderForDetail.status !== "pending"}>
-                            Pending {selectedOrderForDetail.status !== "pending" ? "(Locked)" : ""}
-                          </option>
-                          <option value="paid" disabled={selectedOrderForDetail.status === "shipped"}>
-                            Paid
-                          </option>
-                          <option value="shipped">Shipped</option>
-                          <option value="delivered">Delivered (Locked)</option>
-                          <option value="cancelled">Cancelled (Locked)</option>
-                        </select>
-                      </div>
-
-                      <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                        {(selectedOrderForDetail.status === "paid" || selectedOrderForDetail.status === "pending") && (
-                          <button
-                            onClick={() => {
-                              const ord = selectedOrderForDetail;
-                              setSelectedOrderForDetail(null);
-                              setFulfillingOrder(ord);
-                              setFulfillmentCarrier("Shiprocket");
-                              setFulfillmentTracking("");
-                            }}
-                            className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                          >
-                            <Package className="h-3.5 w-3.5" />
-                            <span>Fulfill Order</span>
-                          </button>
-                        )}
-                        <button
-                          onClick={() => handleDownloadOrderInvoice(selectedOrderForDetail)}
-                          className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          <span>GST Invoice</span>
-                        </button>
-                        <button
-                          onClick={() => setSelectedOrderForDetail(null)}
-                          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors cursor-pointer"
-                        >
-                          Close
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -7553,9 +7240,322 @@ export default function MerchantDashboard() {
         })}
       </div>
 
+      {/* DEDICATED FULFILL ORDER MODAL */}
+      {fulfillingOrder && (
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Package className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Fulfill & Dispatch Order</h3>
+                  <p className="text-xs text-slate-400 font-mono">#{fulfillingOrder.orderId.substring(0, 12).toUpperCase()}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFulfillingOrder(null)}
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Customer & Address Summary */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-1.5 text-xs">
+              <div className="flex justify-between items-center font-bold text-slate-900">
+                <span>Recipient: {fulfillingOrder.customerInfo?.name || "Customer"}</span>
+                <span className="text-slate-500 font-mono">{fulfillingOrder.customerInfo?.phone || "No phone"}</span>
+              </div>
+              {fulfillingOrder.customerInfo?.address && (
+                <div className="text-slate-600 text-[11px] leading-snug pt-1 border-t border-slate-200/60">
+                  📍 {fulfillingOrder.customerInfo.address.street}, {fulfillingOrder.customerInfo.address.city}, {fulfillingOrder.customerInfo.address.state} - {fulfillingOrder.customerInfo.address.pincode}
+                </div>
+              )}
+            </div>
+
+            {/* Items to ship */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-600 uppercase tracking-wider">Items to Dispatch ({fulfillingOrder.lineItems?.length || 0})</label>
+              <div className="bg-white border border-slate-200 rounded-xl max-h-36 overflow-y-auto divide-y divide-slate-100 text-xs">
+                {(fulfillingOrder.lineItems || []).map((item: any, idx: number) => (
+                  <div key={idx} className="p-2.5 flex justify-between items-center">
+                    <div>
+                      <p className="font-bold text-slate-900">{item.name}</p>
+                      {item.sku && <p className="text-[10px] text-slate-400 font-mono">SKU: {item.sku}</p>}
+                    </div>
+                    <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-bold">Qty: {item.quantity || 1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Fulfillment Inputs */}
+            <div className="space-y-3 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Logistics / Courier Partner
+                </label>
+                <select
+                  value={fulfillmentCarrier}
+                  onChange={(e) => setFulfillmentCarrier(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Shiprocket">Shiprocket (Automated API / Partner)</option>
+                  <option value="Blue Dart">Blue Dart</option>
+                  <option value="Delhivery">Delhivery</option>
+                  <option value="DTDC">DTDC</option>
+                  <option value="FedEx">FedEx</option>
+                  <option value="India Post">India Post</option>
+                  <option value="DHL">DHL Express</option>
+                  <option value="Custom Courier">Custom Courier / Local Logistics</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Tracking Number / AWB Code
+                </label>
+                <input
+                  type="text"
+                  value={fulfillmentTracking}
+                  onChange={(e) => setFulfillmentTracking(e.target.value)}
+                  placeholder="e.g. AWB9876543210"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="notifyCustomer"
+                  checked={fulfillmentNotify}
+                  onChange={(e) => setFulfillmentNotify(e.target.checked)}
+                  className="rounded text-blue-600 focus:ring-blue-500"
+                />
+                <label htmlFor="notifyCustomer" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                  Send dispatch notification with tracking details via Email & WhatsApp
+                </label>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setFulfillingOrder(null)}
+                className="px-4 py-2 text-slate-600 hover:bg-slate-100 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!fulfillingOrder) return;
+                  await updateOrderStatus(
+                    fulfillingOrder.orderId,
+                    "shipped",
+                    fulfillmentTracking || undefined,
+                    fulfillmentCarrier || undefined
+                  );
+                  setFulfillingOrder(null);
+                  setFulfillmentTracking("");
+                }}
+                disabled={loading}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-60"
+              >
+                <Package className="h-4 w-4" />
+                <span>{loading ? "Fulfilling..." : "Confirm & Dispatch Order"}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Order Detail Modal */}
+      {selectedOrderForDetail && (
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-black text-slate-900 font-mono">
+                    Order #{selectedOrderForDetail.orderId.substring(0, 12).toUpperCase()}
+                  </h3>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                    selectedOrderForDetail.status === "paid" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-700"
+                  }`}>
+                    {selectedOrderForDetail.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-medium mt-0.5">
+                  Placed on {new Date(selectedOrderForDetail.createdAt).toLocaleString("en-IN")}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedOrderForDetail(null)}
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Customer & Shipping Address Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Customer Details</p>
+                <p className="font-bold text-slate-900 text-sm">{selectedOrderForDetail.customerInfo?.name || "N/A"}</p>
+                <p className="text-slate-600">{selectedOrderForDetail.customerInfo?.email || "No email"}</p>
+                <p className="text-slate-600 font-mono">{selectedOrderForDetail.customerInfo?.phone || "No phone"}</p>
+              </div>
+
+              <div className="bg-slate-50/70 border border-slate-100 rounded-xl p-3.5 space-y-1">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Delivery Address</p>
+                {selectedOrderForDetail.customerInfo?.address ? (
+                  <div className="text-slate-700 leading-snug">
+                    <p className="font-semibold">{selectedOrderForDetail.customerInfo.address.street}</p>
+                    <p>{selectedOrderForDetail.customerInfo.address.city}, {selectedOrderForDetail.customerInfo.address.state} - {selectedOrderForDetail.customerInfo.address.pincode}</p>
+                    <p className="font-bold text-slate-500 text-[10px] uppercase">{selectedOrderForDetail.customerInfo.address.country}</p>
+                  </div>
+                ) : (
+                  <p className="text-slate-400 italic">No delivery address provided.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Line Items Table */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Ordered Items</h4>
+              <div className="border border-slate-200 rounded-xl overflow-hidden text-xs">
+                <table className="min-w-full divide-y divide-slate-100 text-left">
+                  <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-400">
+                    <tr>
+                      <th className="p-3">Product</th>
+                      <th className="p-3">SKU</th>
+                      <th className="p-3">Qty</th>
+                      <th className="p-3 text-right">Price</th>
+                      <th className="p-3 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                    {(selectedOrderForDetail.lineItems || []).map((item: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="p-3 font-bold text-slate-900">{item.name}</td>
+                        <td className="p-3 font-mono text-[10px] text-slate-400">{item.sku || "N/A"}</td>
+                        <td className="p-3 font-bold text-slate-800">{item.quantity || 1}</td>
+                        <td className="p-3 text-right">{formatINR(item.price)}</td>
+                        <td className="p-3 text-right font-black text-slate-900">{formatINR(item.price * (item.quantity || 1))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Price Breakdown */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal</span>
+                <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.subtotal || selectedOrderForDetail.total)}</span>
+              </div>
+              {selectedOrderForDetail.shippingFee > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>Shipping Fee</span>
+                  <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.shippingFee)}</span>
+                </div>
+              )}
+              {selectedOrderForDetail.tax > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span>GST Tax</span>
+                  <span className="font-semibold text-slate-800">{formatINR(selectedOrderForDetail.tax)}</span>
+                </div>
+              )}
+              {selectedOrderForDetail.discount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-bold">
+                  <span>Discount Applied</span>
+                  <span>-{formatINR(selectedOrderForDetail.discount)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-slate-900 font-extrabold text-sm border-t border-slate-200 pt-2">
+                <span>Total Paid</span>
+                <span className="text-blue-600">{formatINR(selectedOrderForDetail.total)}</span>
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <label className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                  <span>Status:</span>
+                  {selectedOrderForDetail.status === "paid" && (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                      🔒 Payment Confirmed
+                    </span>
+                  )}
+                </label>
+                <select
+                  value={selectedOrderForDetail.status}
+                  disabled={selectedOrderForDetail.status === "delivered" || selectedOrderForDetail.status === "cancelled"}
+                  onChange={async (e) => {
+                    const newStatus = e.target.value;
+                    await updateOrderStatus(selectedOrderForDetail.orderId, newStatus);
+                    setSelectedOrderForDetail((prev: any) => ({ ...prev, status: newStatus }));
+                  }}
+                  className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <option value="pending" disabled={selectedOrderForDetail.status !== "pending"}>
+                    Pending {selectedOrderForDetail.status !== "pending" ? "(Locked)" : ""}
+                  </option>
+                  <option value="paid" disabled={selectedOrderForDetail.status === "shipped"}>
+                    Paid
+                  </option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered (Locked)</option>
+                  <option value="cancelled">Cancelled (Locked)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                {(selectedOrderForDetail.status === "paid" || selectedOrderForDetail.status === "pending") && (
+                  <button
+                    onClick={() => {
+                      const ord = selectedOrderForDetail;
+                      setSelectedOrderForDetail(null);
+                      setFulfillingOrder(ord);
+                      setFulfillmentCarrier("Shiprocket");
+                      setFulfillmentTracking("");
+                    }}
+                    className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Package className="h-3.5 w-3.5" />
+                    <span>Fulfill Order</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDownloadOrderInvoice(selectedOrderForDetail)}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-lg shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  <span>GST Invoice</span>
+                </button>
+                <button
+                  onClick={() => setSelectedOrderForDetail(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-lg transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* OTP Verification Modal */}
       {showOtpModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in select-none">
+        <div className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-100 space-y-5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
