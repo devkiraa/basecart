@@ -172,6 +172,87 @@ app.get("/orders", authenticateMerchant, async (c) => {
 });
 
 /**
+ * Create Sample / Test Order (Merchant-only)
+ */
+app.post("/orders/sample", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const now = new Date().toISOString();
+  const orderId = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
+
+  const customerInfo = {
+    name: "Aarav Sharma",
+    email: "aarav.sharma@example.com",
+    phone: "+91 98765 43210",
+    address: {
+      street: "42 MG Road, Koramangala",
+      city: "Bengaluru",
+      state: "Karnataka",
+      pincode: "560034",
+      country: "India",
+    },
+  };
+
+  const sampleItems = [
+    {
+      productId: "prod_sample_1",
+      name: "Premium Cotton Oversized T-Shirt",
+      sku: "SKU-COT-BLACK-L",
+      price: 999,
+      quantity: 2,
+    },
+    {
+      productId: "prod_sample_2",
+      name: "Classic Denim Jacket",
+      sku: "SKU-JKT-BLUE-XL",
+      price: 2499,
+      quantity: 1,
+    },
+  ];
+
+  const subtotal = 4497;
+  const tax = 225;
+  const shippingFee = 99;
+  const discount = 321;
+  const total = subtotal + tax + shippingFee - discount;
+
+  await tenantDb
+    .prepare(
+      `INSERT INTO orders (orderId, tenantId, customerInfo, subtotal, tax, shippingFee, discount, total, status, paymentMethod, paymentId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(
+      orderId,
+      tenantId,
+      JSON.stringify(customerInfo),
+      subtotal,
+      tax,
+      shippingFee,
+      discount,
+      total,
+      "paid",
+      "Razorpay",
+      `pay_${Math.random().toString(36).slice(2, 12)}`,
+      now,
+      now
+    )
+    .run();
+
+  for (const item of sampleItems) {
+    const itemId = `item_${Math.random().toString(36).slice(2, 10)}`;
+    await tenantDb
+      .prepare(
+        `INSERT INTO order_items (itemId, orderId, productId, name, sku, price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(itemId, orderId, item.productId, item.name, item.sku, item.price, item.quantity)
+      .run();
+  }
+
+  return c.json({ message: "Sample order created successfully", orderId }, 201);
+});
+
+/**
  * Get Order Details
  */
 app.get("/orders/:id", authenticateMerchant, async (c) => {
