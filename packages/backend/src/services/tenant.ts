@@ -99,12 +99,13 @@ export async function provisionTenantDatabase(
     pageContent: JSON.stringify({
       home: {
         heroTitle: "BUILT FOR PERFORMANCE",
-        heroSubtext: "Premium active gear for those who never compromise.",
-        ctaText: "SHOP NOW"
+        heroSubtext: "Discover our premium selection of footwear, streetwear, and activewear engineered for high performance.",
+        ctaText: "SHOP COLLECTION",
+        secondaryCtaText: "EXPLORE CATALOG"
       },
       catalog: {
         pageTitle: "Latest Catalog Arrivals",
-        pageSubtext: "Discover our premium selection of sports goods and apparel."
+        pageSubtext: "Discover our premium selection of footwear and apparel."
       },
       checkout: {
         pageTitle: "Secure Stripe & Razorpay Checkout",
