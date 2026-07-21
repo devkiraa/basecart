@@ -73,10 +73,29 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     customDomain: store.customDomain || "",
     plan: store.plan || "starter",
     addOns,
-    gstin: store.gstin || "",
+    gstin: store.gstin || (branding as any).gstin || "",
     registeredBusinessName: store.registeredBusinessName || "",
     registeredBusinessAddress: store.registeredBusinessAddress || "",
     registeredState: store.registeredState || "",
+    panNumber: (branding as any).panNumber || "",
+    cinNumber: (branding as any).cinNumber || "",
+    tanNumber: (branding as any).tanNumber || "",
+    placeOfSupply: (branding as any).placeOfSupply || "",
+    bankDetails: (branding as any).bankDetails || {
+      bankName: "",
+      accountName: "",
+      accountNumber: "",
+      ifscCode: "",
+      bankBranch: "",
+    },
+    invoiceConfig: (branding as any).invoiceConfig || {
+      invoiceHeaderDisclaimer: "*This is a computer generated invoice and does not require a physical copy",
+      invoiceTerms: "Net 15",
+      invoiceNotes: "Thanks for your business. For GST queries, please contact your store support.",
+      authorizedSignatoryName: "",
+      authorizedSignatoryTitle: "Authorized Signatory",
+      signatureStampUrl: "",
+    },
     razorpayConfigured: hasRazorpayKey && hasRazorpaySecret,
     branding,
     termsOfService: store.termsOfService || "",
@@ -119,6 +138,12 @@ app.patch("/store/settings", authenticateMerchant, async (c) => {
     branding,
     addOns,
     gstin,
+    panNumber,
+    cinNumber,
+    tanNumber,
+    placeOfSupply,
+    bankDetails,
+    invoiceConfig,
     registeredBusinessName,
     registeredBusinessAddress,
     registeredState,
@@ -162,7 +187,18 @@ app.patch("/store/settings", authenticateMerchant, async (c) => {
   const oldAddOns = JSON.parse(oldAddOnsStr);
 
   const updatedAddOns = addOns !== undefined ? addOns : oldAddOns;
-  const updatedBranding = branding !== undefined ? branding : (store.branding ? JSON.parse(store.branding) : {});
+  const oldBranding = store.branding ? JSON.parse(store.branding) : {};
+  const updatedBranding = {
+    ...oldBranding,
+    ...(branding || {}),
+    ...(panNumber !== undefined ? { panNumber } : {}),
+    ...(cinNumber !== undefined ? { cinNumber } : {}),
+    ...(tanNumber !== undefined ? { tanNumber } : {}),
+    ...(placeOfSupply !== undefined ? { placeOfSupply } : {}),
+    ...(bankDetails !== undefined ? { bankDetails } : {}),
+    ...(invoiceConfig !== undefined ? { invoiceConfig } : {}),
+    ...(gstin !== undefined ? { gstin } : {}),
+  };
 
   // Generate billing statement for newly enabled add-ons
   if (addOns !== undefined) {

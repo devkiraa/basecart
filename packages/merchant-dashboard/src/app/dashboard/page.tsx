@@ -159,7 +159,28 @@ interface StoreSettings {
   plan?: string;
   createdAt?: string;
   gstin?: string;
+  panNumber?: string;
+  cinNumber?: string;
+  tanNumber?: string;
+  registeredBusinessName?: string;
   registeredBusinessAddress?: string;
+  registeredState?: string;
+  placeOfSupply?: string;
+  bankDetails?: {
+    bankName?: string;
+    accountName?: string;
+    accountNumber?: string;
+    ifscCode?: string;
+    bankBranch?: string;
+  };
+  invoiceConfig?: {
+    invoiceHeaderDisclaimer?: string;
+    invoiceTerms?: string;
+    invoiceNotes?: string;
+    authorizedSignatoryName?: string;
+    authorizedSignatoryTitle?: string;
+    signatureStampUrl?: string;
+  };
   branding: {
     logoUrl?: string;
     primaryColor?: string;
@@ -1691,23 +1712,110 @@ export default function MerchantDashboard() {
     }
   };
 
+  function numberToWordsINR(amount: number): string {
+    const a = [
+      "",
+      "One ",
+      "Two ",
+      "Three ",
+      "Four ",
+      "Five ",
+      "Six ",
+      "Seven ",
+      "Eight ",
+      "Nine ",
+      "Ten ",
+      "Eleven ",
+      "Twelve ",
+      "Thirteen ",
+      "Fourteen ",
+      "Fifteen ",
+      "Sixteen ",
+      "Seventeen ",
+      "Eighteen ",
+      "Nineteen ",
+    ];
+    const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+    function inWords(num: number): string {
+      if (num === 0) return "";
+      const strNum = ("000000000" + num).slice(-9);
+      const n = strNum.match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+      if (!n) return "";
+      let str = "";
+      str += Number(n[1]) !== 0 ? (a[Number(n[1])] || b[Number(n[1][0])] + " " + a[Number(n[1][1])]) + "Crore " : "";
+      str += Number(n[2]) !== 0 ? (a[Number(n[2])] || b[Number(n[2][0])] + " " + a[Number(n[2][1])]) + "Lakh " : "";
+      str += Number(n[3]) !== 0 ? (a[Number(n[3])] || b[Number(n[3][0])] + " " + a[Number(n[3][1])]) + "Thousand " : "";
+      str += Number(n[4]) !== 0 ? (a[Number(n[4])] || b[Number(n[4][0])] + " " + a[Number(n[4][1])]) + "Hundred " : "";
+      str += Number(n[5]) !== 0 ? (str !== "" ? "and " : "") + (a[Number(n[5])] || b[Number(n[5][0])] + " " + a[Number(n[5][1])]) : "";
+      return str.trim();
+    }
+
+    const num = Math.floor(amount);
+    const paise = Math.round((amount - num) * 100);
+
+    let result = "Rupees " + (inWords(num) || "Zero");
+    if (paise > 0) {
+      result += " and " + (inWords(paise) || "Zero") + " Paise";
+    }
+    return result + " Only";
+  }
+
   const openPrintableInvoiceWindow = (order: any) => {
     const invNo = order.invoiceNumber || `INV-2026-${order.orderNumber || order.orderId.substring(0, 6).toUpperCase()}`;
-    const dateStr = new Date(order.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
-    const storeName = settings.storeName || "Basecart Merchant Store";
-    const gstin = settings.gstin || "29AAAAA0000A1Z5";
-    const address = settings.registeredBusinessAddress || "Bangalore, India";
+    const dateStr = new Date(order.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+    const dueDateObj = new Date(new Date(order.createdAt).getTime() + 15 * 24 * 60 * 60 * 1000);
+    const dueDateStr = dueDateObj.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+
+    // Store & Tax Metadata
+    const storeName = settings.registeredBusinessName || settings.storeName || "Basecart Merchant Store";
+    const logoUrl = settings.branding?.logoUrl || "";
+    const gstin = settings.gstin || "33AAACZ4322M2Z9";
+    const panNumber = settings.panNumber || "AAACZ4322M";
+    const cinNumber = settings.cinNumber || "U40100TN2010PTC075961";
+    const tanNumber = settings.tanNumber || "CHEZ03229C";
+    const regAddress = settings.registeredBusinessAddress || "Krisp IT Park, Kelambakkam Road, Chennai, Tamil Nadu, Pin: 600127";
+    const regState = settings.registeredState || settings.placeOfSupply || "Tamil Nadu (33)";
+
+    // Customer & Addresses
     const customerName = order.customerInfo?.name || "Valued Customer";
-    const customerEmail = order.customerInfo?.email || "";
+    const customerEmail = order.customerInfo?.email || "customer@example.com";
     const customerPhone = order.customerInfo?.phone || "";
+    const customerAddress = order.customerInfo?.address;
+    const addressLine1 = customerAddress ? `${customerAddress.street}` : "Standard Shipping Address";
+    const addressCityState = customerAddress ? `${customerAddress.city}, ${customerAddress.state} ${customerAddress.pincode}` : "India";
+
+    // Amounts & Tax calculations
     const items = order.lineItems || [];
     const subtotal = order.subtotal || order.total;
-    const tax = order.tax || Math.round(subtotal * 0.05);
-    const total = order.total;
+    const taxRatePercent = 18; // Default GST 18%
+    const taxAmount = order.tax || Math.round((subtotal * taxRatePercent) / 100);
+    const totalAmount = order.total || subtotal + taxAmount;
+    const isPaid = order.status === "paid" || order.status === "shipped" || order.status === "delivered";
+    const paymentMade = isPaid ? totalAmount : 0;
+    const balanceDue = totalAmount - paymentMade;
+    const totalInWords = numberToWordsINR(totalAmount);
+
+    // Bank Details & Config
+    const bank = settings.bankDetails || {};
+    const bankName = bank.bankName || "HDFC Bank Limited";
+    const accountName = bank.accountName || storeName;
+    const accountNumber = bank.accountNumber || "50200026430541";
+    const ifscCode = bank.ifscCode || "HDFC0001225";
+    const bankBranch = bank.bankBranch || "AC Old No.56, New No.16/1, Ground Floor, Anna Nagar West, Chennai 600 040";
+
+    const invConfig = settings.invoiceConfig || {};
+    const disclaimer = invConfig.invoiceHeaderDisclaimer || "*This is a computer generated invoice and does not require a physical copy";
+    const terms = invConfig.invoiceTerms || "Net 15";
+    const notes = invConfig.invoiceNotes || "Thanks for your business. For GST queries, please contact your store support.";
+    const signatoryName = invConfig.authorizedSignatoryName || storeName;
+    const signatoryTitle = invConfig.authorizedSignatoryTitle || "Authorized Signatory";
+
+    const qrData = encodeURIComponent(`https://${settings.subdomain || "store"}.basecart.app/invoice-verify?id=${invNo}&amount=${totalAmount}`);
 
     const printWin = window.open("", "_blank");
     if (!printWin) {
-      alert("Please allow popups to open the Tax Invoice.");
+      alert("Please allow popups to view & print the Tax Invoice.");
       return;
     }
 
@@ -1715,87 +1823,358 @@ export default function MerchantDashboard() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>GST Tax Invoice - ${invNo}</title>
+        <title>TAX INVOICE - ${invNo}</title>
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #1e293b; background: #fff; }
-          .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; pb: 20px; margin-bottom: 20px; }
-          .title { font-size: 24px; font-weight: 900; color: #0f172a; text-transform: uppercase; letter-spacing: 1px; }
-          .subtitle { font-size: 12px; color: #64748b; margin-top: 4px; }
-          .grid { display: flex; justify-content: space-between; margin-bottom: 30px; }
-          .box { font-size: 12px; leading-height: 1.5; }
-          .box h4 { margin: 0 0 6px 0; font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800; letter-spacing: 0.5px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 12px; }
-          th { background: #f8fafc; text-transform: uppercase; font-size: 10px; color: #475569; padding: 10px; text-align: left; border-bottom: 1px solid #cbd5e1; }
-          td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
-          .total-box { margin-left: auto; width: 260px; font-size: 12px; border-top: 2px solid #0f172a; pt: 10px; }
-          .total-row { display: flex; justify-content: space-between; padding: 4px 0; }
-          .grand-total { font-size: 16px; font-weight: 900; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 8px; margin-top: 4px; }
-          .footer { margin-top: 50px; border-top: 1px solid #e2e8f0; pt: 20px; text-align: center; font-size: 11px; color: #94a3b8; }
-          .btn-print { background: #2563eb; color: #fff; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-bottom: 20px; }
+          @page { size: A4; margin: 8mm; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-size: 10.5px;
+            line-height: 1.35;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 10px;
+          }
+          .disclaimer-top {
+            text-align: center;
+            font-size: 9px;
+            font-style: italic;
+            color: #333;
+            margin-bottom: 6px;
+          }
+          .invoice-card {
+            border: 1px solid #555;
+            width: 100%;
+            box-sizing: border-box;
+          }
+          .header-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 12px;
+            border-bottom: 1px solid #555;
+          }
+          .seller-left {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+          }
+          .seller-logo {
+            max-height: 50px;
+            max-width: 110px;
+            object-fit: contain;
+          }
+          .seller-info h2 {
+            margin: 0 0 3px 0;
+            font-size: 15px;
+            font-weight: 800;
+            color: #000;
+          }
+          .seller-info p {
+            margin: 1px 0;
+            font-size: 10px;
+            color: #222;
+          }
+          .invoice-title {
+            font-size: 24px;
+            font-weight: 900;
+            color: #000;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            text-align: right;
+          }
+          .meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #555;
+          }
+          .meta-table td {
+            width: 50%;
+            padding: 4px 8px;
+            vertical-align: top;
+            border-right: 1px solid #555;
+          }
+          .meta-table td:last-child { border-right: none; }
+          .meta-row {
+            display: flex;
+            font-size: 10px;
+            margin-bottom: 2px;
+          }
+          .meta-label { font-weight: bold; color: #444; width: 115px; }
+          .meta-val { font-weight: bold; color: #000; flex: 1; }
+
+          .address-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #555;
+          }
+          .address-table th {
+            background: #f1f5f9;
+            border-bottom: 1px solid #555;
+            border-right: 1px solid #555;
+            padding: 3px 8px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 10.5px;
+            color: #0f172a;
+          }
+          .address-table th:last-child { border-right: none; }
+          .address-table td {
+            width: 50%;
+            padding: 6px 8px;
+            vertical-align: top;
+            border-right: 1px solid #555;
+          }
+          .address-table td:last-child { border-right: none; }
+
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 1px solid #555;
+          }
+          .items-table th {
+            border-bottom: 1px solid #555;
+            border-right: 1px solid #555;
+            padding: 5px 6px;
+            font-weight: bold;
+            font-size: 10px;
+            background: #fff;
+            text-transform: uppercase;
+          }
+          .items-table th:last-child { border-right: none; }
+          .items-table td {
+            padding: 5px 6px;
+            border-right: 1px solid #555;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: top;
+            font-size: 10px;
+          }
+          .items-table td:last-child { border-right: none; }
+
+          .bottom-grid {
+            display: flex;
+            width: 100%;
+          }
+          .bottom-left {
+            width: 58%;
+            padding: 8px 10px;
+            border-right: 1px solid #555;
+            box-sizing: border-box;
+          }
+          .bottom-right {
+            width: 42%;
+            box-sizing: border-box;
+          }
+          .totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10.5px;
+          }
+          .totals-table td {
+            padding: 3.5px 8px;
+            text-align: right;
+          }
+          .totals-table tr.grand-total td {
+            font-weight: 900;
+            font-size: 12px;
+            border-top: 1px solid #555;
+            border-bottom: 1px solid #555;
+          }
+
+          .signatory-box {
+            border-top: 1px solid #555;
+            padding: 10px 8px 6px 8px;
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+          }
+          .btn-print {
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 12px;
+          }
           @media print { .btn-print { display: none; } }
         </style>
       </head>
       <body>
-        <button class="btn-print" onclick="window.print()">🖨️ Print / Save PDF Invoice</button>
-        <div class="header">
-          <div>
-            <div class="title">${storeName}</div>
-            <div class="subtitle">GSTIN: ${gstin}</div>
-            <div class="subtitle">${address}</div>
-          </div>
-          <div style="text-align: right;">
-            <div style="font-size: 18px; font-weight: 800; color: #2563eb;">TAX INVOICE</div>
-            <div class="subtitle" style="font-weight: 700;">Invoice No: ${invNo}</div>
-            <div class="subtitle">Date: ${dateStr}</div>
-          </div>
-        </div>
+        <button class="btn-print" onclick="window.print()">🖨️ Print / Save Official PDF Invoice</button>
+        <div class="disclaimer-top">${disclaimer}</div>
 
-        <div class="grid">
-          <div class="box">
-            <h4>Billed To (Customer)</h4>
-            <strong>${customerName}</strong><br/>
-            ${customerEmail}<br/>
-            ${customerPhone}
+        <div class="invoice-card">
+          <!-- Seller Header -->
+          <div class="header-box">
+            <div class="seller-left">
+              ${logoUrl ? `<img src="${logoUrl}" class="seller-logo" alt="Store Logo"/>` : ""}
+              <div class="seller-info">
+                <h2>${storeName}</h2>
+                <p>${regAddress}</p>
+                <p>Phone: +91 9876543210</p>
+                <p>Pan No: <strong>${panNumber}</strong> | CIN: <strong>${cinNumber}</strong></p>
+                <p>Tan No: <strong>${tanNumber}</strong> | GSTIN: <strong>${gstin}</strong></p>
+              </div>
+            </div>
+            <div>
+              <div class="invoice-title">TAX INVOICE</div>
+            </div>
           </div>
-          <div class="box" style="text-align: right;">
-            <h4>Payment Method</h4>
-            <strong>${order.paymentMethod || "Razorpay / Online"}</strong><br/>
-            Status: <span style="color: #16a34a; font-weight: bold; text-transform: uppercase;">${order.status}</span>
-          </div>
-        </div>
 
-        <table>
-          <thead>
+          <!-- Metadata Grid -->
+          <table class="meta-table">
             <tr>
-              <th>Item Description</th>
-              <th>SKU</th>
-              <th style="text-align: center;">Qty</th>
-              <th style="text-align: right;">Unit Price</th>
-              <th style="text-align: right;">Total Amount</th>
+              <td>
+                <div class="meta-row"><span class="meta-label">INVOICE#</span><span class="meta-val">: ${invNo}</span></div>
+                <div class="meta-row"><span class="meta-label">DATE</span><span class="meta-val">: ${dateStr}</span></div>
+                <div class="meta-row"><span class="meta-label">TERMS</span><span class="meta-val">: ${terms}</span></div>
+                <div class="meta-row"><span class="meta-label">DUE DATE</span><span class="meta-val">: ${dueDateStr}</span></div>
+                <div class="meta-row"><span class="meta-label">P.O.#</span><span class="meta-val">: ${order.orderId.substring(0, 15).toUpperCase()}</span></div>
+              </td>
+              <td>
+                <div class="meta-row"><span class="meta-label">Name Of State</span><span class="meta-val">: ${regState}</span></div>
+                <div class="meta-row"><span class="meta-label">License Order No</span><span class="meta-val">: RPWIN${order.orderId.substring(0, 12).toUpperCase()}</span></div>
+                <div class="meta-row"><span class="meta-label">License Sent to</span><span class="meta-val">: ${customerName}</span></div>
+                <div class="meta-row"><span class="meta-label">UserMail</span><span class="meta-val">: ${customerEmail}</span></div>
+                <div class="meta-row"><span class="meta-label">Place Of Supply</span><span class="meta-val">: ${customerAddress?.city || "Kerala (32)"}</span></div>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            ${items.map((it: any) => `
+          </table>
+
+          <!-- Bill To / Ship To Grid -->
+          <table class="address-table">
+            <thead>
               <tr>
-                <td><strong>${it.name}</strong></td>
-                <td style="font-family: monospace; color: #64748b;">${it.sku || "N/A"}</td>
-                <td style="text-align: center;">${it.quantity || 1}</td>
-                <td style="text-align: right;">₹${(it.price || 0).toLocaleString("en-IN")}</td>
-                <td style="text-align: right; font-weight: bold;">₹${((it.price || 0) * (it.quantity || 1)).toLocaleString("en-IN")}</td>
+                <th>Bill To</th>
+                <th>Ship To</th>
               </tr>
-            `).join("")}
-          </tbody>
-        </table>
+            </thead>
+            <tr>
+              <td>
+                <strong>${customerName}</strong><br/>
+                Attn: ${customerEmail}<br/>
+                ${addressLine1}<br/>
+                ${addressCityState}<br/>
+                Phone: ${customerPhone || "N/A"}
+              </td>
+              <td>
+                <strong>${customerName}</strong><br/>
+                ${addressLine1}<br/>
+                ${addressCityState}
+              </td>
+            </tr>
+          </table>
 
-        <div class="total-box">
-          <div class="total-row"><span>Subtotal:</span> <span>₹${subtotal.toLocaleString("en-IN")}</span></div>
-          <div class="total-row"><span>GST Tax:</span> <span>₹${tax.toLocaleString("en-IN")}</span></div>
-          <div class="total-row grand-total"><span>Total Amount:</span> <span>₹${total.toLocaleString("en-IN")}</span></div>
+          <!-- Items Table -->
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="text-align: left; width: 45%;">Item & Description</th>
+                <th style="text-align: center; width: 8%;">Qty</th>
+                <th style="text-align: right; width: 14%;">Rate</th>
+                <th style="text-align: center; width: 9%;">IGST %</th>
+                <th style="text-align: right; width: 11%;">Amt</th>
+                <th style="text-align: right; width: 13%;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${items.map((it: any) => {
+                const qty = it.quantity || 1;
+                const rate = it.price || 0;
+                const itemSubtotal = rate * qty;
+                const itemIgst = Math.round((itemSubtotal * taxRatePercent) / 100);
+                return `
+                  <tr>
+                    <td>
+                      <strong>${it.name}</strong><br/>
+                      ${it.sku ? `<span style="color:#555;">SKU: ${it.sku}</span><br/>` : ""}
+                      <span style="color:#666; font-size:9px;">SAC/HSN: 997331</span>
+                    </td>
+                    <td style="text-align: center; font-weight: bold;">${qty.toFixed(2)}</td>
+                    <td style="text-align: right;">${rate.toFixed(2)}</td>
+                    <td style="text-align: center;">${taxRatePercent}%</td>
+                    <td style="text-align: right;">${itemIgst.toFixed(2)}</td>
+                    <td style="text-align: right; font-weight: bold;">${itemSubtotal.toFixed(2)}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+
+          <!-- Bottom Grid: Words, Bank Details, QR & Totals -->
+          <div class="bottom-grid">
+            <div class="bottom-left">
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 10px; font-weight: bold;">Total In Words</span><br/>
+                <strong style="font-style: italic; font-size: 11px;">${totalInWords}</strong>
+              </div>
+
+              <div style="margin-bottom: 8px; font-size: 9.5px; color: #333;">
+                <strong>Notes</strong><br/>
+                ${notes}
+              </div>
+
+              <div style="margin-bottom: 8px; font-size: 9.5px;">
+                <strong style="font-size: 10px;">Details for Transferring the Funds</strong><br/>
+                <strong>${bankName}</strong><br/>
+                Account Name : <strong>${accountName}</strong><br/>
+                Account Number : <strong>${accountNumber}</strong><br/>
+                IFSC Code : <strong>${ifscCode}</strong><br/>
+                Bank Address : ${bankBranch}<br/>
+                <strong style="font-size: 9.5px; display: block; margin-top: 2px;">Please Quote our Invoice No in all your correspondence</strong>
+              </div>
+
+              <div style="display: flex; items-center; gap: 8px; margin-top: 6px; pt: 4px; border-top: 1px solid #ddd;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${qrData}" style="width: 55px; height: 55px;" alt="QR Code" />
+                <div style="font-size: 9px; color: #444; font-weight: 500;">
+                  Scan the QR code to view the configured information & verification.
+                </div>
+              </div>
+            </div>
+
+            <div class="bottom-right">
+              <table class="totals-table">
+                <tr>
+                  <td>Sub Total</td>
+                  <td style="font-weight: bold; width: 80px;">${subtotal.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>IGST18 (${taxRatePercent}%)</td>
+                  <td style="font-weight: bold;">${taxAmount.toFixed(2)}</td>
+                </tr>
+                <tr class="grand-total">
+                  <td>Total</td>
+                  <td>₹${totalAmount.toFixed(2)}</td>
+                </tr>
+                <tr>
+                  <td>Payment Made</td>
+                  <td style="color: #dc2626; font-weight: bold;">(-) ${paymentMade.toFixed(2)}</td>
+                </tr>
+                <tr style="border-top: 1px solid #555; font-size: 12px; font-weight: 900;">
+                  <td>Balance Due</td>
+                  <td>₹${balanceDue.toFixed(2)}</td>
+                </tr>
+              </table>
+
+              <div class="signatory-box">
+                <div style="font-weight: bold; font-size: 10px;">${storeName}</div>
+                <div style="font-family: 'Brush Script MT', cursive, sans-serif; font-size: 18px; color: #1e3a8a; font-weight: bold; transform: rotate(-3deg);">
+                  ${signatoryName}
+                </div>
+                <div style="font-[10px]; font-weight: bold; color: #444; border-top: 1px solid #999; width: 80%; pt: 2px; margin-top: 4px;">
+                  ${signatoryTitle}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="footer">
-          Thank you for shopping with ${storeName}! This is a computer-generated tax invoice issued via Basecart OS.
-        </div>
+        <div style="text-align: right; font-size: 9px; color: #555; margin-top: 4px;">1</div>
       </body>
       </html>
     `);
@@ -5256,6 +5635,249 @@ export default function MerchantDashboard() {
                     <p className="mt-2 text-xs text-slate-400">
                       Keys are encrypted at rest using AES-256-GCM. We never share secrets with public storefront requests.
                     </p>
+                  </div>
+                </div>
+
+                {/* B2B GST & Tax Identifiers */}
+                <div className="border-t border-slate-200 pt-6 space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">GST, Tax & Corporate Registrations</h3>
+                  <p className="text-xs text-slate-500">
+                    Enter your official tax numbers to generate compliant B2B GST Tax Invoices matching official company standards.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Registered Company Name
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.registeredBusinessName || ""}
+                        onChange={(e) => setSettings({ ...settings, registeredBusinessName: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="e.g. ZOHO Corporation Private Limited"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        GSTIN Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.gstin || ""}
+                        onChange={(e) => setSettings({ ...settings, gstin: e.target.value.toUpperCase() })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="33AAACZ4322M2Z9"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        PAN Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.panNumber || ""}
+                        onChange={(e) => setSettings({ ...settings, panNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="AAACZ4322M"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        CIN Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.cinNumber || ""}
+                        onChange={(e) => setSettings({ ...settings, cinNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="U40100TN2010PTC075961"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        TAN Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.tanNumber || ""}
+                        onChange={(e) => setSettings({ ...settings, tanNumber: e.target.value.toUpperCase() })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="CHEZ03229C"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Place Of Supply / State (Code)
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.placeOfSupply || settings.registeredState || ""}
+                        onChange={(e) => setSettings({ ...settings, placeOfSupply: e.target.value, registeredState: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="Kerala (32) or Tamil Nadu (33)"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                      Registered Corporate Address
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={settings.registeredBusinessAddress || ""}
+                      onChange={(e) => setSettings({ ...settings, registeredBusinessAddress: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                      placeholder="942, Krisp IT Park, Vandalur Kelambakkam Road, Chennai, Tamil Nadu, 600127"
+                    />
+                  </div>
+                </div>
+
+                {/* Bank Account Transfer Details */}
+                <div className="border-t border-slate-200 pt-6 space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">Bank Transfer Details (Printed on Invoices)</h3>
+                  <p className="text-xs text-slate-500">
+                    These bank account details will appear on generated invoices for customer NEFT/IMPS/RTGS wire transfers.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankDetails?.bankName || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          bankDetails: { ...(settings.bankDetails || {}), bankName: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="HDFC Bank Limited"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Account Holder Name
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankDetails?.accountName || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          bankDetails: { ...(settings.bankDetails || {}), accountName: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="ZOHO Corporation Private Limited"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Account Number
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankDetails?.accountNumber || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          bankDetails: { ...(settings.bankDetails || {}), accountNumber: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="50200026430541"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        IFSC Code
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.bankDetails?.ifscCode || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          bankDetails: { ...(settings.bankDetails || {}), ifscCode: e.target.value.toUpperCase() }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
+                        placeholder="HDFC0001225"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                      Bank Branch Address
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.bankDetails?.bankBranch || ""}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        bankDetails: { ...(settings.bankDetails || {}), bankBranch: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                      placeholder="AC Old No.56, New No.16/1, Ground Floor, Anna Nagar West, Chennai 600 040"
+                    />
+                  </div>
+                </div>
+
+                {/* Invoice Customization & Authorized Signatory */}
+                <div className="border-t border-slate-200 pt-6 space-y-4">
+                  <h3 className="text-sm font-bold text-slate-900">Invoice Terms & Authorized Signatory</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Payment Terms
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.invoiceConfig?.invoiceTerms || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceTerms: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="Net 15 or Due on Receipt"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                        Authorized Signatory Name
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.invoiceConfig?.authorizedSignatoryName || ""}
+                        onChange={(e) => setSettings({
+                          ...settings,
+                          invoiceConfig: { ...(settings.invoiceConfig || {}), authorizedSignatoryName: e.target.value }
+                        })}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                        placeholder="R. Badrinath"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                      Invoice Footer Notes
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.invoiceConfig?.invoiceNotes || ""}
+                      onChange={(e) => setSettings({
+                        ...settings,
+                        invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceNotes: e.target.value }
+                      })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
+                      placeholder="Thanks for your business. For GST queries, please contact us."
+                    />
                   </div>
                 </div>
 

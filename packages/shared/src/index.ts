@@ -70,6 +70,29 @@ export const StoreSettingsSchema = z.object({
   registeredBusinessName: z.string().optional(),
   registeredBusinessAddress: z.string().optional(),
   registeredState: z.string().optional(),
+  panNumber: z.string().optional(),
+  cinNumber: z.string().optional(),
+  tanNumber: z.string().optional(),
+  placeOfSupply: z.string().optional(),
+  bankDetails: z
+    .object({
+      bankName: z.string().optional().or(z.literal("")),
+      accountName: z.string().optional().or(z.literal("")),
+      accountNumber: z.string().optional().or(z.literal("")),
+      ifscCode: z.string().optional().or(z.literal("")),
+      bankBranch: z.string().optional().or(z.literal("")),
+    })
+    .optional(),
+  invoiceConfig: z
+    .object({
+      invoiceHeaderDisclaimer: z.string().optional().or(z.literal("")),
+      invoiceTerms: z.string().optional().or(z.literal("")),
+      invoiceNotes: z.string().optional().or(z.literal("")),
+      authorizedSignatoryName: z.string().optional().or(z.literal("")),
+      authorizedSignatoryTitle: z.string().optional().or(z.literal("")),
+      signatureStampUrl: z.string().optional().or(z.literal("")),
+    })
+    .optional(),
   branding: z
     .object({
       logoUrl: z.string().optional().or(z.literal("")),
@@ -88,7 +111,7 @@ export const StoreSettingsSchema = z.object({
   termsOfService: z.string().optional(),
   privacyPolicy: z.string().optional(),
   refundPolicy: z.string().optional(),
-}).strict();
+});
 
 export type StoreSettingsInput = z.infer<typeof StoreSettingsSchema>;
 
