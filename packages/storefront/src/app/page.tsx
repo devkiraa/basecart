@@ -436,10 +436,18 @@ export default function Storefront() {
       // 2. Fetch Active Products
       const prodRes = await fetch(`${API_URL}/store/${subdomain}/products`);
       if (prodRes.ok) {
-        setProducts(await prodRes.json());
+        const fetchedProds = await prodRes.json();
+        if (Array.isArray(fetchedProds) && fetchedProds.length > 0) {
+          setProducts(fetchedProds);
+        } else {
+          setProducts(infoData?.theme?.templateBase === "Aura" ? MOCK_WATCH_PRODUCTS : MOCK_SATO_PRODUCTS);
+        }
+      } else {
+        setProducts(infoData?.theme?.templateBase === "Aura" ? MOCK_WATCH_PRODUCTS : MOCK_SATO_PRODUCTS);
       }
     } catch (err) {
       console.error(err);
+      setProducts(MOCK_SATO_PRODUCTS);
     } finally {
       setLoadingStore(false);
     }
