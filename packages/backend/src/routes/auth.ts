@@ -530,6 +530,36 @@ app.post("/auth/merchant/forgot-password", async (c) => {
 });
 
 /**
+ * Verify Merchant Reset Password Token
+ */
+app.get("/auth/merchant/verify-reset-token", async (c) => {
+  const token = c.req.query("token");
+  if (!token) {
+    return c.json({ valid: false, error: "Password reset token is missing. Please request a new link." }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+  const resetToken = await controlDb
+    .prepare("SELECT * FROM reset_tokens WHERE token = ?")
+    .bind(token)
+    .first<any>();
+
+  if (!resetToken) {
+    return c.json({ valid: false, error: "Invalid or expired reset token" }, 400);
+  }
+
+  if (new Date(resetToken.expiresAt) < new Date()) {
+    await controlDb
+      .prepare("DELETE FROM reset_tokens WHERE token = ?")
+      .bind(token)
+      .run();
+    return c.json({ valid: false, error: "Invalid or expired reset token" }, 400);
+  }
+
+  return c.json({ valid: true });
+});
+
+/**
  * Merchant Reset Password
  */
 app.post("/auth/merchant/reset-password", async (c) => {

@@ -8,6 +8,8 @@ const MARKETING_URL = process.env.NEXT_PUBLIC_MARKETING_URL || "http://localhost
 
 export default function ResetPasswordPage() {
   const [token, setToken] = useState<string | null>(null);
+  const [validating, setValidating] = useState(true);
+  const [isTokenInvalid, setIsTokenInvalid] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,10 +20,32 @@ export default function ResetPasswordPage() {
     const params = new URLSearchParams(window.location.search);
     const tokenParam = params.get("token");
     if (!tokenParam) {
+      setValidating(false);
+      setIsTokenInvalid(true);
       setErrorMsg("Password reset token is missing. Please request a new password reset link.");
-    } else {
-      setToken(tokenParam);
+      return;
     }
+
+    const verifyToken = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/merchant/verify-reset-token?token=${encodeURIComponent(tokenParam)}`);
+        const data = await res.json();
+        if (!res.ok || !data.valid) {
+          setIsTokenInvalid(true);
+          setErrorMsg(data.error || "Invalid or expired reset token.");
+        } else {
+          setToken(tokenParam);
+          setIsTokenInvalid(false);
+        }
+      } catch (err) {
+        setIsTokenInvalid(true);
+        setErrorMsg("Failed to verify password reset token.");
+      } finally {
+        setValidating(false);
+      }
+    };
+
+    verifyToken();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -46,7 +70,13 @@ export default function ResetPasswordPage() {
         body: JSON.stringify({ token, newPassword }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Password reset failed");
+      if (!res.ok) {
+        const message = data.error || "Password reset failed";
+        if (message.toLowerCase().includes("token") || message.toLowerCase().includes("expired") || message.toLowerCase().includes("invalid")) {
+          setIsTokenInvalid(true);
+        }
+        throw new Error(message);
+      }
       setSuccess(true);
       setToken(null);
       if (typeof window !== "undefined") {
@@ -74,15 +104,20 @@ export default function ResetPasswordPage() {
           <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
         </div>
 
-        {errorMsg && !token ? (
-          <div className="text-center space-y-5 py-6">
-            <div className="bg-red-50 text-red-700 p-3.5 rounded-button text-xs border border-red-100 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{errorMsg}</span>
+        {validating ? (
+          <div className="flex flex-col items-center justify-center py-8 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="text-xs font-semibold text-slate-500">Verifying password reset link...</span>
+          </div>
+        ) : isTokenInvalid ? (
+          <div className="text-center space-y-5 py-4">
+            <div className="bg-red-50 text-red-700 p-4 rounded-xl text-xs font-semibold border border-red-100 flex items-center justify-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+              <span>{errorMsg || "Invalid or expired reset token"}</span>
             </div>
             <button
               onClick={() => { window.location.href = "/login"; }}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-sm"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors text-sm shadow"
             >
               Back to Sign In
             </button>
@@ -105,7 +140,7 @@ export default function ResetPasswordPage() {
           <div className="space-y-6">
             <div className="space-y-1 text-center">
               <h2 className="text-2xl font-black text-slate-900 tracking-tight">Reset Password</h2>
-              <p className="text-xs text-slate-500 font-semibold font-sans">Choose a new secure password for your account (tokens expire in 10 minutes)</p>
+              <p className="text-xs text-slate-500 font-semibold font-sans">Choose a new secure password for your account</p>
             </div>
 
             {errorMsg && (
