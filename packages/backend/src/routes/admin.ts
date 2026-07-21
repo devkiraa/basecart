@@ -10,26 +10,45 @@ import { logReservedSubdomainAbuse } from "../lib/audit";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
+function isLocalHostRequest(c: any): boolean {
+  const host = c.req.header("host") || "";
+  const origin = c.req.header("origin") || "";
+  const referer = c.req.header("referer") || "";
+  return (
+    host.includes("localhost") ||
+    host.includes("127.0.0.1") ||
+    origin.includes("localhost") ||
+    origin.includes("127.0.0.1") ||
+    referer.includes("localhost") ||
+    referer.includes("127.0.0.1")
+  );
+}
+
 function getAdminCookieOptions(c: any, maxAge: number) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined);
   return {
     path: "/",
     httpOnly: true,
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
-    domain: (c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined,
+    domain,
   };
 }
 
 function getAdminDeleteOptions(c: any) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_ADMIN) || undefined);
   return {
     path: "/",
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    domain,
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
   };
 }
 

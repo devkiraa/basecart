@@ -16,55 +16,73 @@ import { logReservedSubdomainAbuse } from "../lib/audit";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
+function isLocalHostRequest(c: any): boolean {
+  const host = c.req.header("host") || "";
+  const origin = c.req.header("origin") || "";
+  const referer = c.req.header("referer") || "";
+  return (
+    host.includes("localhost") ||
+    host.includes("127.0.0.1") ||
+    origin.includes("localhost") ||
+    origin.includes("127.0.0.1") ||
+    referer.includes("localhost") ||
+    referer.includes("127.0.0.1")
+  );
+}
+
 function getMerchantCookieOptions(c: any, maxAge: number) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
-  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined);
   return {
     path: "/",
     httpOnly: true,
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };
 }
 
 function getMerchantDeleteOptions(c: any) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
-  const domain = (c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_MERCHANT) || undefined);
   return {
     path: "/",
     domain,
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
   };
 }
 
 function getCustomerCookieOptions(c: any, maxAge: number) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
-  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined);
   return {
     path: "/",
     httpOnly: true,
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
     maxAge,
     domain,
   };
 }
 
 function getCustomerDeleteOptions(c: any) {
+  const isLocal = isLocalHostRequest(c);
   const isHttps = c.req.header("x-forwarded-proto") === "https" || c.req.url.startsWith("https");
-  const isProdOrStaging = c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging") || isHttps;
-  const domain = (c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined;
+  const isProdOrStaging = !isLocal && ((c.env && (c.env.NODE_ENV === "production" || c.env.NODE_ENV === "staging")) || isHttps);
+  const domain = isLocal ? undefined : ((c.env && c.env.COOKIE_DOMAIN_CUSTOMER) || undefined);
   return {
     path: "/",
     domain,
-    secure: isProdOrStaging,
-    sameSite: isProdOrStaging ? ("None" as const) : ("Lax" as const),
+    secure: isLocal ? false : isProdOrStaging,
+    sameSite: isLocal ? ("Lax" as const) : isProdOrStaging ? ("None" as const) : ("Lax" as const),
   };
 }
 
