@@ -328,6 +328,16 @@ app.patch("/orders/:id/status", authenticateMerchant, async (c) => {
     return c.json({ error: "Order not found" }, 404);
   }
 
+  // Prevent reverting paid or shipped orders back to pending (preserves payment audit compliance)
+  if ((order.status === "paid" || order.status === "shipped") && status === "pending") {
+    return c.json(
+      {
+        error: `Payment status is locked for ${order.status} transactions. Confirmed payments cannot be reverted to 'pending'.`,
+      },
+      400
+    );
+  }
+
   // Prevent modifying settled or cancelled orders to preserve order transaction integrity
   if (order.status === "delivered" || order.status === "cancelled") {
     return c.json(

@@ -5247,7 +5247,14 @@ export default function MerchantDashboard() {
                     {/* Actions Footer */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-100 pt-4">
                       <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <label className="text-xs font-bold text-slate-500">Status:</label>
+                        <label className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                          <span>Status:</span>
+                          {selectedOrderForDetail.status === "paid" && (
+                            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              🔒 Payment Confirmed
+                            </span>
+                          )}
+                        </label>
                         <select
                           value={selectedOrderForDetail.status}
                           disabled={selectedOrderForDetail.status === "delivered" || selectedOrderForDetail.status === "cancelled"}
@@ -5258,8 +5265,12 @@ export default function MerchantDashboard() {
                           }}
                           className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 bg-white disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed cursor-pointer"
                         >
-                          <option value="pending">Pending</option>
-                          <option value="paid">Paid</option>
+                          <option value="pending" disabled={selectedOrderForDetail.status !== "pending"}>
+                            Pending {selectedOrderForDetail.status !== "pending" ? "(Locked)" : ""}
+                          </option>
+                          <option value="paid" disabled={selectedOrderForDetail.status === "shipped"}>
+                            Paid
+                          </option>
                           <option value="shipped">Shipped</option>
                           <option value="delivered">Delivered (Locked)</option>
                           <option value="cancelled">Cancelled (Locked)</option>
