@@ -2844,32 +2844,26 @@ export default function MerchantDashboard() {
                           </div>
                         )}
 
-                        {productForm.productId ? (
-                          <div className="flex items-center gap-4 pt-2">
-                            <label className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-button text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer transition-colors shadow-sm bg-white">
-                              {uploadingImage ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                              ) : (
-                                <Upload className="h-4 w-4" />
-                              )}
-                              {uploadingImage ? "Uploading to S3..." : "Upload Image"}
-                              <input
-                                type="file"
-                                accept="image/*"
-                                disabled={uploadingImage}
-                                onChange={(e) => handleImageUpload(e, productForm.productId!)}
-                                className="hidden"
-                              />
-                            </label>
-                            <span className="text-xs text-slate-400">
-                              Supports JPG, PNG, WEBP.
-                            </span>
-                          </div>
-                        ) : (
-                          <p className="text-xs text-amber-600 bg-amber-50 p-2.5 rounded border border-amber-100 font-medium">
-                            ⚠️ Please save the product first to enable S3 direct file uploading.
-                          </p>
-                        )}
+                        <div className="flex items-center gap-4 pt-2">
+                          <label className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-button text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer transition-colors shadow-sm bg-white">
+                            {uploadingImage ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                            ) : (
+                              <Upload className="h-4 w-4" />
+                            )}
+                            {uploadingImage ? "Uploading to S3..." : "Upload Image"}
+                            <input
+                              type="file"
+                              accept="image/*"
+                              disabled={uploadingImage}
+                              onChange={(e) => handleImageUpload(e, productForm.productId || "new")}
+                              className="hidden"
+                            />
+                          </label>
+                          <span className="text-xs text-slate-400">
+                            Supports JPG, PNG, WEBP.
+                          </span>
+                        </div>
                       </div>
 
                       {/* Card 3: Pricing */}
