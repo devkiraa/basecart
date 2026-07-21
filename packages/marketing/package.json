@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "clean": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "predev": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "dev": "next dev -p 3000",
     "build": "next build",
     "pages:build": "npx @cloudflare/next-on-pages",
