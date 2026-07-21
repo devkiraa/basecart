@@ -21,7 +21,8 @@
     "migrate:dev": "npm run migrate:dev --workspace=packages/backend",
     "migrate:dev:remote": "npm run migrate:dev:remote --workspace=packages/backend",
     "migrate:staging": "npm run migrate:staging --workspace=packages/backend",
-    "migrate:prod": "npm run migrate:prod --workspace=packages/backend"
+    "migrate:prod": "npm run migrate:prod --workspace=packages/backend",
+    "db:sync": "npm run db:sync --workspace=packages/backend"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
