@@ -7393,72 +7393,126 @@ export default function MerchantDashboard() {
             return (
               <div className="space-y-6 animate-fade-in select-none">
 
-                {/* 1. Selected Theme Hero */}
-                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden flex flex-col xl:flex-row gap-6 p-6">
-                  <div className="flex-1 flex flex-col justify-between pr-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Active Store Layout</span>
-                        <div className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 text-[9px] font-extrabold rounded-full uppercase tracking-wider shadow-xs">
-                          <span className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                          <span>Active</span>
+                {/* 1. Core Web Vitals & Speed Performance Header Bar */}
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-extrabold text-slate-700">Speed Score & Core Web Vitals</span>
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-black border border-emerald-200">
+                      98/100 · Fast
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-6 text-xs">
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold block">LCP P75</span>
+                      <span className="font-extrabold text-slate-800">320 ms</span>
+                      <span className="ml-1 text-[10px] text-emerald-600 font-bold">Good</span>
+                    </div>
+                    <div className="h-6 w-px bg-slate-100"></div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold block">INP P75</span>
+                      <span className="font-extrabold text-slate-800">8 ms</span>
+                      <span className="ml-1 text-[10px] text-emerald-600 font-bold">Good</span>
+                    </div>
+                    <div className="h-6 w-px bg-slate-100"></div>
+                    <div>
+                      <span className="text-slate-400 text-[10px] uppercase font-bold block">CLS</span>
+                      <span className="font-extrabold text-slate-800">0.00</span>
+                      <span className="ml-1 text-[10px] text-emerald-600 font-bold">Good</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Main Active Theme Preview Card (Shopify Standard Layout) */}
+                <div className="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden select-none">
+                  {/* Hero Canvas Showcase Area */}
+                  <div className="bg-slate-100/70 p-6 md:p-10 flex items-center justify-center relative min-h-[400px] overflow-hidden border-b border-slate-200/80">
+                    <div className="relative w-full max-w-4xl flex items-center justify-center">
+                      
+                      {/* Desktop Mockup Display Frame */}
+                      <div className="w-full max-w-2xl h-[340px] bg-white rounded-xl shadow-2xl border border-slate-300/80 flex flex-col overflow-hidden relative group">
+                        {/* Browser Header Bar */}
+                        <div className="flex items-center justify-between border-b border-slate-200/80 px-3 py-1.5 bg-slate-100/90 text-[10px] text-slate-500 font-medium shrink-0">
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
+                            <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
+                          </div>
+                          <span className="truncate max-w-xs font-mono text-center mx-auto text-slate-600 font-semibold bg-white/80 px-4 py-0.5 rounded-md border border-slate-200">
+                            https://{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}
+                          </span>
+                          <div className="w-10"></div>
+                        </div>
+
+                        {/* Scaling Iframe Container */}
+                        <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-50">
+                          <iframe
+                            src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
+                            className="w-[1280px] h-[850px] border-none bg-white origin-top-left scale-[0.48] pointer-events-none"
+                            title="Desktop Storefront Preview"
+                          />
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">{activeTheme ? activeTheme.name : "Satoshi"}</h2>
-                        <span className="text-[9px] font-extrabold bg-[#4F46E5]/10 text-[#4F46E5] px-1.5 py-0.5 rounded uppercase tracking-wide">V2</span>
+
+                      {/* Mobile Phone Mockup Overlay Frame */}
+                      <div className="hidden sm:block absolute right-4 -bottom-6 w-44 h-[290px] bg-slate-900 rounded-[28px] shadow-2xl border-4 border-slate-800 flex flex-col overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                        {/* Notch */}
+                        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 bg-slate-800 w-12 h-2 rounded-full z-20 flex items-center justify-end px-1">
+                          <span className="w-1 h-1 rounded-full bg-blue-500"></span>
+                        </div>
+                        <div className="relative w-full h-full pt-4 bg-white overflow-hidden">
+                          <iframe
+                            src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
+                            className="w-[375px] h-[667px] border-none bg-white origin-top-left scale-[0.41] pointer-events-none"
+                            title="Mobile Storefront Preview"
+                          />
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500 leading-relaxed max-w-md">Clean and modern fashion theme built for conversion rates and merchant trust.</p>
-                      <div className="grid grid-cols-2 gap-3 text-xs text-slate-600 font-bold pt-2">
-                        {["Mobile Responsive", "SEO Optimized", "Fast Loading", "Accessibility Ready"].map((item) => (
-                          <div key={item} className="flex items-center gap-2">
-                            <span className="h-4 w-4 rounded-full bg-indigo-50 border border-indigo-100 flex items-center justify-center text-[#4F46E5] font-extrabold text-[10px]">✓</span>
-                            <span>{item}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-3 pt-8">
-                      <button onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }} className="px-4 py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all">Customize Theme</button>
-                      <button onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }} className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-extrabold text-xs rounded-xl shadow-sm transition-all">Theme Settings</button>
-                      <a href={getStorefrontLink(settings.subdomain || "demo")} target="_blank" rel="noreferrer" className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-extrabold text-xs rounded-xl shadow-sm flex items-center gap-1">
-                        <span>Preview Store</span><ExternalLink className="h-3 w-3 text-slate-400" />
-                      </a>
+
                     </div>
                   </div>
 
-                  {/* Right Column live preview */}
-                  <div className="flex-1 bg-slate-50 border border-slate-200/60 rounded-xl p-5 flex flex-col justify-between items-center gap-4 relative min-h-[340px]">
-                    <div className="w-full flex justify-between items-center border-b border-slate-200 pb-2">
-                      <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Storefront Simulator</span>
-                      <div className="flex gap-1 bg-slate-200/60 p-0.5 rounded-lg border border-slate-300/30 shadow-xs">
-                        <button onClick={() => setPreviewMode("desktop")} className={`flex items-center gap-1 px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "desktop" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
-                          <Monitor className="h-3 w-3" /><span>Desktop</span>
-                        </button>
-                        <button onClick={() => setPreviewMode("mobile")} className={`flex items-center gap-1 px-2.5 py-1 text-[9px] font-extrabold uppercase rounded-md transition-all ${previewMode === "mobile" ? "bg-white text-slate-800 shadow-xs" : "text-slate-500 hover:text-slate-700"}`}>
-                          <Smartphone className="h-3 w-3" /><span>Mobile</span>
-                        </button>
+                  {/* Active Theme Info & Actions Bar (Shopify Style Footer) */}
+                  <div className="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2.5">
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Satoshi</h3>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-emerald-200/80">
+                          Active Theme
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
+                        <span>Last saved: Just now</span>
+                        <span className="text-slate-300">·</span>
+                        <span className="text-blue-600 font-bold">● Version 1.0.0</span>
                       </div>
                     </div>
 
-                    {previewMode === "desktop" ? (
-                      <div className="w-full h-[220px] bg-white rounded-lg shadow-md border border-slate-200 flex flex-col overflow-hidden relative animate-fade-in">
-                        <div className="flex items-center justify-between border-b border-slate-100 px-3 py-1 bg-slate-50/70 text-[8px] text-slate-400 font-medium">
-                          <div className="flex items-center gap-1 shrink-0">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
-                          </div>
-                          <span className="truncate w-32 font-mono text-center mx-auto">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</span>
-                        </div>
-                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Satoshi"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#010101")}`} className="w-full flex-1 border-none bg-slate-50 pointer-events-none scale-90 origin-top" />
-                      </div>
-                    ) : (
-                      <div className="w-36 h-[220px] bg-white rounded-2xl shadow-md border-4 border-slate-800 flex flex-col overflow-hidden relative animate-fade-in">
-                        <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 w-10 h-1.5 rounded-full z-10 flex items-center justify-end px-1"><span className="w-0.5 h-0.5 rounded-full bg-blue-500"></span></div>
-                        <iframe src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Satoshi"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#010101")}`} className="w-full h-full border-none bg-slate-50 pt-3 pointer-events-none scale-90 origin-top" />
-                      </div>
-                    )}
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <button
+                        onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }}
+                        className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                      >
+                        <Palette className="h-3.5 w-3.5" />
+                        <span>Customize Theme</span>
+                      </button>
+
+                      <button
+                        onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }}
+                        className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                      >
+                        Theme Settings
+                      </button>
+
+                      <a
+                        href={getStorefrontLink(settings.subdomain || "demo")}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>View Store</span>
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-400" />
+                      </a>
+                    </div>
                   </div>
                 </div>
 
