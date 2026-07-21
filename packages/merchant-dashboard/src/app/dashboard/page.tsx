@@ -542,8 +542,11 @@ export default function MerchantDashboard() {
     last7Days: [],
   });
 
-  // Discount Codes
+  // Discount Codes state
   const [discounts, setDiscounts] = useState<any[]>([]);
+  const [discountFilter, setDiscountFilter] = useState<string>("all");
+  const [discountSearchQuery, setDiscountSearchQuery] = useState<string>("");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Advanced screens state
   const [customers, setCustomers] = useState<any[]>([]);
@@ -2247,6 +2250,49 @@ export default function MerchantDashboard() {
     }
   };
 
+  const toggleDiscountActive = async (disc: any) => {
+    setLoading(true);
+    setActionError("");
+    try {
+      const newActiveState = !disc.active;
+      const res = await fetch(`${API_URL}/discounts/${disc.code}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          code: disc.code,
+          type: disc.type,
+          value: Number(disc.value),
+          minOrderAmount: Number(disc.minOrderAmount || 0),
+          usageLimit: disc.usageLimit ? Number(disc.usageLimit) : undefined,
+          expiry: disc.expiry ? new Date(disc.expiry).toISOString() : undefined,
+          active: newActiveState,
+        }),
+      });
+      if (res.ok) {
+        setActionSuccess(`Discount code ${disc.code} is now ${newActiveState ? "active" : "inactive"}.`);
+        fetchDashboardData();
+      } else {
+        const d = await res.json();
+        setActionError(d.error || "Failed updating status");
+      }
+    } catch (err) {
+      setActionError("Error updating discount status.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyCouponCode = (code: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+      setCopiedCode(code);
+      setTimeout(() => setCopiedCode(null), 2000);
+    }
+  };
+
   const fetchCustomerOrders = async (email: string) => {
     setLoading(true);
     setActionError("");
@@ -2343,12 +2389,13 @@ export default function MerchantDashboard() {
       if (e.key === "Escape") {
         if (selectedOrderForDetail) setSelectedOrderForDetail(null);
         if (fulfillingOrder) setFulfillingOrder(null);
+        if (discountForm) setDiscountForm(null);
         if (showOtpModal) setShowOtpModal(false);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedOrderForDetail, fulfillingOrder, showOtpModal]);
+  }, [selectedOrderForDetail, fulfillingOrder, discountForm, showOtpModal]);
 
   // --- Loading / Hydration Splash ---
   if (!isHydrated || !sessionChecked) {
@@ -5017,267 +5064,376 @@ export default function MerchantDashboard() {
           {/* 4. Discount Codes Tab */}
           {activeTab === "discounts" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              {/* Header & Primary Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold tracking-tight">Discount Codes</h2>
-                  <p className="text-sm text-slate-500">Create discount coupons and track campaign usage</p>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Discount Codes & Coupons</h2>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      Promotions Active
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-0.5">Create discount coupons, set minimum spend rules, manage usage limits, and track redemption metrics</p>
                 </div>
-                <button
-                  onClick={() => setDiscountForm({ code: "", type: "flat", value: 0, minOrderAmount: 0, active: true })}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-button shadow-sm transition-colors"
-                >
-                  <Plus className="h-4 w-4" /> Add Discount Code
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDiscountForm({ code: "", type: "flat", value: 100, minOrderAmount: 499, active: true })}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Create Discount Code</span>
+                  </button>
+                </div>
               </div>
 
-              {discountForm && (
-                <div className="bg-white p-6 rounded-card border border-slate-200 shadow-card">
-                  <h3 className="text-md font-bold mb-4">{discountForm.isEdit ? "Edit Code" : "New Discount Code"}</h3>
-                  <form onSubmit={saveDiscount} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Code (e.g. SAVE10)
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          disabled={!!discountForm.isEdit}
-                          value={discountForm.code || ""}
-                          onChange={(e) => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase() })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Discount Type
-                        </label>
-                        <select
-                          value={discountForm.type || "flat"}
-                          onChange={(e: any) => setDiscountForm({ ...discountForm, type: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                        >
-                          <option value="flat">Flat Cash (₹)</option>
-                          <option value="percentage">Percentage (%)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Value
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min="1"
-                          value={discountForm.value || ""}
-                          onChange={(e) => setDiscountForm({ ...discountForm, value: Number(e.target.value) })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Minimum Order Amount Required (₹)
-                        </label>
-                        <input
-                          type="number"
-                          value={discountForm.minOrderAmount || 0}
-                          onChange={(e) => setDiscountForm({ ...discountForm, minOrderAmount: Number(e.target.value) })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Usage Limit (Optional)
-                        </label>
-                        <input
-                          type="number"
-                          value={discountForm.usageLimit || ""}
-                          onChange={(e) => setDiscountForm({ ...discountForm, usageLimit: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                          placeholder="No limit"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Active Campaign
-                        </label>
-                        <select
-                          value={discountForm.active === false ? "false" : "true"}
-                          onChange={(e) => setDiscountForm({ ...discountForm, active: e.target.value === "true" })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        >
-                          <option value="true">Active</option>
-                          <option value="false">Inactive</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-button shadow-sm"
-                      >
-                        Save Code
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiscountForm(null)}
-                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-600 text-sm font-medium rounded-button"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+              {/* Metrics Summary Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {/* 1. Total Campaigns */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-white text-left shadow-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Total Campaigns</span>
+                    <Tag className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-black text-slate-900">{discounts.length}</div>
+                  <p className="text-[10px] text-slate-500 font-medium">Configured coupons</p>
                 </div>
-              )}
 
-              {!discountForm && discounts.length === 0 && !loading ? (
-                <EmptyState
-                  icon={<Tag className="h-10 w-10 text-blue-600" />}
-                  title="No discount codes yet"
-                  description="Create custom promotional coupons to boost sales on your storefront."
-                  action={{
-                    label: "Add Discount Code",
-                    onClick: () => setDiscountForm({ code: "", type: "flat", value: 0, minOrderAmount: 0, active: true })
-                  }}
-                />
-              ) : (
-                <>
-                  <div className="hidden md:block bg-white border border-slate-200 rounded-card shadow-card overflow-hidden animate-fade-in">
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                      <thead className="bg-slate-50 font-semibold text-slate-600 text-xs uppercase tracking-wider">
-                        <tr>
-                          <th className="px-6 py-3">Code</th>
-                          <th className="px-6 py-3">Discount Details</th>
-                          <th className="px-6 py-3">Min Order</th>
-                          <th className="px-6 py-3">Usage Count</th>
-                          <th className="px-6 py-3">Status</th>
-                          <th className="px-6 py-3 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                      {loading ? (
-                        Array.from({ length: 5 }).map((_, idx) => (
-                          <tr key={idx}>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-12 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
-                            <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
-                            <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto animate-shimmer" /></td>
+                {/* 2. Active Offers */}
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/40 text-left shadow-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-emerald-700">Active Offers</span>
+                    <Sparkles className="h-4 w-4 text-emerald-600" />
+                  </div>
+                  <div className="text-2xl font-black text-emerald-900">
+                    {discounts.filter((d) => d.active && (!d.expiry || new Date(d.expiry).getTime() >= Date.now())).length}
+                  </div>
+                  <p className="text-[10px] text-emerald-700 font-medium">Ready for checkout</p>
+                </div>
+
+                {/* 3. Total Redemptions */}
+                <div className="p-4 rounded-xl border border-indigo-200 bg-indigo-50/40 text-left shadow-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-indigo-700">Total Redemptions</span>
+                    <TrendingUp className="h-4 w-4 text-indigo-600" />
+                  </div>
+                  <div className="text-2xl font-black text-indigo-900">
+                    {discounts.reduce((acc, curr) => acc + (curr.usageCount || 0), 0)}
+                  </div>
+                  <p className="text-[10px] text-indigo-700 font-medium">Used by storefront buyers</p>
+                </div>
+
+                {/* 4. Expired / Reached Limit */}
+                <div className="p-4 rounded-xl border border-slate-200 bg-slate-50 text-left shadow-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-slate-500">Expired / Inactive</span>
+                    <AlertCircle className="h-4 w-4 text-slate-400" />
+                  </div>
+                  <div className="text-2xl font-black text-slate-700">
+                    {discounts.filter((d) => !d.active || (d.expiry && new Date(d.expiry).getTime() < Date.now())).length}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium">Ended or disabled</p>
+                </div>
+              </div>
+
+              {/* Preset Templates Banner */}
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50/60 to-purple-50 p-4 rounded-xl border border-blue-100 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-black uppercase text-blue-700 tracking-wider">Quick Preset Templates ⚡</span>
+                  <p className="text-xs text-slate-700 font-medium">Launch popular high-converting coupon templates with 1-click</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setDiscountForm({ code: "WELCOME10", type: "percentage", value: 10, minOrderAmount: 0, active: true })}
+                    className="px-3 py-1.5 bg-white border border-blue-200 hover:bg-blue-600 hover:text-white text-blue-700 font-bold text-xs rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  >
+                    🎉 WELCOME10 (10% Off)
+                  </button>
+                  <button
+                    onClick={() => setDiscountForm({ code: "FLAT100", type: "flat", value: 100, minOrderAmount: 499, active: true })}
+                    className="px-3.5 py-1.5 bg-white border border-indigo-200 hover:bg-indigo-600 hover:text-white text-indigo-700 font-bold text-xs rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  >
+                    🏷️ FLAT100 (₹100 Off)
+                  </button>
+                  <button
+                    onClick={() => setDiscountForm({ code: "VIP20", type: "percentage", value: 20, minOrderAmount: 999, active: true })}
+                    className="px-3.5 py-1.5 bg-white border border-purple-200 hover:bg-purple-600 hover:text-white text-purple-700 font-bold text-xs rounded-lg transition-colors shadow-2xs cursor-pointer"
+                  >
+                    👑 VIP20 (20% Off)
+                  </button>
+                </div>
+              </div>
+
+              {/* Search & Filter Bar */}
+              <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-center justify-between gap-3">
+                <div className="relative w-full md:w-72">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search coupon code..."
+                    value={discountSearchQuery}
+                    onChange={(e) => setDiscountSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-slate-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
+
+                {/* Filter Pills */}
+                <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+                  {[
+                    { id: "all", label: "All Codes" },
+                    { id: "active", label: "Active" },
+                    { id: "inactive", label: "Inactive" },
+                    { id: "flat", label: "Flat Cash" },
+                    { id: "percentage", label: "Percentage" },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDiscountFilter(tab.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                        discountFilter === tab.id
+                          ? "bg-slate-900 text-white shadow-2xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Coupons List / Table */}
+              {(() => {
+                const filteredDiscounts = discounts.filter((d) => {
+                  const q = discountSearchQuery.trim().toUpperCase();
+                  const matchesQuery = !q || d.code.toUpperCase().includes(q);
+                  const isExpired = d.expiry && new Date(d.expiry).getTime() < Date.now();
+                  
+                  let matchesFilter = true;
+                  if (discountFilter === "active") matchesFilter = d.active && !isExpired;
+                  else if (discountFilter === "inactive") matchesFilter = !d.active || isExpired;
+                  else if (discountFilter === "flat") matchesFilter = d.type === "flat";
+                  else if (discountFilter === "percentage") matchesFilter = d.type === "percentage";
+
+                  return matchesQuery && matchesFilter;
+                });
+
+                if (discounts.length === 0 && !loading) {
+                  return (
+                    <EmptyState
+                      icon={<Tag className="h-10 w-10 text-blue-600" />}
+                      title="No discount codes yet"
+                      description="Create custom promotional coupons to boost sales on your storefront."
+                      action={{
+                        label: "Create Discount Code",
+                        onClick: () => setDiscountForm({ code: "", type: "flat", value: 100, minOrderAmount: 0, active: true })
+                      }}
+                    />
+                  );
+                }
+
+                if (filteredDiscounts.length === 0 && !loading) {
+                  return (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-8 text-center space-y-2">
+                      <Tag className="h-8 w-8 text-slate-300 mx-auto" />
+                      <p className="text-sm font-bold text-slate-700">No matching discount codes found</p>
+                      <p className="text-xs text-slate-400">Try clearing search filters or changing the status filter.</p>
+                      <button
+                        onClick={() => { setDiscountFilter("all"); setDiscountSearchQuery(""); }}
+                        className="mt-2 text-xs font-bold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        Reset Filters
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden animate-fade-in">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead className="bg-slate-50 font-bold text-slate-500 uppercase tracking-wider text-[10px]">
+                          <tr>
+                            <th className="px-6 py-3.5">Coupon Code</th>
+                            <th className="px-6 py-3.5">Discount Offer</th>
+                            <th className="px-6 py-3.5">Min Spend</th>
+                            <th className="px-6 py-3.5">Usage / Limit</th>
+                            <th className="px-6 py-3.5">Status</th>
+                            <th className="px-6 py-3.5 text-right">Actions</th>
                           </tr>
-                        ))
-                      ) : (
-                        discounts.map((disc) => (
-                          <tr key={disc.code} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4 font-mono font-bold text-slate-900">{disc.code}</td>
-                            <td className="px-6 py-4 text-slate-700">
-                              {disc.type === "flat" ? `${formatINR(disc.value)} Off` : `${disc.value}% Off`}
-                            </td>
-                            <td className="px-6 py-4 text-slate-500">{formatINR(disc.minOrderAmount)}</td>
-                            <td className="px-6 py-4 text-slate-500 font-mono">
-                              {disc.usageCount} {disc.usageLimit ? `/ ${disc.usageLimit}` : ""}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${
-                                disc.active
-                                  ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                                  : "bg-slate-100 text-slate-600"
-                              }`}>
-                                {disc.active ? "Active" : "Inactive"}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                              <div className="flex justify-end gap-2">
-                                <button
-                                  onClick={() => setDiscountForm({ ...disc, isEdit: true })}
-                                  className="p-1 hover:text-blue-600 text-slate-400 transition-colors"
-                                >
-                                  <Edit className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteDiscount(disc.code)}
-                                  className="p-1 hover:text-red-600 text-slate-400 transition-colors"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                          {loading ? (
+                            Array.from({ length: 5 }).map((_, idx) => (
+                              <tr key={idx}>
+                                <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20 animate-shimmer" /></td>
+                                <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24 animate-shimmer" /></td>
+                                <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                                <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                                <td className="px-6 py-4"><div className="h-5 bg-slate-200 rounded w-16 animate-shimmer" /></td>
+                                <td className="px-6 py-4 text-right"><div className="h-8 bg-slate-200 rounded w-20 ml-auto animate-shimmer" /></td>
+                              </tr>
+                            ))
+                          ) : (
+                            filteredDiscounts.map((disc) => {
+                              const isExpired = disc.expiry && new Date(disc.expiry).getTime() < Date.now();
+                              const isLimitReached = disc.usageLimit && (disc.usageCount || 0) >= disc.usageLimit;
+                              const isCopied = copiedCode === disc.code;
+
+                              return (
+                                <tr key={disc.code} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono font-black text-slate-900 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg text-xs tracking-wider">
+                                        {disc.code}
+                                      </span>
+                                      <button
+                                        onClick={() => copyCouponCode(disc.code)}
+                                        className="p-1 text-slate-400 hover:text-blue-600 transition-colors cursor-pointer"
+                                        title="Copy code"
+                                      >
+                                        {isCopied ? <span className="text-[10px] font-bold text-emerald-600">✓ Copied</span> : <Copy className="h-3.5 w-3.5" />}
+                                      </button>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <span className="font-bold text-slate-900 text-sm">
+                                      {disc.type === "flat" ? `${formatINR(disc.value)} Off` : `${disc.value}% Off`}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 font-semibold text-slate-600">
+                                    {disc.minOrderAmount > 0 ? formatINR(disc.minOrderAmount) : <span className="text-slate-400 font-normal">No Minimum</span>}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="space-y-1">
+                                      <span className="font-mono font-bold text-slate-800">
+                                        {disc.usageCount || 0} {disc.usageLimit ? `/ ${disc.usageLimit}` : "uses"}
+                                      </span>
+                                      {disc.usageLimit && (
+                                        <div className="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                          <div
+                                            className={`h-full rounded-full ${isLimitReached ? "bg-red-500" : "bg-blue-600"}`}
+                                            style={{ width: `${Math.min(100, ((disc.usageCount || 0) / disc.usageLimit) * 100)}%` }}
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <button
+                                      onClick={() => toggleDiscountActive(disc)}
+                                      className="cursor-pointer group flex items-center gap-1.5"
+                                      title="Click to toggle status"
+                                    >
+                                      {isExpired ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                          Expired
+                                        </span>
+                                      ) : isLimitReached ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-700 border border-red-200">
+                                          Limit Reached
+                                        </span>
+                                      ) : disc.active ? (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 group-hover:bg-emerald-100">
+                                          ● Active
+                                        </span>
+                                      ) : (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200 group-hover:bg-slate-200">
+                                          ○ Inactive
+                                        </span>
+                                      )}
+                                    </button>
+                                  </td>
+                                  <td className="px-6 py-4 text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={() => setDiscountForm({ ...disc, isEdit: true })}
+                                        className="px-2.5 py-1 text-slate-600 hover:text-blue-600 hover:bg-blue-50 border border-slate-200 rounded-md font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                                      >
+                                        <Edit className="h-3.5 w-3.5" />
+                                        <span>Edit</span>
+                                      </button>
+                                      <button
+                                        onClick={() => deleteDiscount(disc.code)}
+                                        className="p-1 hover:text-red-600 text-slate-400 transition-colors cursor-pointer"
+                                        title="Delete code"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards View */}
+                    <div className="md:hidden space-y-3">
+                      {filteredDiscounts.map((disc) => {
+                        const isExpired = disc.expiry && new Date(disc.expiry).getTime() < Date.now();
+                        const isLimitReached = disc.usageLimit && (disc.usageCount || 0) >= disc.usageLimit;
+
+                        return (
+                          <div key={disc.code} className="bg-white p-4 border border-slate-200 rounded-xl shadow-xs space-y-3">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <span className="font-mono font-black text-slate-900 text-sm bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                  {disc.code}
+                                </span>
+                                <p className="text-xs font-bold text-slate-800 mt-1.5">
+                                  {disc.type === "flat" ? `${formatINR(disc.value)} Off` : `${disc.value}% Off`}
+                                </p>
                               </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                              <button
+                                onClick={() => toggleDiscountActive(disc)}
+                                className="cursor-pointer"
+                              >
+                                {disc.active && !isExpired ? (
+                                  <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold">
+                                    ● Active
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded text-[10px] font-bold">
+                                    ○ Inactive
+                                  </span>
+                                )}
+                              </button>
+                            </div>
 
-                {/* List Cards - Mobile View */}
-                <div className="md:hidden space-y-4">
-                  {loading ? (
-                    Array.from({ length: 3 }).map((_, idx) => (
-                      <div key={idx} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3 animate-pulse">
-                        <div className="flex justify-between items-center">
-                          <div className="h-4 bg-slate-200 rounded w-16" />
-                          <div className="h-4 bg-slate-200 rounded w-20" />
-                        </div>
-                        <div className="flex justify-between items-center pt-2 border-t border-slate-100">
-                          <div className="h-4 bg-slate-200 rounded w-12" />
-                          <div className="h-5 bg-slate-200 rounded w-16" />
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    discounts.map((disc) => (
-                      <div key={disc.code} className="bg-white p-4 border border-slate-200 rounded-card shadow-sm space-y-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="font-mono font-bold text-slate-900 text-sm">{disc.code}</span>
-                            <p className="text-xs text-slate-500 mt-0.5">
-                              {disc.type === "flat" ? `${formatINR(disc.value)} Off` : `${disc.value}% Off`}
-                            </p>
-                          </div>
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                            disc.active
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
-                              : "bg-slate-100 text-slate-600"
-                          }`}>
-                            {disc.active ? "Active" : "Inactive"}
-                          </span>
-                        </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+                              <div>
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Min Spend</span>
+                                <span className="font-semibold text-slate-700">{disc.minOrderAmount > 0 ? formatINR(disc.minOrderAmount) : "None"}</span>
+                              </div>
+                              <div className="text-right">
+                                <span className="text-[10px] uppercase font-bold text-slate-400 block">Usage</span>
+                                <span className="font-mono font-bold text-slate-800">{disc.usageCount || 0} {disc.usageLimit ? `/ ${disc.usageLimit}` : ""}</span>
+                              </div>
+                            </div>
 
-                        <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 text-[10px]">
-                          <div>
-                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Min Order</span>
-                            <span className="text-slate-700 font-semibold mt-0.5 block">{formatINR(disc.minOrderAmount)}</span>
+                            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                              <button
+                                onClick={() => setDiscountForm({ ...disc, isEdit: true })}
+                                className="px-3 py-1 text-xs font-bold border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 cursor-pointer"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => deleteDiscount(disc.code)}
+                                className="px-3 py-1 text-xs font-bold border border-red-200 text-red-600 rounded-md hover:bg-red-50 cursor-pointer"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <span className="text-slate-400 font-bold uppercase tracking-wider block">Usage Count</span>
-                            <span className="text-slate-700 font-mono font-semibold mt-0.5 block">
-                              {disc.usageCount} {disc.usageLimit ? `/ ${disc.usageLimit}` : ""}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                          <button
-                            onClick={() => setDiscountForm({ ...disc, isEdit: true })}
-                            className="px-3 py-1.5 text-xs font-semibold border border-slate-200 text-slate-600 rounded-md hover:bg-slate-50"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => deleteDiscount(disc.code)}
-                            className="px-3 py-1.5 text-xs font-semibold border border-red-200 text-red-600 rounded-md hover:bg-red-50"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </>
-            )}
+                        );
+                      })}
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -7574,6 +7730,154 @@ export default function MerchantDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* DISCOUNT CODE FORM MODAL */}
+      {discountForm && (
+        <div
+          onClick={() => setDiscountForm(null)}
+          className="fixed inset-0 top-0 left-0 w-screen h-screen z-[99999] flex items-center justify-center p-3 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in overflow-y-auto cursor-pointer"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative my-auto bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-5 cursor-default text-left"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <Tag className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">{discountForm.isEdit ? "Edit Discount Code" : "New Promotional Coupon"}</h3>
+                  <p className="text-xs text-slate-400">Configure discount savings, minimum spend, and redemption limits</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setDiscountForm(null)}
+                className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold flex items-center justify-center text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={saveDiscount} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Coupon Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    disabled={!!discountForm.isEdit}
+                    value={discountForm.code || ""}
+                    onChange={(e) => setDiscountForm({ ...discountForm, code: e.target.value.toUpperCase().replace(/\s/g, "") })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono font-bold text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:bg-slate-100 disabled:text-slate-500"
+                    placeholder="e.g. WELCOME20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Discount Type
+                  </label>
+                  <select
+                    value={discountForm.type || "flat"}
+                    onChange={(e: any) => setDiscountForm({ ...discountForm, type: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm font-semibold focus:outline-none"
+                  >
+                    <option value="flat">Flat Cash Savings (₹)</option>
+                    <option value="percentage">Percentage Off (%)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Discount Value
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={discountForm.value || ""}
+                    onChange={(e) => setDiscountForm({ ...discountForm, value: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm font-bold focus:outline-none"
+                    placeholder={discountForm.type === "percentage" ? "e.g. 20 (for 20%)" : "e.g. 100 (for ₹100)"}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Min Order Spend (₹)
+                  </label>
+                  <input
+                    type="number"
+                    value={discountForm.minOrderAmount || 0}
+                    onChange={(e) => setDiscountForm({ ...discountForm, minOrderAmount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none"
+                    placeholder="0 for no minimum"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Usage Limit (Optional)
+                  </label>
+                  <input
+                    type="number"
+                    value={discountForm.usageLimit || ""}
+                    onChange={(e) => setDiscountForm({ ...discountForm, usageLimit: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none"
+                    placeholder="Unlimited"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Expiry Date (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={discountForm.expiry ? new Date(discountForm.expiry).toISOString().split("T")[0] : ""}
+                    onChange={(e) => setDiscountForm({ ...discountForm, expiry: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Campaign Status
+                  </label>
+                  <select
+                    value={discountForm.active === false ? "false" : "true"}
+                    onChange={(e) => setDiscountForm({ ...discountForm, active: e.target.value === "true" })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-900 text-sm font-semibold focus:outline-none"
+                  >
+                    <option value="true">Active (Enabled)</option>
+                    <option value="false">Inactive (Disabled)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setDiscountForm(null)}
+                  className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm cursor-pointer disabled:opacity-60"
+                >
+                  {loading ? "Saving..." : "Save Discount Code"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
