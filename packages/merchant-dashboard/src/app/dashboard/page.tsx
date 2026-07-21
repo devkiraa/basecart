@@ -49,6 +49,10 @@ import {
   Menu,
   Send,
   Sparkles,
+  Save,
+  Building,
+  Landmark,
+  ShieldCheck,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -153,8 +157,10 @@ interface Order {
 interface StoreSettings {
   storeName: string;
   subdomain: string;
+  customDomain?: string;
   razorpayKey: string;
   razorpaySecret: string;
+  razorpayConfigured?: boolean;
   addOns?: string[];
   plan?: string;
   createdAt?: string;
@@ -542,7 +548,10 @@ export default function MerchantDashboard() {
     last7Days: [],
   });
 
-  // Discount Codes state
+  // Settings sub-tab navigation state
+  const [settingsSubTab, setSettingsSubTab] = useState<string>("general");
+  const [showRazorpaySecret, setShowRazorpaySecret] = useState<boolean>(false);
+  const [confirmBankAccNumber, setConfirmBankAccNumber] = useState<string>("");
   const [discounts, setDiscounts] = useState<any[]>([]);
   const [discountFilter, setDiscountFilter] = useState<string>("all");
   const [discountSearchQuery, setDiscountSearchQuery] = useState<string>("");
@@ -5437,372 +5446,613 @@ export default function MerchantDashboard() {
             </div>
           )}
 
-          {/* 5. Settings Tab */}
+          {/* 5. Settings Tab - Shopify-Class Professional Architecture */}
           {activeTab === "settings" && (
-            <div className="bg-white p-8 border border-slate-200 rounded-card shadow-card max-w-2xl">
-              <div>
-                <h2 className="text-xl font-bold tracking-tight mb-2">Store Settings</h2>
-                <p className="text-sm text-slate-500 mb-6">Configure domain, Razorpay API credentials, and store branding</p>
+            <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Store Settings & Configuration</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-indigo-100 text-indigo-800 border border-indigo-200">
+                      Shopify-Class Console
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-0.5">Manage store profile, payment gateways, GST tax compliance, bank payout details, invoice templates, and legal terms</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={saveSettings}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50 shrink-0"
+                >
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  <span>{loading ? "Saving Settings..." : "Save All Changes"}</span>
+                </button>
               </div>
 
-              <form onSubmit={saveSettings} className="space-y-6">
-                <div className="grid grid-cols-1 gap-6">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Store Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={settings.storeName}
-                      onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                    />
-                  </div>
+              {/* Main 2-Column Shopify Settings Layout */}
+              <div className="flex flex-col md:flex-row gap-6 items-start">
+                {/* Left Sub-Sidebar Menu */}
+                <div className="w-full md:w-64 bg-white border border-slate-200 rounded-2xl p-2 shadow-card space-y-1 shrink-0">
+                  {[
+                    { id: "general", label: "General Store", icon: Building, desc: "Profile & domain" },
+                    { id: "payments", label: "Payments & Gateway", icon: CreditCard, desc: "Razorpay & COD" },
+                    { id: "gst", label: "GST & Tax Identifiers", icon: FileText, desc: "B2B Tax & PAN" },
+                    { id: "bank", label: "Bank Payout Account", icon: Landmark, desc: "Bank wire details" },
+                    { id: "invoices", label: "Invoices & Receipts", icon: FileText, desc: "Terms & signatory" },
+                    { id: "policies", label: "Store Legal Policies", icon: ShieldCheck, desc: "Terms & privacy" },
+                  ].map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = settingsSubTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSettingsSubTab(tab.id)}
+                        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all cursor-pointer text-left ${
+                          isActive
+                            ? "bg-blue-50/80 border border-blue-200/80 text-blue-900 shadow-2xs font-bold"
+                            : "hover:bg-slate-50 text-slate-600 font-medium"
+                        }`}
+                      >
+                        <div className={`p-2 rounded-lg shrink-0 ${isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-500"}`}>
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold leading-none">{tab.label}</p>
+                          <p className="text-[10px] text-slate-400 mt-1 font-normal">{tab.desc}</p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Live Storefront Link
-                    </label>
-                    <div className="mt-1 text-sm font-semibold text-blue-600 flex items-center gap-1">
-                      <span className="underline cursor-pointer">
-                        {STOREFRONT_PROTOCOL}://{settings.subdomain}.{STOREFRONT_DOMAIN}
+                {/* Right Settings Content Form Card */}
+                <div className="flex-1 w-full bg-white border border-slate-200 rounded-2xl p-6 shadow-card space-y-6">
+                  <form onSubmit={saveSettings} className="space-y-6">
+                    {/* 1. GENERAL STORE */}
+                    {settingsSubTab === "general" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">General Store Profile</h3>
+                          <p className="text-xs text-slate-500">Configure public storefront identity and system domains</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Store Display Name <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={settings.storeName || ""}
+                              onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Acme Organic Store"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Store Subdomain Prefix
+                            </label>
+                            <div className="flex items-center">
+                              <input
+                                type="text"
+                                disabled
+                                value={settings.subdomain || ""}
+                                className="w-full px-3.5 py-2.5 border border-slate-200 rounded-l-xl text-slate-500 font-mono text-xs bg-slate-50"
+                              />
+                              <span className="px-3 py-2.5 bg-slate-100 border border-l-0 border-slate-200 rounded-r-xl text-xs font-semibold text-slate-500 font-mono">
+                                .{STOREFRONT_DOMAIN}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Live Storefront URL
+                            </label>
+                            <a
+                              href={`${STOREFRONT_PROTOCOL}://${settings.subdomain}.${STOREFRONT_DOMAIN}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-between px-3.5 py-2.5 border border-blue-200 rounded-xl text-blue-600 bg-blue-50/50 hover:bg-blue-50 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              <span className="truncate">{STOREFRONT_PROTOCOL}://{settings.subdomain}.{STOREFRONT_DOMAIN}</span>
+                              <ExternalLink className="h-3.5 w-3.5 shrink-0 ml-1" />
+                            </a>
+                          </div>
+
+                          <div className="md:col-span-2 pt-2 border-t border-slate-100">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Custom Domain (Pro Tier)
+                            </label>
+                            <input
+                              type="text"
+                              disabled={settings.plan !== "pro"}
+                              value={settings.customDomain || ""}
+                              onChange={(e) => setSettings({ ...settings, customDomain: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs disabled:bg-slate-50 disabled:text-slate-400"
+                              placeholder="e.g. store.mybrand.com"
+                            />
+                            {settings.plan !== "pro" && (
+                              <p className="text-[11px] text-amber-600 font-medium mt-1">
+                                🔒 Custom domains require the <strong>Pro Plan</strong> tier. Upgrade in the Billing section to link custom SSL domain names.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 2. PAYMENTS & GATEWAY */}
+                    {settingsSubTab === "payments" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3 flex justify-between items-center">
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">Payment Gateways & Checkout Rules</h3>
+                            <p className="text-xs text-slate-500">Configure Razorpay merchant keys and Cash on Delivery (COD) settings</p>
+                          </div>
+                          {settings.razorpayConfigured ? (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold flex items-center gap-1">
+                              <CheckCircle className="h-3.5 w-3.5 text-emerald-600" /> Razorpay Live
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-xs font-bold">
+                              ⚠️ Keys Pending
+                            </span>
+                          )}
+                        </div>
+
+                        {!emailVerified && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-start gap-2.5 font-medium">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                            <div>
+                              <p className="font-bold">Email Verification Required</p>
+                              <p className="text-[11px] text-amber-700 mt-0.5">
+                                Your merchant account email must be verified with the 6-digit OTP code before live payment gateway credentials can be activated.
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setShowOtpModal(true)}
+                                className="mt-1 text-[11px] font-bold text-amber-900 underline hover:text-black cursor-pointer"
+                              >
+                                Enter OTP Verification Code →
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Razorpay Key ID
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.razorpayKey || ""}
+                              onChange={(e) => setSettings({ ...settings, razorpayKey: e.target.value })}
+                              className={`w-full px-3.5 py-2.5 border rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none ${
+                                settings.razorpayKey && !settings.razorpayKey.startsWith("rzp_")
+                                  ? "border-red-300 bg-red-50/40"
+                                  : "border-slate-300"
+                              }`}
+                              placeholder="rzp_live_... or rzp_test_..."
+                            />
+                            {settings.razorpayKey && !settings.razorpayKey.startsWith("rzp_") && (
+                              <p className="text-[10px] text-red-600 font-bold mt-1">
+                                ⚠️ Invalid format: Razorpay Key ID should start with "rzp_live_" or "rzp_test_"
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Razorpay Key Secret
+                            </label>
+                            <div className="relative">
+                              <input
+                                type={showRazorpaySecret ? "text" : "password"}
+                                value={settings.razorpaySecret || ""}
+                                onChange={(e) => setSettings({ ...settings, razorpaySecret: e.target.value })}
+                                className="w-full pl-3.5 pr-10 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                placeholder="••••••••••••••••"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
+                                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-700 text-xs font-bold cursor-pointer"
+                              >
+                                {showRazorpaySecret ? "Hide" : "Show"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-400 leading-relaxed bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                          🔒 <strong>Security Guarantee:</strong> API keys are encrypted at rest using Cloudflare AES-256-GCM hardware security modules. Plaintext secrets are never exposed in public API responses or client storefront JavaScript.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 3. GST & TAX IDENTIFIERS */}
+                    {settingsSubTab === "gst" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">GST, Tax & Corporate Identifiers</h3>
+                          <p className="text-xs text-slate-500">Enter your official business tax numbers for compliant B2B tax invoice generation</p>
+                        </div>
+
+                        {/* Format validation status */}
+                        {(() => {
+                          const gstinValid = !settings.gstin || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(settings.gstin.toUpperCase());
+                          const panValid = !settings.panNumber || /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(settings.panNumber.toUpperCase());
+                          const hasError = !gstinValid || !panValid;
+
+                          if (hasError) {
+                            return (
+                              <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 font-medium flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                                <span>Please check the highlighted tax identifier formats below before saving.</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Registered Legal Entity Name
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.registeredBusinessName || ""}
+                              onChange={(e) => setSettings({ ...settings, registeredBusinessName: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-bold text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Acme Retail Private Limited"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                GSTIN Number (15-Digit)
+                              </label>
+                              {settings.gstin && /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(settings.gstin.toUpperCase()) && (
+                                <span className="text-[10px] font-bold text-emerald-600">✓ Valid GSTIN</span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              maxLength={15}
+                              value={settings.gstin || ""}
+                              onChange={(e) => setSettings({ ...settings, gstin: e.target.value.toUpperCase() })}
+                              className={`w-full px-3.5 py-2.5 border rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none ${
+                                settings.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(settings.gstin.toUpperCase())
+                                  ? "border-red-300 bg-red-50/40"
+                                  : "border-slate-300"
+                              }`}
+                              placeholder="e.g. 33AAAAA0000A1Z5"
+                            />
+                            {settings.gstin && !/^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(settings.gstin.toUpperCase()) && (
+                              <p className="text-[10px] text-red-600 font-bold mt-1">
+                                ⚠️ Format check: 15 alphanumeric characters (e.g., 33AAAAA0000A1Z5)
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Permanent Account Number (PAN)
+                              </label>
+                              {settings.panNumber && /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(settings.panNumber.toUpperCase()) && (
+                                <span className="text-[10px] font-bold text-emerald-600">✓ Valid PAN</span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              maxLength={10}
+                              value={settings.panNumber || ""}
+                              onChange={(e) => setSettings({ ...settings, panNumber: e.target.value.toUpperCase() })}
+                              className={`w-full px-3.5 py-2.5 border rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none ${
+                                settings.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(settings.panNumber.toUpperCase())
+                                  ? "border-red-300 bg-red-50/40"
+                                  : "border-slate-300"
+                              }`}
+                              placeholder="e.g. ABCDE1234F"
+                            />
+                            {settings.panNumber && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(settings.panNumber.toUpperCase()) && (
+                              <p className="text-[10px] text-red-600 font-bold mt-1">
+                                ⚠️ Format check: 10 characters (e.g., ABCDE1234F)
+                              </p>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Corporate Identity Number (CIN)
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.cinNumber || ""}
+                              onChange={(e) => setSettings({ ...settings, cinNumber: e.target.value.toUpperCase() })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. U40100TN2010PTC075961"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Place of Supply / State
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.placeOfSupply || settings.registeredState || ""}
+                              onChange={(e) => setSettings({ ...settings, placeOfSupply: e.target.value, registeredState: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Tamil Nadu (33) or Maharashtra (27)"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Registered Corporate Address
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={settings.registeredBusinessAddress || ""}
+                              onChange={(e) => setSettings({ ...settings, registeredBusinessAddress: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="Enter full registered address printed on official Tax Invoices..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 4. BANK PAYOUT ACCOUNT */}
+                    {settingsSubTab === "bank" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">Bank Payout & Wire Transfer Details</h3>
+                          <p className="text-xs text-slate-500">Configure bank details for direct customer NEFT/RTGS wire transfers printed on invoices</p>
+                        </div>
+
+                        {/* IFSC Validation Indicator */}
+                        {settings.bankDetails?.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(settings.bankDetails.ifscCode.toUpperCase()) && (
+                          <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-700 font-medium flex items-center gap-2">
+                            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+                            <span>Invalid IFSC Code format. IFSC should be 11 characters (e.g. HDFC0001225).</span>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Bank Name
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.bankDetails?.bankName || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                bankDetails: { ...(settings.bankDetails || {}), bankName: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. HDFC Bank Limited"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Account Holder Name
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.bankDetails?.accountName || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                bankDetails: { ...(settings.bankDetails || {}), accountName: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Acme Retail Private Limited"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Bank Account Number
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.bankDetails?.accountNumber || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                bankDetails: { ...(settings.bankDetails || {}), accountNumber: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. 50200026430541"
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex justify-between items-center mb-1">
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                IFSC Code (11-Digit)
+                              </label>
+                              {settings.bankDetails?.ifscCode && /^[A-Z]{4}0[A-Z0-9]{6}$/.test(settings.bankDetails.ifscCode.toUpperCase()) && (
+                                <span className="text-[10px] font-bold text-emerald-600">✓ Valid IFSC</span>
+                              )}
+                            </div>
+                            <input
+                              type="text"
+                              maxLength={11}
+                              value={settings.bankDetails?.ifscCode || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                bankDetails: { ...(settings.bankDetails || {}), ifscCode: e.target.value.toUpperCase() }
+                              })}
+                              className={`w-full px-3.5 py-2.5 border rounded-xl text-slate-900 font-mono text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none ${
+                                settings.bankDetails?.ifscCode && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(settings.bankDetails.ifscCode.toUpperCase())
+                                  ? "border-red-300 bg-red-50/40"
+                                  : "border-slate-300"
+                              }`}
+                              placeholder="e.g. HDFC0001225"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Bank Branch Address
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.bankDetails?.bankBranch || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                bankDetails: { ...(settings.bankDetails || {}), bankBranch: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Ground Floor, Anna Nagar West, Chennai 600040"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 5. INVOICES & RECEIPTS */}
+                    {settingsSubTab === "invoices" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">Invoice Terms & Signatory Watermark</h3>
+                          <p className="text-xs text-slate-500">Customize legal disclaimers, payment terms, and authorized signatures printed on PDF GST Tax Invoices</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Default Invoice Terms
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.invoiceConfig?.invoiceTerms || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceTerms: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Net 15 or Due on Receipt"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Authorized Signatory Name
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.invoiceConfig?.authorizedSignatoryName || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                invoiceConfig: { ...(settings.invoiceConfig || {}), authorizedSignatoryName: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-bold focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. R. Badrinath"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Invoice Footer Notes & Thank You Message
+                            </label>
+                            <input
+                              type="text"
+                              value={settings.invoiceConfig?.invoiceNotes || ""}
+                              onChange={(e) => setSettings({
+                                ...settings,
+                                invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceNotes: e.target.value }
+                              })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                              placeholder="e.g. Thanks for your business. For GST queries, please contact store support."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 6. STORE LEGAL POLICIES */}
+                    {settingsSubTab === "policies" && (
+                      <div className="space-y-5">
+                        <div className="border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">Store Legal Policy Pages</h3>
+                          <p className="text-xs text-slate-500">Provide legal policy texts. When saved, these will automatically generate public policy links in your storefront footer</p>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Terms of Service Policy
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={settings.termsOfService || ""}
+                              onChange={(e) => setSettings({ ...settings, termsOfService: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                              placeholder="Specify buyer rights, store usage conditions, and order policies..."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Privacy & Data Collection Policy
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={settings.privacyPolicy || ""}
+                              onChange={(e) => setSettings({ ...settings, privacyPolicy: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                              placeholder="Detail how customer email, phone, and delivery address data is used..."
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Shipping, Refund & Cancellation Policy
+                            </label>
+                            <textarea
+                              rows={4}
+                              value={settings.refundPolicy || ""}
+                              onChange={(e) => setSettings({ ...settings, refundPolicy: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-blue-600 focus:outline-none font-mono"
+                              placeholder="Outline refund timelines, item return conditions, and cancellation rules..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Bottom Action Footer */}
+                    <div className="border-t border-slate-100 pt-5 flex items-center justify-between">
+                      <span className="text-xs text-slate-400 font-medium">
+                        Changes are saved instantly to your Cloudflare D1/DO store database.
                       </span>
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-xs font-bold rounded-lg shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        <span>{loading ? "Saving Settings..." : "Save Configuration"}</span>
+                      </button>
                     </div>
-                  </div>
-
-                  <div className="border-t border-slate-200 pt-6">
-                    <h3 className="text-sm font-bold text-slate-900 mb-3">Razorpay Merchant Credentials</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Razorpay Key ID
-                        </label>
-                        <input
-                          type="text"
-                          value={settings.razorpayKey}
-                          onChange={(e) => setSettings({ ...settings, razorpayKey: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                          placeholder="rzp_test_..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                          Razorpay Secret Key
-                        </label>
-                        <input
-                          type="password"
-                          value={settings.razorpaySecret}
-                          onChange={(e) => setSettings({ ...settings, razorpaySecret: e.target.value })}
-                          className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                          placeholder="••••••••"
-                        />
-                      </div>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-400">
-                      Keys are encrypted at rest using AES-256-GCM. We never share secrets with public storefront requests.
-                    </p>
-                  </div>
+                  </form>
                 </div>
-
-                {/* B2B GST & Tax Identifiers */}
-                <div className="border-t border-slate-200 pt-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">GST, Tax & Corporate Registrations</h3>
-                  <p className="text-xs text-slate-500">
-                    Enter your official tax numbers to generate compliant B2B GST Tax Invoices matching official company standards.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Registered Company Name
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.registeredBusinessName || ""}
-                        onChange={(e) => setSettings({ ...settings, registeredBusinessName: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="e.g. ZOHO Corporation Private Limited"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        GSTIN Number
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.gstin || ""}
-                        onChange={(e) => setSettings({ ...settings, gstin: e.target.value.toUpperCase() })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="33AAACZ4322M2Z9"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        PAN Number
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.panNumber || ""}
-                        onChange={(e) => setSettings({ ...settings, panNumber: e.target.value.toUpperCase() })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="AAACZ4322M"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        CIN Number
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.cinNumber || ""}
-                        onChange={(e) => setSettings({ ...settings, cinNumber: e.target.value.toUpperCase() })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="U40100TN2010PTC075961"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        TAN Number
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.tanNumber || ""}
-                        onChange={(e) => setSettings({ ...settings, tanNumber: e.target.value.toUpperCase() })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="CHEZ03229C"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Place Of Supply / State (Code)
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.placeOfSupply || settings.registeredState || ""}
-                        onChange={(e) => setSettings({ ...settings, placeOfSupply: e.target.value, registeredState: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="Kerala (32) or Tamil Nadu (33)"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Registered Corporate Address
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={settings.registeredBusinessAddress || ""}
-                      onChange={(e) => setSettings({ ...settings, registeredBusinessAddress: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                      placeholder="942, Krisp IT Park, Vandalur Kelambakkam Road, Chennai, Tamil Nadu, 600127"
-                    />
-                  </div>
-                </div>
-
-                {/* Bank Account Transfer Details */}
-                <div className="border-t border-slate-200 pt-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Bank Transfer Details (Printed on Invoices)</h3>
-                  <p className="text-xs text-slate-500">
-                    These bank account details will appear on generated invoices for customer NEFT/IMPS/RTGS wire transfers.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Bank Name
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.bankDetails?.bankName || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bankDetails: { ...(settings.bankDetails || {}), bankName: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="HDFC Bank Limited"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Account Holder Name
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.bankDetails?.accountName || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bankDetails: { ...(settings.bankDetails || {}), accountName: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="ZOHO Corporation Private Limited"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Account Number
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.bankDetails?.accountNumber || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bankDetails: { ...(settings.bankDetails || {}), accountNumber: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="50200026430541"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        IFSC Code
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.bankDetails?.ifscCode || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          bankDetails: { ...(settings.bankDetails || {}), ifscCode: e.target.value.toUpperCase() }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm font-mono"
-                        placeholder="HDFC0001225"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Bank Branch Address
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.bankDetails?.bankBranch || ""}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        bankDetails: { ...(settings.bankDetails || {}), bankBranch: e.target.value }
-                      })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                      placeholder="AC Old No.56, New No.16/1, Ground Floor, Anna Nagar West, Chennai 600 040"
-                    />
-                  </div>
-                </div>
-
-                {/* Invoice Customization & Authorized Signatory */}
-                <div className="border-t border-slate-200 pt-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Invoice Terms & Authorized Signatory</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Payment Terms
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.invoiceConfig?.invoiceTerms || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceTerms: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="Net 15 or Due on Receipt"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Authorized Signatory Name
-                      </label>
-                      <input
-                        type="text"
-                        value={settings.invoiceConfig?.authorizedSignatoryName || ""}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          invoiceConfig: { ...(settings.invoiceConfig || {}), authorizedSignatoryName: e.target.value }
-                        })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                        placeholder="R. Badrinath"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                      Invoice Footer Notes
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.invoiceConfig?.invoiceNotes || ""}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        invoiceConfig: { ...(settings.invoiceConfig || {}), invoiceNotes: e.target.value }
-                      })}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm"
-                      placeholder="Thanks for your business. For GST queries, please contact us."
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-200 pt-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">Store Legal Policies</h3>
-                  <p className="text-xs text-slate-500 leading-normal">
-                    Enter customized plain text policy summaries. When populated, these will automatically display links inside your public storefront footer.
-                  </p>
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Terms of Service
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={settings.termsOfService || ""}
-                        onChange={(e) => setSettings({ ...settings, termsOfService: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none font-mono"
-                        placeholder="Our store terms & conditions..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Privacy Policy
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={settings.privacyPolicy || ""}
-                        onChange={(e) => setSettings({ ...settings, privacyPolicy: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none font-mono"
-                        placeholder="Our privacy collection standards..."
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                        Refund & Cancellation Policy
-                      </label>
-                      <textarea
-                        rows={4}
-                        value={settings.refundPolicy || ""}
-                        onChange={(e) => setSettings({ ...settings, refundPolicy: e.target.value })}
-                        className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none font-mono"
-                        placeholder="Our item cancellation & money-back policies..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-200 pt-6 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-button shadow-sm"
-                  >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Configuration"}
-                  </button>
-                </div>
-              </form>
+              </div>
             </div>
           )}
 
