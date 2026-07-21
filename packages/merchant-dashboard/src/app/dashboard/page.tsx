@@ -569,10 +569,11 @@ export default function MerchantDashboard() {
     { name: "", values: [] }
   ]);
 
-  // Read tokens on startup (via httpOnly cookie session check)
+  // Read tokens on startup (via httpOnly cookie session check, with localStorage fallback for local dev)
   useEffect(() => {
     const checkSession = async () => {
       try {
+        // First try cookie-based session (production)
         const res = await fetch(`${API_URL}/auth/merchant/me`, {
           credentials: "include",
         });
@@ -582,12 +583,48 @@ export default function MerchantDashboard() {
           setTenantId(data.tenantId);
           setEmailVerified(data.emailVerified !== false);
         } else {
-          // Clear session if invalid/expired
-          setToken(null);
-          setTenantId(null);
+          // Fallback: try localStorage token (local dev cross-origin)
+          const storedToken = typeof window !== "undefined" ? localStorage.getItem("basecart_token") : null;
+          if (storedToken) {
+            const meRes = await fetch(`${API_URL}/auth/merchant/me`, {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              setToken(storedToken);
+              setTenantId(meData.tenantId);
+              setEmailVerified(meData.emailVerified !== false);
+            } else {
+              // Token expired or invalid — clear it
+              localStorage.removeItem("basecart_token");
+              localStorage.removeItem("basecart_refresh_token");
+              localStorage.removeItem("basecart_tenant_id");
+              setToken(null);
+              setTenantId(null);
+            }
+          } else {
+            setToken(null);
+            setTenantId(null);
+          }
         }
       } catch (err) {
-        console.error("No active merchant session:", err);
+        // Network error — try localStorage fallback
+        const storedToken = typeof window !== "undefined" ? localStorage.getItem("basecart_token") : null;
+        if (storedToken) {
+          try {
+            const meRes = await fetch(`${API_URL}/auth/merchant/me`, {
+              headers: { Authorization: `Bearer ${storedToken}` },
+            });
+            if (meRes.ok) {
+              const meData = await meRes.json();
+              setToken(storedToken);
+              setTenantId(meData.tenantId);
+              setEmailVerified(meData.emailVerified !== false);
+            }
+          } catch (innerErr) {
+            console.error("No active merchant session:", innerErr);
+          }
+        }
       } finally {
         setSessionChecked(true);
       }

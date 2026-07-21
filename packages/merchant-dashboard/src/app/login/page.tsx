@@ -28,11 +28,26 @@ export default function LoginPage() {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   useEffect(() => {
-    // If already logged in via httpOnly cookie, go to dashboard
-    // Check cookie existence (httpOnly cookies can't be read by JS, so we check auth status)
-    fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
-      .then(res => { if (res.ok) window.location.href = "/dashboard"; })
-      .catch(() => {});
+    // If already logged in via httpOnly cookie or localStorage token, go to dashboard
+    const checkExistingSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" });
+        if (res.ok) { window.location.href = "/dashboard"; return; }
+      } catch {}
+
+      // Fallback: check localStorage token (local dev)
+      const storedToken = localStorage.getItem("basecart_token");
+      if (storedToken) {
+        try {
+          const res = await fetch(`${API_URL}/auth/merchant/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          if (res.ok) { window.location.href = "/dashboard"; return; }
+          else { localStorage.removeItem("basecart_token"); }
+        } catch {}
+      }
+    };
+    checkExistingSession();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -49,7 +64,17 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
 
-      // Token is stored in httpOnly cookie by the server
+      // Store tokens in localStorage as fallback for local dev (cross-origin cookies)
+      if (data.accessToken) {
+        localStorage.setItem("basecart_token", data.accessToken);
+      }
+      if (data.refreshToken) {
+        localStorage.setItem("basecart_refresh_token", data.refreshToken);
+      }
+      if (data.tenantId) {
+        localStorage.setItem("basecart_tenant_id", data.tenantId);
+      }
+
       // Redirect to dashboard on success
       window.location.href = "/dashboard";
     } catch (err: any) {
