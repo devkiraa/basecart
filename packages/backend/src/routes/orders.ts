@@ -162,8 +162,22 @@ app.get("/orders", authenticateMerchant, async (c) => {
   const orders = [];
   for (const row of rows) {
     const items = await tenantDb.prepare("SELECT * FROM order_items WHERE orderId = ?").bind(row.orderId).all();
+    let parsedAddress: any = null;
+    try {
+      parsedAddress = typeof row.shippingAddress === "string" ? JSON.parse(row.shippingAddress) : row.shippingAddress;
+    } catch (e) {
+      parsedAddress = { street: row.shippingAddress };
+    }
+
     orders.push({
       ...row,
+      customerInfo: {
+        name: row.customerName || "Guest",
+        email: row.customerEmail || "",
+        phone: row.customerPhone || "",
+        address: parsedAddress,
+      },
+      paymentMethod: row.paymentId ? "Razorpay" : "COD",
       lineItems: items.results || [],
     });
   }
@@ -180,18 +194,20 @@ app.post("/orders/sample", authenticateMerchant, async (c) => {
   const now = new Date().toISOString();
   const orderId = `ORD-${Date.now().toString(36).toUpperCase()}-${Math.floor(100 + Math.random() * 900)}`;
 
-  const customerInfo = {
-    name: "Aarav Sharma",
-    email: "aarav.sharma@example.com",
-    phone: "+91 98765 43210",
-    address: {
-      street: "42 MG Road, Koramangala",
-      city: "Bengaluru",
-      state: "Karnataka",
-      pincode: "560034",
-      country: "India",
-    },
+  const maxNumRow = await tenantDb.prepare("SELECT MAX(orderNumber) as lastNum FROM orders").first<{ lastNum: number }>();
+  const orderNumber = (maxNumRow?.lastNum || 1000) + 1;
+
+  const customerName = "Aarav Sharma";
+  const customerEmail = "aarav.sharma@example.com";
+  const customerPhone = "+91 98765 43210";
+  const shippingAddressObj = {
+    street: "42 MG Road, Koramangala",
+    city: "Bengaluru",
+    state: "Karnataka",
+    pincode: "560034",
+    country: "India",
   };
+  const shippingAddressStr = JSON.stringify(shippingAddressObj);
 
   const sampleItems = [
     {
@@ -211,28 +227,31 @@ app.post("/orders/sample", authenticateMerchant, async (c) => {
   ];
 
   const subtotal = 4497;
-  const tax = 225;
-  const shippingFee = 99;
-  const discount = 321;
-  const total = subtotal + tax + shippingFee - discount;
+  const taxAmount = 225;
+  const discountAmount = 321;
+  const total = subtotal + taxAmount - discountAmount;
 
   await tenantDb
     .prepare(
-      `INSERT INTO orders (orderId, tenantId, customerInfo, subtotal, tax, shippingFee, discount, total, status, paymentMethod, paymentId, createdAt, updatedAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO orders (orderId, orderNumber, customerId, customerName, customerEmail, customerPhone, shippingAddress, status, subtotal, taxAmount, total, discountAmount, paymentId, paymentStatus, razorpayOrderId, createdAt, updatedAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .bind(
       orderId,
-      tenantId,
-      JSON.stringify(customerInfo),
-      subtotal,
-      tax,
-      shippingFee,
-      discount,
-      total,
+      orderNumber,
+      `cust_${Math.random().toString(36).slice(2, 10)}`,
+      customerName,
+      customerEmail,
+      customerPhone,
+      shippingAddressStr,
       "paid",
-      "Razorpay",
+      subtotal,
+      taxAmount,
+      total,
+      discountAmount,
       `pay_${Math.random().toString(36).slice(2, 12)}`,
+      "paid",
+      `order_${Math.random().toString(36).slice(2, 12)}`,
       now,
       now
     )
@@ -242,10 +261,10 @@ app.post("/orders/sample", authenticateMerchant, async (c) => {
     const itemId = `item_${Math.random().toString(36).slice(2, 10)}`;
     await tenantDb
       .prepare(
-        `INSERT INTO order_items (itemId, orderId, productId, name, sku, price, quantity)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO order_items (itemId, orderId, productId, name, price, quantity)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .bind(itemId, orderId, item.productId, item.name, item.sku, item.price, item.quantity)
+      .bind(itemId, orderId, item.productId, item.name, item.price, item.quantity)
       .run();
   }
 
