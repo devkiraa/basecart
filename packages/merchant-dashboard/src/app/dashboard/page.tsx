@@ -2979,7 +2979,7 @@ export default function MerchantDashboard() {
               {[
                 { id: "store-design", name: "Storefront Studio", icon: Store },
                 { id: "brand", name: "Agentic Store & AI", icon: Bot },
-                { id: "emails", name: "Headless Architecture", icon: Code, badge: "Soon" },
+                { id: "emails", name: "Headless Store", icon: Code, badge: "Soon" },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -2997,9 +2997,9 @@ export default function MerchantDashboard() {
                     }`}
                   >
                     <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                    {!sidebarCollapsed && <span>{item.name}</span>}
+                    {!sidebarCollapsed && <span className="truncate whitespace-nowrap">{item.name}</span>}
                     {!sidebarCollapsed && item.badge && (
-                      <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200">
+                      <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200 shrink-0">
                         {item.badge}
                       </span>
                     )}
@@ -9949,92 +9949,19 @@ export default function MerchantDashboard() {
 
           {/* Headless Architecture Tab */}
           {activeTab === "emails" && (
-            <div className="space-y-6 animate-fade-in">
-              {/* Coming Soon Hero Banner */}
-              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="relative z-10 space-y-3 max-w-2xl">
-                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-400/30 rounded-full text-amber-300 font-extrabold text-xs">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    <span>Coming Soon — Headless Architecture</span>
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-black tracking-tight">
-                    Build Any Frontend with Basecart Headless Storefront APIs ⚡
-                  </h2>
-                  <p className="text-sm text-slate-300 leading-relaxed font-medium">
-                    Deploy custom React, Next.js, Vue, or iOS/Android native apps using our high-performance GraphQL & REST Storefront APIs powered by Cloudflare Workers.
-                  </p>
-
-                  <div className="pt-2 flex flex-wrap items-center gap-3">
-                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-slate-200">
-                      🔑 Storefront API Key: <code className="text-amber-300 font-mono">pk_live_basecart_head_2026</code>
-                    </div>
-                    <button
-                      onClick={() => alert("Headless Architecture features & SDKs are coming soon! Stay tuned.")}
-                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-                    >
-                      View API Specs (Coming Soon)
-                    </button>
-                  </div>
+            <div className="space-y-6 animate-fade-in max-w-2xl">
+              <div className="bg-white border border-slate-200/90 p-8 md:p-12 rounded-2xl shadow-xs text-center space-y-4">
+                <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto font-bold border border-indigo-100/80 shadow-xs">
+                  <Code className="h-7 w-7" />
                 </div>
-              </div>
-
-              {/* Feature Preview Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
-                  <div className="h-8 w-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold">
-                    <Code className="h-4 w-4" />
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">GraphQL & REST APIs</h4>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Query products, collections, checkout, and customer sessions with millisecond latency globally.
-                  </p>
-                </div>
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
-                  <div className="h-8 w-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-bold">
-                    <Globe className="h-4 w-4" />
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Next.js & Mobile SDKs</h4>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Pre-built starter kits for Next.js 14 App Router, Expo React Native, and Swift iOS.
-                  </p>
-                </div>
-                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
-                  <div className="h-8 w-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center font-bold">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <h4 className="text-xs font-bold text-slate-900">Autonomous Edge Checkout</h4>
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
-                    Decoupled checkout pipeline supporting Razorpay India, UPI, and Instant COD verification.
-                  </p>
-                </div>
-              </div>
-
-              {/* Headless API Code & Webhooks Preview */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Storefront API Code Example (Next.js App Router)</h3>
-                    <p className="text-xs text-slate-500">Fetch catalog items directly from Cloudflare Worker edge nodes</p>
-                  </div>
-                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
-                    GET /api/v1/storefront/products
+                <div className="space-y-1.5">
+                  <span className="text-[10px] font-black text-amber-800 bg-amber-100 border border-amber-200 px-3 py-1 rounded-full uppercase tracking-wider">
+                    Coming Soon
                   </span>
-                </div>
-
-                <div className="bg-slate-950 text-slate-200 p-4 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 space-y-2">
-                  <p className="text-slate-400">// Install the Basecart Headless Storefront SDK</p>
-                  <p className="text-emerald-400">npm install @basecart/storefront-sdk</p>
-                  <br />
-                  <p className="text-slate-400">// Initialize client in your Next.js application</p>
-                  <p className="text-[#818CF8]">import &#123; BasecartClient &#125; from "@basecart/storefront-sdk";</p>
-                  <br />
-                  <p className="text-slate-300">const client = new BasecartClient(&#123;</p>
-                  <p className="text-slate-300">  subdomain: "{settings.subdomain || "my-store"}",</p>
-                  <p className="text-slate-300">  apiKey: "pk_live_basecart_head_2026",</p>
-                  <p className="text-slate-300">&#125;);</p>
-                  <br />
-                  <p className="text-amber-300">const products = await client.products.list(&#123; limit: 12 &#125;);</p>
+                  <h2 className="text-xl font-extrabold text-slate-900 tracking-tight pt-2">Headless Architecture</h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    This feature will be added soon.
+                  </p>
                 </div>
               </div>
             </div>
@@ -11224,7 +11151,7 @@ export default function MerchantDashboard() {
                 {[
                   { id: "store-design", name: "Storefront Studio", icon: Store },
                   { id: "brand", name: "Agentic Store & AI", icon: Bot },
-                  { id: "emails", name: "Headless Architecture", icon: Code, badge: "Soon" },
+                  { id: "emails", name: "Headless Store", icon: Code, badge: "Soon" },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -11242,9 +11169,9 @@ export default function MerchantDashboard() {
                       }`}
                     >
                       <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                      <span>{item.name}</span>
+                      <span className="truncate whitespace-nowrap">{item.name}</span>
                       {item.badge && (
-                        <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200">
+                        <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200 shrink-0">
                           {item.badge}
                         </span>
                       )}
