@@ -19,6 +19,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [backendReady, setBackendReady] = useState(false);
@@ -362,7 +363,9 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   id="rememberMe"
-                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                 />
                 <label htmlFor="rememberMe" className="text-xs text-slate-500 font-semibold cursor-pointer">
                   Remember me

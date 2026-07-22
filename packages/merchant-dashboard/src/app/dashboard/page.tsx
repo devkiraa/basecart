@@ -1609,15 +1609,22 @@ export default function MerchantDashboard() {
     try {
       await fetch(`${API_URL}/auth/merchant/logout`, {
         method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         credentials: "include",
       });
     } catch (e) {
       console.error("Logout request failed", e);
     }
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("basecart_token");
+      localStorage.removeItem("basecart_refresh_token");
+      localStorage.removeItem("basecart_tenant_id");
+    }
     setToken(null);
     setTenantId(null);
     setProducts([]);
     setOrders([]);
+    window.location.href = "/login";
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {

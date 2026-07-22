@@ -3,8 +3,8 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { D1Database } from "../lib/db";
 
-const ACCESS_TOKEN_EXPIRY = "15m";
-const REFRESH_TOKEN_EXPIRY = 7 * 24 * 60 * 60; // 7 days in seconds
+const ACCESS_TOKEN_EXPIRY = "15d";
+const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60; // 30 days in seconds
 
 export interface TokenPayload {
   userId: string;
@@ -69,7 +69,7 @@ export class AuthService {
         jti: crypto.randomUUID(),
       },
       secret,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     // Save refresh token to D1 control database if DB client is provided

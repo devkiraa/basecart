@@ -311,8 +311,8 @@ app.post("/auth/merchant/signup", async (c) => {
     c.env
   );
 
-  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
-  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
+  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 24 * 60 * 60));
+  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 30 * 24 * 60 * 60));
 
   return c.json({
     message: "Merchant account and store created successfully",
@@ -370,8 +370,8 @@ app.post("/auth/merchant/login", async (c) => {
     c.env
   );
 
-  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
-  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
+  setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 24 * 60 * 60));
+  setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 30 * 24 * 60 * 60));
 
   return c.json({
     tenantId: user.tenantId,
@@ -398,8 +398,8 @@ app.post("/auth/merchant/refresh", async (c) => {
     const controlDb = getControlDb(c.env);
     const tokens = await authService.refreshSession(refreshToken, tenantId, controlDb, c.env);
 
-    setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 60));
-    setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 7 * 24 * 60 * 60));
+    setCookie(c, "basecart_merchant_token", tokens.accessToken, getMerchantCookieOptions(c, 15 * 24 * 60 * 60));
+    setCookie(c, "basecart_merchant_refresh_token", tokens.refreshToken, getMerchantCookieOptions(c, 30 * 24 * 60 * 60));
 
     return c.json(tokens);
   } catch (err: any) {
