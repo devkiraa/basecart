@@ -10010,10 +10010,32 @@ export default function MerchantDashboard() {
                 </div>
               </div>
 
-              {/* Email Notifications Sub-Section */}
+              {/* Headless API Code & Webhooks Preview */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-                <h3 className="text-sm font-bold text-slate-900">Email Notifications & Templates</h3>
-                <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Storefront API Code Example (Next.js App Router)</h3>
+                    <p className="text-xs text-slate-500">Fetch catalog items directly from Cloudflare Worker edge nodes</p>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200">
+                    GET /api/v1/storefront/products
+                  </span>
+                </div>
+
+                <div className="bg-slate-950 text-slate-200 p-4 rounded-xl font-mono text-xs overflow-x-auto border border-slate-800 space-y-2">
+                  <p className="text-slate-400">// Install the Basecart Headless Storefront SDK</p>
+                  <p className="text-emerald-400">npm install @basecart/storefront-sdk</p>
+                  <br />
+                  <p className="text-slate-400">// Initialize client in your Next.js application</p>
+                  <p className="text-[#818CF8]">import &#123; BasecartClient &#125; from "@basecart/storefront-sdk";</p>
+                  <br />
+                  <p className="text-slate-300">const client = new BasecartClient(&#123;</p>
+                  <p className="text-slate-300">  subdomain: "{settings.subdomain || "my-store"}",</p>
+                  <p className="text-slate-300">  apiKey: "pk_live_basecart_head_2026",</p>
+                  <p className="text-slate-300">&#125;);</p>
+                  <br />
+                  <p className="text-amber-300">const products = await client.products.list(&#123; limit: 12 &#125;);</p>
+                </div>
               </div>
             </div>
           )}
