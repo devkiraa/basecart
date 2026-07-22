@@ -378,6 +378,7 @@ export default function MerchantDashboard() {
   };
 
   const [email, setEmail] = useState("");
+  const [merchantOwnerName, setMerchantOwnerName] = useState("");
   const [password, setPassword] = useState("");
   const [storeNameInput, setStoreNameInput] = useState("");
   const [subdomainInput, setSubdomainInput] = useState("");
@@ -967,6 +968,8 @@ export default function MerchantDashboard() {
           const data = await res.json();
           setToken(data.accessToken);
           setTenantId(data.tenantId);
+          if (data.email) setEmail(data.email);
+          if (data.ownerName) setMerchantOwnerName(data.ownerName);
           setEmailVerified(data.emailVerified !== false);
         } else {
           // Fallback: try localStorage token (local dev cross-origin)
@@ -979,6 +982,8 @@ export default function MerchantDashboard() {
               const meData = await meRes.json();
               setToken(storedToken);
               setTenantId(meData.tenantId);
+              if (meData.email) setEmail(meData.email);
+              if (meData.ownerName) setMerchantOwnerName(meData.ownerName);
               setEmailVerified(meData.emailVerified !== false);
             } else {
               // Token expired or invalid — clear it
@@ -1005,6 +1010,8 @@ export default function MerchantDashboard() {
               const meData = await meRes.json();
               setToken(storedToken);
               setTenantId(meData.tenantId);
+              if (meData.email) setEmail(meData.email);
+              if (meData.ownerName) setMerchantOwnerName(meData.ownerName);
               setEmailVerified(meData.emailVerified !== false);
             }
           } catch (innerErr) {
@@ -10129,12 +10136,21 @@ export default function MerchantDashboard() {
 
                   {/* Profile Footer */}
                   <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="h-8 w-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-xs text-slate-700">
-                      KS
+                    <div className="h-8 w-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-xs text-slate-700 uppercase">
+                      {(merchantOwnerName || email || "Kiran S")
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2) || "KS"}
                     </div>
                     <div className="overflow-hidden">
-                      <div className="text-xs font-bold text-slate-900 truncate">Kiran S</div>
-                      <div className="text-[10px] text-slate-500 truncate">{email || "kirankichu6151@gmail.com"}</div>
+                      <div className="text-xs font-bold text-slate-900 truncate">
+                        {merchantOwnerName || (email ? email.split("@")[0] : "Kiran S")}
+                      </div>
+                      <div className="text-[10px] text-slate-500 truncate">
+                        {email || "kirankichu6151@gmail.com"}
+                      </div>
                     </div>
                   </div>
                 </aside>

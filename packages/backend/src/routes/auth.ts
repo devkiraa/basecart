@@ -432,9 +432,16 @@ app.get("/auth/merchant/me", authenticateMerchant, async (c) => {
     c.env
   );
 
+  const tenant = await controlDb
+    .prepare("SELECT storeName, ownerName FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<any>();
+
   return c.json({
     tenantId,
     email: user.email,
+    ownerName: tenant?.ownerName || user.email.split("@")[0],
+    storeName: tenant?.storeName || "",
     role: user.role,
     emailVerified: dbUser?.emailVerified === 1,
     accessToken: tokens.accessToken,
