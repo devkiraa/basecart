@@ -37,6 +37,15 @@ CREATE TABLE IF NOT EXISTS customers (
   hashedPassword TEXT,
   phone TEXT,
   shippingAddress TEXT,
+  firstName TEXT,
+  lastName TEXT,
+  acceptsEmailMarketing INTEGER DEFAULT 0,
+  acceptsSmsMarketing INTEGER DEFAULT 0,
+  acceptsWhatsAppMarketing INTEGER DEFAULT 0,
+  company TEXT,
+  tags TEXT,
+  note TEXT,
+  taxExempt INTEGER DEFAULT 0,
   createdAt TEXT NOT NULL
 );
 

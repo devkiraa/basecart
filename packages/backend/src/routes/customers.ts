@@ -13,16 +13,20 @@ app.get("/customers", authenticateMerchant, async (c) => {
   const tenantId = c.get("tenantId")!;
   const tenantDb = await getTenantDb(tenantId, c.env);
 
-  // Migration helper: Ensure metadata columns exist in D1 customers table
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN firstName TEXT").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN lastName TEXT").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsEmailMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsSmsMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsWhatsAppMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN company TEXT").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN tags TEXT").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN note TEXT").run(); } catch (e) {}
-  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN taxExempt INTEGER DEFAULT 0").run(); } catch (e) {}
+  // Migration helper: Safely check existing columns before altering
+  try {
+    const tableInfo = await tenantDb.prepare("PRAGMA table_info(customers)").all();
+    const existingCols = new Set((tableInfo.results || []).map((col: any) => col.name));
+    if (!existingCols.has("firstName")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN firstName TEXT").run();
+    if (!existingCols.has("lastName")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN lastName TEXT").run();
+    if (!existingCols.has("acceptsEmailMarketing")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsEmailMarketing INTEGER DEFAULT 0").run();
+    if (!existingCols.has("acceptsSmsMarketing")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsSmsMarketing INTEGER DEFAULT 0").run();
+    if (!existingCols.has("acceptsWhatsAppMarketing")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsWhatsAppMarketing INTEGER DEFAULT 0").run();
+    if (!existingCols.has("company")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN company TEXT").run();
+    if (!existingCols.has("tags")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN tags TEXT").run();
+    if (!existingCols.has("note")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN note TEXT").run();
+    if (!existingCols.has("taxExempt")) await tenantDb.prepare("ALTER TABLE customers ADD COLUMN taxExempt INTEGER DEFAULT 0").run();
+  } catch (e) {}
 
   const customersResult = await tenantDb.prepare("SELECT * FROM customers ORDER BY createdAt DESC").all();
   const registeredCustomers = customersResult.results || [];

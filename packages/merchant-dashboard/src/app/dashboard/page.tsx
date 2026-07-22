@@ -686,6 +686,7 @@ export default function MerchantDashboard() {
   ]);
   // Customers sub-tab & CSV Import/Export state
   const [customersSubTab, setCustomersSubTab] = useState<"list" | "segments" | "companies">("list");
+  const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
   const [segmentSearchQuery, setSegmentSearchQuery] = useState("");
   const [customerForm, setCustomerForm] = useState<any | null>(null);
@@ -693,11 +694,11 @@ export default function MerchantDashboard() {
   const [importCsvText, setImportCsvText] = useState("");
   const [importingCsvLoading, setImportingCsvLoading] = useState(false);
   const [customerSegments, setCustomerSegments] = useState<any[]>([
-    { id: "seg-1", name: "Customers who have purchased at least once", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
-    { id: "seg-2", name: "Email subscribers", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
-    { id: "seg-3", name: "Abandoned checkouts in the last 30 days", percent: "100%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
-    { id: "seg-4", name: "Customers who have purchased more than once", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
-    { id: "seg-5", name: "Customers who haven't purchased", percent: "100%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+    { id: "seg-1", name: "Customers who have purchased at least once", lastActivity: "Created on May 27, 2026", createdBy: "System" },
+    { id: "seg-2", name: "Email subscribers", lastActivity: "Created on May 27, 2026", createdBy: "System" },
+    { id: "seg-3", name: "Abandoned checkouts in the last 30 days", lastActivity: "Created on May 27, 2026", createdBy: "System" },
+    { id: "seg-4", name: "Customers who have purchased more than once", lastActivity: "Created on May 27, 2026", createdBy: "System" },
+    { id: "seg-5", name: "Customers who haven't purchased", lastActivity: "Created on May 27, 2026", createdBy: "System" },
   ]);
 
   const handleExportCustomersCSV = () => {
@@ -5767,6 +5768,33 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
 
+                      {/* Active Segment Filter Banner */}
+                      {activeSegmentId && (
+                        <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-2xl flex items-center justify-between gap-3 text-xs animate-fade-in">
+                          <div className="flex items-center gap-2 text-indigo-900 font-bold">
+                            <Tag className="h-4 w-4 text-indigo-600" />
+                            <span>Active Segment Filter: {customerSegments.find((s) => s.id === activeSegmentId)?.name || "Segment"}</span>
+                            <span className="bg-indigo-600 text-white px-2 py-0.5 rounded-full text-[10px]">
+                              {customers.filter((c) => {
+                                if (activeSegmentId === "seg-1") return (c.ordersCount || 0) > 0;
+                                if (activeSegmentId === "seg-2") return Boolean(c.acceptsEmailMarketing);
+                                if (activeSegmentId === "seg-3") return (c.ordersCount || 0) === 0;
+                                if (activeSegmentId === "seg-4") return (c.ordersCount || 0) > 1;
+                                if (activeSegmentId === "seg-5") return (c.ordersCount || 0) === 0;
+                                return true;
+                              }).length} customers
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => setActiveSegmentId(null)}
+                            className="text-indigo-700 hover:text-indigo-950 font-bold underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>Clear Filter</span>
+                          </button>
+                        </div>
+                      )}
+
                       {/* Search Customers Bar */}
                       <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                         <div className="relative flex-1">
@@ -5800,12 +5828,21 @@ export default function MerchantDashboard() {
                             {customers
                               .filter((c) => {
                                 const q = customerSearchQuery.toLowerCase();
-                                return (
+                                const matchesSearch =
                                   c.email?.toLowerCase().includes(q) ||
                                   c.name?.toLowerCase().includes(q) ||
                                   c.firstName?.toLowerCase().includes(q) ||
-                                  c.lastName?.toLowerCase().includes(q)
-                                );
+                                  c.lastName?.toLowerCase().includes(q);
+
+                                if (!matchesSearch) return false;
+
+                                if (activeSegmentId === "seg-1") return (c.ordersCount || 0) > 0;
+                                if (activeSegmentId === "seg-2") return Boolean(c.acceptsEmailMarketing);
+                                if (activeSegmentId === "seg-3") return (c.ordersCount || 0) === 0;
+                                if (activeSegmentId === "seg-4") return (c.ordersCount || 0) > 1;
+                                if (activeSegmentId === "seg-5") return (c.ordersCount || 0) === 0;
+
+                                return true;
                               })
                               .map((cust) => (
                                 <tr key={cust.customerId} className="hover:bg-slate-50 transition-colors">
@@ -5865,7 +5902,7 @@ export default function MerchantDashboard() {
                         </div>
 
                         <button
-                          onClick={() => setCustomerSegments([...customerSegments, { id: `seg-${Date.now()}`, name: "New Custom Segment", percent: "0%", lastActivity: "Created today", createdBy: "Merchant" }])}
+                          onClick={() => setCustomerSegments([...customerSegments, { id: `seg-${Date.now()}`, name: "New Custom Segment", lastActivity: "Created today", createdBy: "Merchant" }])}
                           className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
                         >
                           Create segment
@@ -5904,31 +5941,59 @@ export default function MerchantDashboard() {
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
                             {customerSegments
                               .filter((s) => s.name.toLowerCase().includes(segmentSearchQuery.toLowerCase()))
-                              .map((seg) => (
-                                <tr key={seg.id} className="hover:bg-slate-50 transition-colors">
-                                  <td className="px-4 py-4">
-                                    <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
-                                  </td>
-                                  <td className="px-6 py-4 font-bold text-slate-900 text-sm">
-                                    {seg.name}
-                                  </td>
-                                  <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">
-                                    {seg.percent}
-                                  </td>
-                                  <td className="px-6 py-4 text-xs font-semibold text-slate-500">
-                                    {seg.lastActivity}
-                                  </td>
-                                  <td className="px-6 py-4 text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                                    <ShoppingBag className="h-3.5 w-3.5 text-emerald-600" />
-                                    <span>{seg.createdBy}</span>
-                                  </td>
-                                  <td className="px-4 py-4 text-right">
-                                    <button className="p-1 text-slate-400 hover:text-slate-600">
-                                      <MoreHorizontal className="h-4 w-4" />
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
+                              .map((seg) => {
+                                const total = customers.length;
+                                let percent = "0%";
+                                if (total > 0) {
+                                  if (seg.id === "seg-1") {
+                                    percent = `${Math.round((customers.filter((c) => (c.ordersCount || 0) > 0).length / total) * 100)}%`;
+                                  } else if (seg.id === "seg-2") {
+                                    percent = `${Math.round((customers.filter((c) => c.acceptsEmailMarketing).length / total) * 100)}%`;
+                                  } else if (seg.id === "seg-3") {
+                                    percent = `${Math.round((customers.filter((c) => (c.ordersCount || 0) === 0).length / total) * 100)}%`;
+                                  } else if (seg.id === "seg-4") {
+                                    percent = `${Math.round((customers.filter((c) => (c.ordersCount || 0) > 1).length / total) * 100)}%`;
+                                  } else if (seg.id === "seg-5") {
+                                    percent = `${Math.round((customers.filter((c) => (c.ordersCount || 0) === 0).length / total) * 100)}%`;
+                                  } else {
+                                    percent = seg.percent || "0%";
+                                  }
+                                }
+
+                                return (
+                                  <tr
+                                    key={seg.id}
+                                    onClick={() => {
+                                      setActiveSegmentId(seg.id);
+                                      setCustomersSubTab("list");
+                                    }}
+                                    className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                                  >
+                                    <td className="px-4 py-4" onClick={(e) => e.stopPropagation()}>
+                                      <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-slate-900 text-sm group-hover:text-indigo-600 transition-colors">
+                                      {seg.name}
+                                    </td>
+                                    <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">
+                                      {percent}
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                                      {seg.lastActivity}
+                                    </td>
+                                    <td className="px-6 py-4 text-xs font-bold text-slate-700">
+                                      <span className="px-2.5 py-1 bg-slate-100 border border-slate-200/80 rounded-md text-[11px] font-semibold text-slate-600">
+                                        {seg.createdBy || "System"}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                      <button className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
                           </tbody>
                         </table>
                       </div>
