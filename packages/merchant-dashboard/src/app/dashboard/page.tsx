@@ -3739,37 +3739,35 @@ export default function MerchantDashboard() {
           {/* 2. Products Tab */}
           {activeTab === "products" && (
             <div className="space-y-6">
-              {/* Products Sub-Nav Bar (Shopify Standard Sub-Tabs) */}
-              <div className="bg-white p-1.5 border border-slate-200/90 rounded-2xl shadow-2xs flex flex-wrap items-center justify-between gap-3 select-none">
-                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5">
-                  {[
-                    { id: "catalog", label: "Products", icon: Package },
-                    { id: "collections", label: "Collections", icon: Layers },
-                    { id: "inventory", label: "Inventory", icon: Warehouse },
-                    { id: "purchase-orders", label: "Purchase Orders", icon: Truck },
-                    { id: "transfers", label: "Transfers", icon: ArrowRightLeft },
-                    { id: "gift-cards", label: "Gift Cards", icon: Gift },
-                  ].map((subTab) => {
-                    const SubIcon = subTab.icon;
-                    const isSubActive = productsSubTab === subTab.id;
-                    return (
-                      <button
-                        key={subTab.id}
-                        onClick={() => {
-                          setProductsSubTab(subTab.id as any);
-                          setProductForm(null);
-                        }}
-                        className={`flex items-center gap-2 px-3.5 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer whitespace-nowrap ${
-                          isSubActive
-                            ? "bg-slate-900 text-white shadow-xs"
-                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                        }`}
-                      >
-                        <SubIcon className={`h-3.5 w-3.5 ${isSubActive ? "text-white" : "text-slate-400"}`} />
-                        <span>{subTab.label}</span>
-                      </button>
-                    );
-                  })}
+              {/* Header & Main Actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                      {productsSubTab === "catalog" && "Products"}
+                      {productsSubTab === "collections" && "Collections"}
+                      {productsSubTab === "inventory" && "Inventory"}
+                      {productsSubTab === "purchase-orders" && "Purchase Orders"}
+                      {productsSubTab === "transfers" && "Transfers"}
+                      {productsSubTab === "gift-cards" && "Gift Cards"}
+                    </h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
+                      {productsSubTab === "catalog" && "Catalog Engine"}
+                      {productsSubTab === "collections" && "Grouping Engine"}
+                      {productsSubTab === "inventory" && "Stock Tracker"}
+                      {productsSubTab === "purchase-orders" && "Supplier Orders"}
+                      {productsSubTab === "transfers" && "Stock Moves"}
+                      {productsSubTab === "gift-cards" && "Store Credit"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    {productsSubTab === "catalog" && "Manage your store products, pricing margins, stock inventory, variants, and SEO listing previews"}
+                    {productsSubTab === "collections" && "Group products into manual or automated collections to feature on your storefront"}
+                    {productsSubTab === "inventory" && "Track real-time stock levels, update SKU quantities, and manage low-stock thresholds"}
+                    {productsSubTab === "purchase-orders" && "Create supplier purchase orders, track incoming shipments, and manage receiving logs"}
+                    {productsSubTab === "transfers" && "Track stock transfers between central warehouses and store fulfillment points"}
+                    {productsSubTab === "gift-cards" && "Issue digital gift cards, manage customer balances, and track voucher redemptions"}
+                  </p>
                 </div>
 
                 {productsSubTab === "catalog" && !productForm && (
