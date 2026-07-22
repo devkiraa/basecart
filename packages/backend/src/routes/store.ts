@@ -130,6 +130,10 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     address2Required: kvMap.address2Required !== undefined ? kvMap.address2Required === "true" : false,
     taxRate: kvMap.taxRate ? Number(kvMap.taxRate) : 18,
     pricesIncludeTax: kvMap.pricesIncludeTax !== undefined ? kvMap.pricesIncludeTax === "true" : true,
+    orderIdPrefix: kvMap.orderIdPrefix || "#",
+    orderIdSuffix: kvMap.orderIdSuffix || "",
+    autoFulfill: kvMap.autoFulfill || "none",
+    autoArchive: kvMap.autoArchive !== undefined ? kvMap.autoArchive === "true" : true,
     createdAt: store.createdAt,
   });
 });
@@ -308,6 +312,10 @@ app.patch("/store/settings", authenticateMerchant, async (c) => {
     ["taxRate", settingsInput.taxRate !== undefined ? String(settingsInput.taxRate) : undefined],
     ["pricesIncludeTax", settingsInput.pricesIncludeTax !== undefined ? String(settingsInput.pricesIncludeTax) : undefined],
     ["gstin", settingsInput.gstin],
+    ["orderIdPrefix", settingsInput.orderIdPrefix],
+    ["orderIdSuffix", settingsInput.orderIdSuffix],
+    ["autoFulfill", settingsInput.autoFulfill],
+    ["autoArchive", settingsInput.autoArchive !== undefined ? String(settingsInput.autoArchive) : undefined],
   ];
 
   for (const [key, val] of kvPairs) {

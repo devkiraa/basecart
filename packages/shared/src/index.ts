@@ -129,6 +129,10 @@ export const StoreSettingsSchema = z.object({
   address2Required: z.boolean().optional(),
   taxRate: z.number().optional(),
   pricesIncludeTax: z.boolean().optional(),
+  orderIdPrefix: z.string().optional(),
+  orderIdSuffix: z.string().optional(),
+  autoFulfill: z.string().optional(),
+  autoArchive: z.boolean().optional(),
 });
 
 export type StoreSettingsInput = z.infer<typeof StoreSettingsSchema>;

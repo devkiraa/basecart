@@ -38,6 +38,7 @@ import {
   Globe,
   ChevronDown,
   Calendar,
+  HelpCircle,
   Copy,
   ExternalLink,
   Download,
@@ -229,6 +230,10 @@ interface StoreSettings {
   address2Required?: boolean;
   taxRate?: number;
   pricesIncludeTax?: boolean;
+  orderIdPrefix?: string;
+  orderIdSuffix?: string;
+  autoFulfill?: string;
+  autoArchive?: boolean;
 }
 
 function calculateTrialDaysRemaining(createdAtStr?: string) {
@@ -832,6 +837,10 @@ export default function MerchantDashboard() {
           privacyPolicy: settings.privacyPolicy,
           refundPolicy: settings.refundPolicy,
           shippingPolicy: settings.shippingPolicy,
+          orderIdPrefix: settings.orderIdPrefix,
+          orderIdSuffix: settings.orderIdSuffix,
+          autoFulfill: settings.autoFulfill,
+          autoArchive: settings.autoArchive,
         }),
       });
 
@@ -10217,23 +10226,26 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
 
-                      {/* Store defaults (Matching Screenshot 2) */}
+                      {/* Store defaults (Matching Screenshot) */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
                         <h3 className="text-sm font-bold text-slate-900">Store defaults</h3>
 
                         <div className="space-y-4">
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">Currency display</label>
-                            <select
-                              value={settings.currency || "INR ₹"}
-                              onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                            >
-                              <option value="INR ₹">Indian Rupee (INR ₹)</option>
-                              <option value="USD $">US Dollar (USD $)</option>
-                              <option value="EUR €">Euro (EUR €)</option>
-                              <option value="GBP £">British Pound (GBP £)</option>
-                            </select>
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
+                              <select
+                                value={settings.currency || "INR ₹"}
+                                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                              >
+                                <option value="INR ₹">Indian Rupee (INR ₹)</option>
+                                <option value="USD $">US Dollar (USD $)</option>
+                                <option value="EUR €">Euro (EUR €)</option>
+                                <option value="GBP £">British Pound (GBP £)</option>
+                              </select>
+                              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">To manage currencies, go to Markets</span>
+                            </div>
                           </div>
 
                           <div>
@@ -10248,6 +10260,7 @@ export default function MerchantDashboard() {
                               <option value="United Kingdom">United Kingdom</option>
                               <option value="Canada">Canada</option>
                             </select>
+                            <span className="text-[11px] text-slate-500 mt-1 block">Determines settings for customers outside of your markets</span>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -10285,7 +10298,184 @@ export default function MerchantDashboard() {
                               <option value="(GMT-05:00) Eastern Time (US & Canada)">(GMT-05:00) Eastern Time (US & Canada)</option>
                               <option value="(GMT+01:00) Central European Time">(GMT+01:00) Central European Time</option>
                             </select>
+                            <span className="text-[11px] text-slate-500 mt-1 block">Sets the time for when orders and analytics are recorded</span>
                           </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
+                          To change your user level time zone and language visit your <span className="text-indigo-600 underline font-semibold cursor-pointer">account settings</span>
+                        </p>
+                      </div>
+
+                      {/* Order ID format (Matching Screenshot) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Order ID format</h3>
+                          <p className="text-xs text-slate-500">Shown on the order page, customer pages, and customer order notifications to identify order</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Prefix</label>
+                            <input
+                              type="text"
+                              value={settings.orderIdPrefix ?? "#"}
+                              onChange={(e) => setSettings({ ...settings, orderIdPrefix: e.target.value })}
+                              placeholder="#"
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none font-mono"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Suffix</label>
+                            <input
+                              type="text"
+                              value={settings.orderIdSuffix ?? ""}
+                              onChange={(e) => setSettings({ ...settings, orderIdSuffix: e.target.value })}
+                              placeholder=""
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-600 font-medium pt-1">
+                          Your order ID will appear as <span className="font-mono font-bold text-slate-900">{settings.orderIdPrefix ?? "#"}1001{settings.orderIdSuffix ?? ""}</span>, <span className="font-mono font-bold text-slate-900">{settings.orderIdPrefix ?? "#"}1002{settings.orderIdSuffix ?? ""}</span>, <span className="font-mono font-bold text-slate-900">{settings.orderIdPrefix ?? "#"}1003{settings.orderIdSuffix ?? ""}</span>, ...
+                        </p>
+                      </div>
+
+                      {/* Order processing (Matching Screenshot) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-sm font-bold text-slate-900">Order processing</h3>
+                          <span className="text-slate-400 text-xs font-bold" title="Order fulfillment automation rules">ⓘ</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-xs font-bold text-slate-800">After an order has been paid</div>
+                          <div className="space-y-2">
+                            {[
+                              { id: "all", label: "Automatically fulfill the order's line items" },
+                              { id: "gift_cards", label: "Automatically fulfill only the gift cards of the order" },
+                              { id: "none", label: "Don't fulfill any of the order's line items automatically" },
+                            ].map((opt) => (
+                              <label key={opt.id} className="flex items-center gap-3 text-xs font-medium text-slate-700 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name="autoFulfill"
+                                  value={opt.id}
+                                  checked={(settings.autoFulfill || "none") === opt.id}
+                                  onChange={(e) => setSettings({ ...settings, autoFulfill: e.target.value })}
+                                  className="h-4 w-4 text-indigo-600 border-slate-300 focus:ring-indigo-500"
+                                />
+                                <span>{opt.label}</span>
+                              </label>
+                            ))}
+                          </div>
+
+                          <div className="pt-3 border-t border-slate-100 space-y-2">
+                            <div className="text-xs font-bold text-slate-800">After an order has been fulfilled and paid, or when all items have been refunded</div>
+                            <label className="flex items-start gap-3 text-xs font-medium text-slate-700 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={settings.autoArchive !== false}
+                                onChange={(e) => setSettings({ ...settings, autoArchive: e.target.checked })}
+                                className="h-4 w-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 mt-0.5"
+                              />
+                              <div>
+                                <div className="font-bold text-slate-900">Automatically archive the order</div>
+                                <div className="text-[11px] text-slate-500">The order will be removed from your list of open orders.</div>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Store assets (Matching Screenshot) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Store assets</h3>
+
+                        <div className="space-y-3">
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-4 w-4 text-slate-500" />
+                              <div>
+                                <div className="text-xs font-bold text-slate-900">Metafields</div>
+                                <div className="text-[11px] text-slate-500 font-medium">Available in themes and configurable for Storefront API</div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+
+                          <div
+                            onClick={() => setSettingsSubTab("brand")}
+                            className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Sparkles className="h-4 w-4 text-slate-500" />
+                              <div>
+                                <div className="text-xs font-bold text-slate-900">Brand</div>
+                                <div className="text-[11px] text-slate-500 font-medium">Integrate brand assets across sales channels, themes and apps</div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Resources (Matching Screenshot) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Resources</h3>
+
+                        <div className="space-y-3">
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Code className="h-4 w-4 text-slate-500" />
+                              <span className="text-xs font-bold text-slate-900">Change log</span>
+                            </div>
+                            <button onClick={() => alert("Showing Basecart Spring '26 release notes")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">View change log</button>
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <HelpCircle className="h-4 w-4 text-slate-500" />
+                              <span className="text-xs font-bold text-slate-900">Basecart Help Center</span>
+                            </div>
+                            <button onClick={() => alert("Opening Basecart Help Documentation")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">Get help</button>
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Users className="h-4 w-4 text-slate-500" />
+                              <span className="text-xs font-bold text-slate-900">Hire a Basecart Partner</span>
+                            </div>
+                            <button onClick={() => alert("Connecting to Basecart Verified Designers & Developers")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">Hire a Partner</button>
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/60">
+                            <div className="flex items-center gap-3">
+                              <Layers className="h-4 w-4 text-slate-500" />
+                              <span className="text-xs font-bold text-slate-900">Keyboard shortcuts</span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/60">
+                            <div className="flex items-center gap-3">
+                              <FileText className="h-4 w-4 text-slate-500" />
+                              <span className="text-xs font-bold text-slate-900">Store activity log</span>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Transfer store (Matching Screenshot) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900">Transfer store</h3>
+                            <p className="text-xs text-slate-500">Move this store into an organization or transfer to an external owner. <span className="text-indigo-600 underline font-medium cursor-pointer">Learn more</span></p>
+                          </div>
+                          <button onClick={() => alert("Store transfer portal initialized.")} className="px-4 py-2 border border-slate-300 text-slate-800 text-xs font-bold rounded-xl hover:bg-slate-50">Manage</button>
                         </div>
                       </div>
                     </div>
