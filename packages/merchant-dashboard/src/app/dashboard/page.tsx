@@ -513,9 +513,11 @@ export default function MerchantDashboard() {
       const match = TAB_SLUG_MAP[routeSlug.toLowerCase()] || { tab: "summary" };
       setActiveTab(match.tab.split(" ")[0] as any);
       if (match.subTab) {
-        setProductsSubTab(match.subTab as any);
-      } else if (match.tab === "products") {
-        setProductsSubTab("catalog");
+        if (match.tab === "products") setProductsSubTab(match.subTab as any);
+        if (match.tab === "customers") setCustomersSubTab(match.subTab as any);
+      } else {
+        if (match.tab === "products") setProductsSubTab("catalog");
+        if (match.tab === "customers") setCustomersSubTab("list");
       }
     };
 
@@ -534,6 +536,7 @@ export default function MerchantDashboard() {
 
     let slug = targetKey;
     if (targetKey === "catalog") slug = "products";
+    if (targetKey === "list") slug = "customers";
 
     const newPath = `/store/${storeSubdomain}/${slug === "summary" ? "" : slug}`.replace(/\/$/, "");
 
@@ -544,9 +547,13 @@ export default function MerchantDashboard() {
     if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(targetKey)) {
       setActiveTab("products");
       setProductsSubTab(targetKey as any);
+    } else if (["segments", "companies"].includes(targetKey)) {
+      setActiveTab("customers");
+      setCustomersSubTab(targetKey as any);
     } else {
       setActiveTab(tabId as any);
       if (tabId === "products") setProductsSubTab("catalog");
+      if (tabId === "customers") setCustomersSubTab("list");
     }
   };
 
@@ -5770,15 +5777,6 @@ export default function MerchantDashboard() {
                         </div>
                       </div>
 
-                      {/* Describe Your Segment AI Bar */}
-                      <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 cursor-pointer hover:border-slate-300 transition-colors">
-                        <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500">
-                          <Sparkles className="h-4 w-4 text-indigo-600" />
-                          <span>Describe your segment</span>
-                        </div>
-                        <ChevronDown className="h-4 w-4 text-slate-400" />
-                      </div>
-
                       {/* Search Customers Bar */}
                       <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
                         <div className="relative flex-1">
@@ -5955,20 +5953,24 @@ export default function MerchantDashboard() {
 
                   {/* 3. COMPANIES SUB-VIEW */}
                   {customersSubTab === "companies" && (
-                    <div className="space-y-6">
+                    <div className="space-y-6 animate-fade-in">
                       <div className="flex items-center justify-between">
-                        <h2 className="text-xl font-bold tracking-tight text-slate-900">B2B Companies</h2>
-                        <button className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm">
-                          Add company
-                        </button>
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Companies</h2>
                       </div>
 
-                      <div className="bg-white p-8 border border-slate-200 rounded-2xl text-center space-y-3 shadow-2xs">
-                        <Building className="h-10 w-10 text-indigo-600 mx-auto" />
-                        <h3 className="text-base font-bold text-slate-900">B2B Corporate Customer Accounts</h3>
-                        <p className="text-xs text-slate-500 max-w-md mx-auto">
-                          Manage company locations, corporate buyers, wholesale price catalogs, and tax identification numbers.
-                        </p>
+                      <div className="bg-white p-12 border border-slate-200 rounded-2xl text-center space-y-4 shadow-2xs">
+                        <div className="h-12 w-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mx-auto">
+                          <Building className="h-6 w-6" />
+                        </div>
+                        <div className="space-y-1">
+                          <h3 className="text-base font-bold text-slate-900">B2B Companies & Wholesale Accounts</h3>
+                          <p className="text-xs text-slate-500 max-w-sm mx-auto font-medium">
+                            This feature will be added soon. You will be able to manage corporate accounts, custom pricing lists, and wholesale business catalogs.
+                          </p>
+                        </div>
+                        <span className="inline-flex items-center px-3 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-full text-xs font-bold">
+                          ● Feature will be added soon
+                        </span>
                       </div>
                     </div>
                   )}
