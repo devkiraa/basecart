@@ -1005,4 +1005,129 @@ app.post("/store/email-templates/test", authenticateMerchant, async (c) => {
   }
 });
 
+// -------------------------------------------------------------
+// 3. Content Management Endpoints (Menus, Blog Posts, Files, Metaobjects)
+// -------------------------------------------------------------
+
+/**
+ * GET /store/menus
+ */
+app.get("/store/menus", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS store_menus (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        items TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM store_menus ORDER BY createdAt ASC").all();
+  const rows = result.results || [];
+
+  if (rows.length === 0) {
+    // Default standard menus matching Shopify structure
+    const defaultMenus = [
+      { id: "menu-main", name: "Main menu", items: JSON.stringify(["Home", "Catalog", "Contact"]), createdAt: new Date().toISOString() },
+      { id: "menu-footer", name: "Footer menu", items: JSON.stringify(["Search"]), createdAt: new Date().toISOString() },
+      { id: "menu-account", name: "Customer account main menu", items: JSON.stringify(["Orders", "Profile"]), createdAt: new Date().toISOString() },
+    ];
+    for (const dm of defaultMenus) {
+      await tenantDb
+        .prepare("INSERT OR REPLACE INTO store_menus (id, name, items, createdAt) VALUES (?, ?, ?, ?)")
+        .bind(dm.id, dm.name, dm.items, dm.createdAt)
+        .run()
+        .catch(() => {});
+    }
+    return c.json(defaultMenus.map(m => ({ ...m, items: JSON.parse(m.items) })));
+  }
+
+  return c.json(rows.map((r: any) => ({
+    ...r,
+    items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
+  })));
+});
+
+/**
+ * POST /store/menus
+ */
+app.post("/store/menus", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { name, items } = body;
+
+  if (!name) return c.json({ error: "Menu name is required" }, 400);
+
+  const id = body.id || `menu-${Date.now()}`;
+  const itemsJson = JSON.stringify(Array.isArray(items) ? items : [items].filter(Boolean));
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare("INSERT OR REPLACE INTO store_menus (id, name, items, createdAt) VALUES (?, ?, ?, ?)")
+    .bind(id, name, itemsJson, createdAt)
+    .run();
+
+  return c.json({ success: true, id });
+});
+
+/**
+ * GET /store/blog-posts
+ */
+app.get("/store/blog-posts", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS blog_posts (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL,
+        author TEXT,
+        featuredImage TEXT,
+        seoTitle TEXT,
+        seoDescription TEXT,
+        status TEXT DEFAULT 'published',
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM blog_posts ORDER BY createdAt DESC").all();
+  return c.json(result.results || []);
+});
+
+/**
+ * POST /store/blog-posts
+ */
+app.post("/store/blog-posts", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { title, content, author, featuredImage, seoTitle, seoDescription } = body;
+
+  if (!title || !content) {
+    return c.json({ error: "Title and content are required for blog posts" }, 400);
+  }
+
+  const id = body.id || `blog-${Date.now()}`;
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      `INSERT OR REPLACE INTO blog_posts (id, title, content, author, featuredImage, seoTitle, seoDescription, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(id, title, content, author || "Store Admin", featuredImage || "", seoTitle || "", seoDescription || "", "published", createdAt)
+    .run();
+
+  return c.json({ success: true, id });
+});
+
 export default app;

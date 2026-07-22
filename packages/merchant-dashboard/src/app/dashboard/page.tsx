@@ -60,6 +60,9 @@ import {
   Truck,
   ArrowRightLeft,
   Gift,
+  ChevronsUpDown,
+  Edit3,
+  Folder,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -399,7 +402,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "brand" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
+    "summary" | "orders" | "products" | "customers" | "content" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "brand" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Marketing / Newsletter campaign states
@@ -497,6 +500,12 @@ export default function MerchantDashboard() {
         "gift_cards": { tab: "products", subTab: "gift-cards" },
         "customers": { tab: "customers" },
         "discounts": { tab: "discounts" },
+        "content": { tab: "content", subTab: "metaobjects" },
+        "metaobjects": { tab: "content", subTab: "metaobjects" },
+        "files": { tab: "content", subTab: "files" },
+        "menus": { tab: "content", subTab: "menus" },
+        "blog-posts": { tab: "content", subTab: "blog-posts" },
+        "blog_posts": { tab: "content", subTab: "blog-posts" },
         "marketing": { tab: "marketing" },
         "brand": { tab: "brand" },
         "store-design": { tab: "store-design" },
@@ -515,9 +524,11 @@ export default function MerchantDashboard() {
       if (match.subTab) {
         if (match.tab === "products") setProductsSubTab(match.subTab as any);
         if (match.tab === "customers") setCustomersSubTab(match.subTab as any);
+        if (match.tab === "content") setContentSubTab(match.subTab as any);
       } else {
         if (match.tab === "products") setProductsSubTab("catalog");
         if (match.tab === "customers") setCustomersSubTab("list");
+        if (match.tab === "content") setContentSubTab("metaobjects");
       }
     };
 
@@ -550,10 +561,14 @@ export default function MerchantDashboard() {
     } else if (["segments", "companies"].includes(targetKey)) {
       setActiveTab("customers");
       setCustomersSubTab(targetKey as any);
+    } else if (["metaobjects", "files", "menus", "blog-posts"].includes(targetKey)) {
+      setActiveTab("content");
+      setContentSubTab(targetKey as any);
     } else {
       setActiveTab(tabId as any);
       if (tabId === "products") setProductsSubTab("catalog");
       if (tabId === "customers") setCustomersSubTab("list");
+      if (tabId === "content") setContentSubTab("metaobjects");
     }
   };
 
@@ -689,6 +704,19 @@ export default function MerchantDashboard() {
     { id: "seg-4", name: "Customers who have purchased more than once", lastActivity: "Created on May 27, 2026", createdBy: "System" },
     { id: "seg-5", name: "Customers who haven't purchased", lastActivity: "Created on May 27, 2026", createdBy: "System" },
   ]);
+
+  // Content sub-tab state (Metaobjects, Files, Menus, Blog posts)
+  const [contentSubTab, setContentSubTab] = useState<"metaobjects" | "files" | "menus" | "blog-posts">("metaobjects");
+  const [menus, setMenus] = useState<any[]>([
+    { id: "menu-main", name: "Main menu", items: ["Home", "Catalog", "Contact"] },
+    { id: "menu-footer", name: "Footer menu", items: ["Search"] },
+    { id: "menu-account", name: "Customer account main menu", items: ["Orders", "Profile"] },
+  ]);
+  const [blogPosts, setBlogPosts] = useState<any[]>([]);
+  const [metaobjects, setMetaobjects] = useState<any[]>([]);
+  const [storeFiles, setStoreFiles] = useState<any[]>([]);
+  const [menuForm, setMenuForm] = useState<{ id?: string; name: string; items: string } | null>(null);
+  const [blogForm, setBlogForm] = useState<{ id?: string; title: string; content: string; author?: string } | null>(null);
 
   const handleExportCustomersCSV = () => {
     const headers = [
@@ -1318,6 +1346,13 @@ export default function MerchantDashboard() {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.ok) setCustomers(await res.json());
+      } else if (activeTab === "content") {
+        const [menuRes, blogRes] = await Promise.all([
+          fetch(`${API_URL}/store/menus`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/store/blog-posts`, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        if (menuRes.ok) setMenus(await menuRes.json());
+        if (blogRes.ok) setBlogPosts(await blogRes.json());
       } else if (activeTab === "finances") {
         const res = await fetch(`${API_URL}/finances/summary`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -2688,6 +2723,7 @@ export default function MerchantDashboard() {
               { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
               { id: "products", name: "Products", icon: Package },
               { id: "customers", name: "Customers", icon: Users },
+              { id: "content", name: "Content", icon: FileText },
               { id: "discounts", name: "Discounts", icon: Tag },
               { id: "marketing", name: "Marketing", icon: Megaphone },
               { id: "brand", name: "Brand & Identity", icon: Sparkles },
@@ -2765,6 +2801,30 @@ export default function MerchantDashboard() {
                           }}
                           className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                             customersSubTab === sub.id
+                              ? "bg-slate-100 text-slate-900 font-bold"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sub-items for Content (Matching Screenshot 1) */}
+                  {item.id === "content" && isActive && !sidebarCollapsed && (
+                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                      {[
+                        { id: "metaobjects", label: "Metaobjects" },
+                        { id: "files", label: "Files" },
+                        { id: "menus", label: "Menus" },
+                        { id: "blog-posts", label: "Blog posts" },
+                      ].map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => changeTab("content", sub.id)}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                            contentSubTab === sub.id
                               ? "bg-slate-100 text-slate-900 font-bold"
                               : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
                           }`}
@@ -6191,6 +6251,389 @@ export default function MerchantDashboard() {
                           {importingCsvLoading ? "Importing..." : "Import Customers"}
                         </button>
                       </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CONTENT TAB (MATCHING SCREENSHOTS 1, 2, 3) */}
+          {activeTab === "content" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* 1. MENUS SUB-VIEW (MATCHING SCREENSHOT 2) */}
+              {contentSubTab === "menus" && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <Menu className="h-5 w-5 text-slate-700" />
+                      <h2 className="text-xl font-bold tracking-tight text-slate-900">Menus</h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setActionSuccess("URL Redirects manager opened")}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200/80 transition-colors cursor-pointer"
+                      >
+                        URL redirects
+                      </button>
+                      <button
+                        onClick={() => setMenuForm({ name: "", items: "" })}
+                        className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        Create menu
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50/80 font-bold text-slate-600 text-xs tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3.5 flex items-center gap-1.5">
+                            <span>Menu</span>
+                            <ChevronsUpDown className="h-3.5 w-3.5 text-slate-400" />
+                          </th>
+                          <th className="px-6 py-3.5">Menu items</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {menus.map((m) => (
+                          <tr key={m.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-bold text-slate-900 text-sm">
+                              <button
+                                onClick={() => setMenuForm({ ...m, items: Array.isArray(m.items) ? m.items.join(", ") : m.items })}
+                                className="hover:underline text-indigo-600 font-bold text-left cursor-pointer"
+                              >
+                                {m.name}
+                              </button>
+                            </td>
+                            <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                              {Array.isArray(m.items) ? m.items.join(", ") : m.items}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. BLOG POSTS SUB-VIEW (MATCHING SCREENSHOT 3) */}
+              {contentSubTab === "blog-posts" && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="h-5 w-5 text-slate-700" />
+                      <h2 className="text-xl font-bold tracking-tight text-slate-900">Blog posts</h2>
+                    </div>
+
+                    <button
+                      onClick={() => setActionSuccess("Manage blogs settings opened")}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200/80 transition-colors cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                      <span>Manage blogs</span>
+                    </button>
+                  </div>
+
+                  {blogPosts.length === 0 ? (
+                    /* Matching Screenshot 3 Empty State Card */
+                    <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center shadow-card max-w-2xl mx-auto my-6 space-y-5 animate-fade-in">
+                      <div className="relative mx-auto h-24 w-24 flex items-center justify-center">
+                        <div className="h-20 w-20 rounded-full bg-slate-100/90 flex items-center justify-center">
+                          <div className="bg-white border border-slate-200 rounded-xl p-2.5 shadow-sm flex flex-col items-center space-y-1 w-14">
+                            <div className="flex items-center justify-between w-full border-b border-slate-100 pb-0.5 text-[9px] font-bold font-mono text-slate-700">
+                              <span>B</span>
+                              <span className="italic">I</span>
+                              <span className="underline">U</span>
+                            </div>
+                            <div className="h-4 w-4 bg-teal-50 border border-teal-200 rounded flex items-center justify-center text-teal-600">
+                              <FileText className="h-3 w-3" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h3 className="text-base font-bold text-slate-900">Write a blog post</h3>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto font-medium leading-relaxed">
+                          Blog posts are a great way to build a community around your products and your brand.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setActionSuccess("Blog documentation opened")}
+                          className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs transition-colors cursor-pointer"
+                        >
+                          Learn more
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBlogForm({ title: "", content: "", author: "Store Admin" })}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer"
+                        >
+                          Create blog post
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                        <thead className="bg-slate-50/80 font-bold text-slate-600 text-xs tracking-wider">
+                          <tr>
+                            <th className="px-6 py-3.5">Blog post title</th>
+                            <th className="px-6 py-3.5">Author</th>
+                            <th className="px-6 py-3.5">Status</th>
+                            <th className="px-6 py-3.5 text-right">Published date</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                          {blogPosts.map((post) => (
+                            <tr key={post.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 font-bold text-slate-900 text-sm">
+                                {post.title}
+                              </td>
+                              <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                                {post.author || "Store Admin"}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  {post.status || "published"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-right text-xs font-semibold text-slate-500">
+                                {new Date(post.createdAt).toLocaleDateString("en-IN")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. FILES SUB-VIEW */}
+              {contentSubTab === "files" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Files</h2>
+                    <button
+                      onClick={() => setActionSuccess("File uploader opened")}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
+                    >
+                      Upload files
+                    </button>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-2xs">
+                    <Folder className="h-10 w-10 text-indigo-600 mx-auto" />
+                    <h3 className="text-base font-bold text-slate-900">Store Media & Digital Assets</h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
+                      Upload promotional banners, product manuals, and storefront images to use across your store pages.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. METAOBJECTS SUB-VIEW */}
+              {contentSubTab === "metaobjects" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Metaobjects</h2>
+                    <button
+                      onClick={() => setActionSuccess("Metaobject definition builder opened")}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
+                    >
+                      Create definition
+                    </button>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-2xs">
+                    <Layers className="h-10 w-10 text-indigo-600 mx-auto" />
+                    <h3 className="text-base font-bold text-slate-900">Custom Content Data Types</h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
+                      Define custom structured content (Size Guides, Designer Spotlights, Specifications) to embed anywhere on store pages.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* CREATE/EDIT MENU MODAL */}
+              {menuForm && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-bold text-slate-900">
+                        {menuForm.id ? "Edit Navigation Menu" : "Create Navigation Menu"}
+                      </h3>
+                      <button onClick={() => setMenuForm(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Menu Title
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Header Navigation"
+                          value={menuForm.name}
+                          onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
+                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Menu Items (Comma Separated)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Home, Catalog, Contact, About Us"
+                          value={menuForm.items}
+                          onChange={(e) => setMenuForm({ ...menuForm, items: e.target.value })}
+                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setMenuForm(null)}
+                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!menuForm.name) return;
+                          try {
+                            const itemsArr = menuForm.items.split(",").map((s) => s.trim()).filter(Boolean);
+                            const res = await fetch(`${API_URL}/store/menus`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify({ ...menuForm, items: itemsArr }),
+                            });
+                            if (res.ok) {
+                              setActionSuccess("Navigation menu saved to database!");
+                              fetchDashboardData();
+                            }
+                          } catch (err: any) {
+                            setActionError(err.message);
+                          }
+                          setMenuForm(null);
+                        }}
+                        className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                      >
+                        Save Menu
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CREATE BLOG POST MODAL */}
+              {blogForm && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <h3 className="text-base font-bold text-slate-900">Create New Blog Post</h3>
+                      <button onClick={() => setBlogForm(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Post Title
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Summer Collection Lookbook & Styling Guide"
+                          value={blogForm.title}
+                          onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Author
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Store Admin"
+                          value={blogForm.author || "Store Admin"}
+                          onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
+                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Content
+                        </label>
+                        <textarea
+                          rows={5}
+                          required
+                          placeholder="Write your blog post content here..."
+                          value={blogForm.content}
+                          onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+                          className="w-full p-3 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setBlogForm(null)}
+                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!blogForm.title || !blogForm.content) return;
+                          try {
+                            const res = await fetch(`${API_URL}/store/blog-posts`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify(blogForm),
+                            });
+                            if (res.ok) {
+                              setActionSuccess("Blog post published to database successfully!");
+                              fetchDashboardData();
+                            }
+                          } catch (err: any) {
+                            setActionError(err.message);
+                          }
+                          setBlogForm(null);
+                        }}
+                        className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                      >
+                        Publish Post
+                      </button>
                     </div>
                   </div>
                 </div>
