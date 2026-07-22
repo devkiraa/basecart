@@ -10170,39 +10170,69 @@ export default function MerchantDashboard() {
                         </span>
                       </div>
 
-                      {/* Business details */}
+                      {/* Business details (Tailored for India) */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
-                        <div>
-                          <h3 className="text-sm font-bold text-slate-900">Business details</h3>
-                          <p className="text-xs text-slate-500">Business entity registered in database for financial compliance, taxes, and storefront</p>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-sm font-bold text-slate-900">Business details</h3>
+                            <p className="text-xs text-slate-500">Business entity registered in India for GST compliance, tax invoicing, and storefront operations</p>
+                          </div>
+                          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1 rounded-xl text-xs font-bold text-slate-800">
+                            <span>🇮🇳</span>
+                            <span>India Entity</span>
+                          </div>
                         </div>
 
                         <div className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Store Legal / Entity Name</label>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Registered Business / Legal Entity Name</label>
                               <input
                                 type="text"
                                 value={settings.storeName || ""}
                                 onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                                placeholder="e.g. Iron Forge Pvt Ltd"
                                 className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Registered GSTIN / Tax ID</label>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Registered GSTIN (15-Digit GST Number)</label>
                               <input
                                 type="text"
+                                maxLength={15}
                                 placeholder="32AAAAA0000A1Z5"
                                 value={settings.gstin || ""}
-                                onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
-                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none uppercase"
+                                onChange={(e) => setSettings({ ...settings, gstin: e.target.value.toUpperCase() })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none uppercase font-mono"
                               />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Registered State / Union Territory (Place of Supply)</label>
+                              <select
+                                value={settings.registeredState || "Kerala"}
+                                onChange={(e) => setSettings({ ...settings, registeredState: e.target.value, placeOfSupply: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none bg-white"
+                              >
+                                {["Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"].map((st) => (
+                                  <option key={st} value={st}>{st}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Operating Country</label>
+                              <div className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 flex items-center justify-between">
+                                <span>India (Domestic INR market)</span>
+                                <span>🇮🇳</span>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
 
-                      {/* Store contact details */}
+                      {/* Store contact details (Tailored for India) */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
                         <h3 className="text-sm font-bold text-slate-900">Store contact details</h3>
 
@@ -10218,73 +10248,59 @@ export default function MerchantDashboard() {
                               />
                             </div>
                             <div>
-                              <label className="block text-xs font-bold text-slate-700 mb-1">Support Phone Number</label>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Indian Support Phone (+91)</label>
                               <input
                                 type="text"
                                 placeholder="+91 98765 43210"
                                 value={settings.supportPhone || ""}
                                 onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none font-mono"
                               />
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Registered Store Address</label>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Registered Indian Store Address (Street, District, State & PIN Code)</label>
                             <textarea
                               rows={2}
                               value={settings.registeredBusinessAddress || ""}
                               onChange={(e) => setSettings({ ...settings, registeredBusinessAddress: e.target.value })}
-                              placeholder="Full registered address..."
+                              placeholder="Door No, Street Name, District, State, PIN Code..."
                               className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none resize-none"
                             />
                           </div>
                         </div>
                       </div>
 
-                      {/* Store defaults (Matching Screenshot) */}
+                      {/* Store defaults (Tailored for Indian Customers) */}
                       <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
-                        <h3 className="text-sm font-bold text-slate-900">Store defaults</h3>
+                        <h3 className="text-sm font-bold text-slate-900">Store defaults (India Market)</h3>
 
                         <div className="space-y-4">
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Currency display</label>
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between">
-                              <select
-                                value={settings.currency || "INR ₹"}
-                                onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
-                                className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
-                              >
-                                <option value="INR ₹">Indian Rupee (INR ₹)</option>
-                                <option value="USD $">US Dollar (USD $)</option>
-                                <option value="EUR €">Euro (EUR €)</option>
-                                <option value="GBP £">British Pound (GBP £)</option>
-                              </select>
-                              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">To manage currencies, go to Markets</span>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Store Currency</label>
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-sm text-indigo-700">₹</span>
+                                <span className="text-xs font-bold text-slate-900">Indian Rupee (INR ₹)</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 font-medium">Primary Currency for Indian Checkout</span>
                             </div>
                           </div>
 
                           <div>
-                            <label className="block text-xs font-bold text-slate-700 mb-1">Backup Region</label>
-                            <select
-                              value={settings.backupRegion || "India"}
-                              onChange={(e) => setSettings({ ...settings, backupRegion: e.target.value })}
-                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                            >
-                              <option value="India">India</option>
-                              <option value="United States">United States</option>
-                              <option value="United Kingdom">United Kingdom</option>
-                              <option value="Canada">Canada</option>
-                            </select>
-                            <span className="text-[11px] text-slate-500 mt-1 block">Determines settings for customers outside of your markets</span>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Primary Region</label>
+                            <div className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between">
+                              <span>India (Domestic & Interstate Orders)</span>
+                              <span className="text-emerald-700 font-bold text-[10px] bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">Active</span>
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-xs font-bold text-slate-700 mb-1">Unit system</label>
                               <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-                                <option>Metric system</option>
-                                <option>Imperial system</option>
+                                <option value="Metric system">Metric system (kg, g, cm, m)</option>
                               </select>
                             </div>
                             <div>
@@ -10296,25 +10312,16 @@ export default function MerchantDashboard() {
                               >
                                 <option value="Kilogram (kg)">Kilogram (kg)</option>
                                 <option value="Gram (g)">Gram (g)</option>
-                                <option value="Pound (lb)">Pound (lb)</option>
-                                <option value="Ounce (oz)">Ounce (oz)</option>
                               </select>
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">Time zone</label>
-                            <select
-                              value={settings.timezone || "(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi"}
-                              onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                            >
-                              <option value="(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi">(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
-                              <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
-                              <option value="(GMT-05:00) Eastern Time (US & Canada)">(GMT-05:00) Eastern Time (US & Canada)</option>
-                              <option value="(GMT+01:00) Central European Time">(GMT+01:00) Central European Time</option>
-                            </select>
-                            <span className="text-[11px] text-slate-500 mt-1 block">Sets the time for when orders and analytics are recorded</span>
+                            <div className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 flex items-center justify-between">
+                              <span>(GMT+05:30) IST — Chennai, Kolkata, Mumbai, New Delhi</span>
+                              <span className="text-[11px] text-slate-500 hidden sm:inline">Indian Standard Time</span>
+                            </div>
                           </div>
                         </div>
 
