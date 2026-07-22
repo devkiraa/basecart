@@ -67,13 +67,24 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     } catch (e) {}
   }
 
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  let kvMap: Record<string, string> = {};
+  try {
+    const kvRows = await tenantDb.prepare("SELECT key, value FROM store_settings").all<{ key: string; value: string }>();
+    if (kvRows.results) {
+      for (const r of kvRows.results) {
+        kvMap[r.key] = r.value;
+      }
+    }
+  } catch (e) {}
+
   return c.json({
     storeName: store.storeName,
     subdomain: store.subdomain,
     customDomain: store.customDomain || "",
     plan: store.plan || "starter",
     addOns,
-    gstin: store.gstin || (branding as any).gstin || "",
+    gstin: store.gstin || (branding as any).gstin || kvMap.gstin || "",
     registeredBusinessName: store.registeredBusinessName || "",
     registeredBusinessAddress: store.registeredBusinessAddress || "",
     registeredState: store.registeredState || "",
@@ -101,6 +112,24 @@ app.get("/store/settings", authenticateMerchant, async (c) => {
     termsOfService: store.termsOfService || "",
     privacyPolicy: store.privacyPolicy || "",
     refundPolicy: store.refundPolicy || "",
+    shippingPolicy: kvMap.shippingPolicy || "",
+    supportEmail: kvMap.supportEmail || store.email || "",
+    supportPhone: kvMap.supportPhone || "",
+    currency: kvMap.currency || "INR ₹",
+    weightUnit: kvMap.weightUnit || "Kilogram (kg)",
+    timezone: kvMap.timezone || "(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi",
+    backupRegion: kvMap.backupRegion || "India",
+    codEnabled: kvMap.codEnabled !== undefined ? kvMap.codEnabled === "true" : true,
+    codMinAmount: kvMap.codMinAmount ? Number(kvMap.codMinAmount) : 0,
+    upiVpa: kvMap.upiVpa || "",
+    shippingFee: kvMap.shippingFee ? Number(kvMap.shippingFee) : 50,
+    freeShippingMinOrder: kvMap.freeShippingMinOrder ? Number(kvMap.freeShippingMinOrder) : 999,
+    handlingDays: kvMap.handlingDays || "1-2 business days",
+    customerAccountPolicy: kvMap.customerAccountPolicy || "optional",
+    phoneRequired: kvMap.phoneRequired !== undefined ? kvMap.phoneRequired === "true" : true,
+    address2Required: kvMap.address2Required !== undefined ? kvMap.address2Required === "true" : false,
+    taxRate: kvMap.taxRate ? Number(kvMap.taxRate) : 18,
+    pricesIncludeTax: kvMap.pricesIncludeTax !== undefined ? kvMap.pricesIncludeTax === "true" : true,
     createdAt: store.createdAt,
   });
 });
@@ -256,6 +285,36 @@ app.patch("/store/settings", authenticateMerchant, async (c) => {
       tenantId
     )
     .run();
+  // Persist all key-value settings in tenantDb store_settings table
+  const settingsInput = parseResult.data as any;
+  const tenantDbForKv = await getTenantDb(tenantId, c.env);
+  const kvPairs = [
+    ["shippingPolicy", settingsInput.shippingPolicy],
+    ["supportEmail", settingsInput.supportEmail],
+    ["supportPhone", settingsInput.supportPhone],
+    ["currency", settingsInput.currency],
+    ["weightUnit", settingsInput.weightUnit],
+    ["timezone", settingsInput.timezone],
+    ["backupRegion", settingsInput.backupRegion],
+    ["codEnabled", settingsInput.codEnabled !== undefined ? String(settingsInput.codEnabled) : undefined],
+    ["codMinAmount", settingsInput.codMinAmount !== undefined ? String(settingsInput.codMinAmount) : undefined],
+    ["upiVpa", settingsInput.upiVpa],
+    ["shippingFee", settingsInput.shippingFee !== undefined ? String(settingsInput.shippingFee) : undefined],
+    ["freeShippingMinOrder", settingsInput.freeShippingMinOrder !== undefined ? String(settingsInput.freeShippingMinOrder) : undefined],
+    ["handlingDays", settingsInput.handlingDays],
+    ["customerAccountPolicy", settingsInput.customerAccountPolicy],
+    ["phoneRequired", settingsInput.phoneRequired !== undefined ? String(settingsInput.phoneRequired) : undefined],
+    ["address2Required", settingsInput.address2Required !== undefined ? String(settingsInput.address2Required) : undefined],
+    ["taxRate", settingsInput.taxRate !== undefined ? String(settingsInput.taxRate) : undefined],
+    ["pricesIncludeTax", settingsInput.pricesIncludeTax !== undefined ? String(settingsInput.pricesIncludeTax) : undefined],
+    ["gstin", settingsInput.gstin],
+  ];
+
+  for (const [key, val] of kvPairs) {
+    if (val !== undefined && val !== null) {
+      await tenantDbForKv.prepare("INSERT OR REPLACE INTO store_settings (key, value) VALUES (?, ?)").bind(key, String(val)).run();
+    }
+  }
 
   return c.json({ message: "Store settings updated successfully" });
 });

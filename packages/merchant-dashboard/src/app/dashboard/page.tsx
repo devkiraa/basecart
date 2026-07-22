@@ -211,6 +211,24 @@ interface StoreSettings {
   termsOfService?: string;
   privacyPolicy?: string;
   refundPolicy?: string;
+  shippingPolicy?: string;
+  supportEmail?: string;
+  supportPhone?: string;
+  currency?: string;
+  weightUnit?: string;
+  timezone?: string;
+  backupRegion?: string;
+  codEnabled?: boolean;
+  codMinAmount?: number;
+  upiVpa?: string;
+  shippingFee?: number;
+  freeShippingMinOrder?: number;
+  handlingDays?: string;
+  customerAccountPolicy?: string;
+  phoneRequired?: boolean;
+  address2Required?: boolean;
+  taxRate?: number;
+  pricesIncludeTax?: boolean;
 }
 
 function calculateTrialDaysRemaining(createdAtStr?: string) {
@@ -764,6 +782,67 @@ export default function MerchantDashboard() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  const handleSaveSettings = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!token) return;
+    setLoading(true);
+    setActionError("");
+    setActionSuccess("");
+    try {
+      const res = await fetch(`${API_URL}/store/settings`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          storeName: settings.storeName,
+          registeredBusinessName: settings.registeredBusinessName,
+          registeredBusinessAddress: settings.registeredBusinessAddress,
+          registeredState: settings.registeredState,
+          gstin: settings.gstin,
+          panNumber: settings.panNumber,
+          cinNumber: settings.cinNumber,
+          tanNumber: settings.tanNumber,
+          placeOfSupply: settings.placeOfSupply,
+          supportEmail: settings.supportEmail,
+          supportPhone: settings.supportPhone,
+          currency: settings.currency,
+          weightUnit: settings.weightUnit,
+          timezone: settings.timezone,
+          backupRegion: settings.backupRegion,
+          razorpayKey: settings.razorpayKey,
+          razorpaySecret: settings.razorpaySecret,
+          codEnabled: settings.codEnabled,
+          codMinAmount: settings.codMinAmount,
+          upiVpa: settings.upiVpa,
+          shippingFee: settings.shippingFee,
+          freeShippingMinOrder: settings.freeShippingMinOrder,
+          handlingDays: settings.handlingDays,
+          customerAccountPolicy: settings.customerAccountPolicy,
+          phoneRequired: settings.phoneRequired,
+          address2Required: settings.address2Required,
+          taxRate: settings.taxRate,
+          pricesIncludeTax: settings.pricesIncludeTax,
+          customDomain: settings.customDomain,
+          termsOfService: settings.termsOfService,
+          privacyPolicy: settings.privacyPolicy,
+          refundPolicy: settings.refundPolicy,
+          shippingPolicy: settings.shippingPolicy,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to save store settings to database");
+      setActionSuccess("All store settings saved to database successfully!");
+    } catch (err: any) {
+      setActionError(err.message || "Error saving store settings");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownloadSampleCsvTemplate = () => {
@@ -9896,41 +9975,44 @@ export default function MerchantDashboard() {
           {(activeTab === "settings" || isSettingsPortalOpen) && (
             <div className="fixed inset-0 bg-slate-100 z-50 flex flex-col font-sans overflow-hidden animate-fade-in">
               {/* Top Global Bar with Back Button */}
-              <div className="h-14 bg-white border-b border-slate-200/90 px-6 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-4">
+              <div className="h-14 bg-white border-b border-slate-200/90 px-4 md:px-6 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
                   <button
                     onClick={() => {
                       setIsSettingsPortalOpen(false);
                       if (activeTab === "settings") setActiveTab("summary");
                     }}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                    className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
                   >
                     <ArrowRight className="h-4 w-4 rotate-180 text-slate-500" />
-                    <span>Back to Dashboard</span>
+                    <span className="hidden sm:inline">Back to Dashboard</span>
+                    <span className="sm:hidden">Back</span>
                   </button>
 
-                  <div className="h-4 w-px bg-slate-200" />
+                  <div className="h-4 w-px bg-slate-200 shrink-0" />
 
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm shrink-0">
                       {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "IF"}
                     </div>
-                    <div>
-                      <h2 className="text-sm font-bold text-slate-900 leading-none">
+                    <div className="truncate">
+                      <h2 className="text-xs md:text-sm font-bold text-slate-900 leading-none truncate">
                         {settings.storeName || "IRON FORGE"}
                       </h2>
-                      <span className="text-[11px] font-mono text-slate-500">
+                      <span className="text-[10px] md:text-[11px] font-mono text-slate-500 truncate block">
                         {settings.subdomain || "iron-forge-12"}.basecart.app
                       </span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 shrink-0">
                   <button
-                    onClick={() => setActionSuccess("Settings saved successfully!")}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                    disabled={loading}
+                    onClick={() => handleSaveSettings()}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                   >
+                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     Save
                   </button>
                   <button
@@ -9946,10 +10028,44 @@ export default function MerchantDashboard() {
                 </div>
               </div>
 
+              {/* Mobile Horizontal Sub-Tab Scrolling Pills (md:hidden) */}
+              <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 no-scrollbar">
+                {[
+                  { id: "general", label: "General", icon: Home },
+                  { id: "plan", label: "Plan", icon: Layers },
+                  { id: "billing", label: "Billing", icon: DollarSign },
+                  { id: "payments", label: "Payments", icon: CreditCard },
+                  { id: "brand", label: "Brand", icon: Sparkles },
+                  { id: "shipping", label: "Shipping", icon: Truck },
+                  { id: "checkout", label: "Checkout", icon: ShoppingCart },
+                  { id: "taxes", label: "Taxes", icon: Scale },
+                  { id: "domains", label: "Domains", icon: Globe },
+                  { id: "notifications", label: "Emails", icon: Bell },
+                  { id: "policies", label: "Policies", icon: FileText },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = settingsSubTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setSettingsSubTab(item.id as any)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
+                        isActive
+                          ? "bg-indigo-600 text-white font-bold shadow-xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
               {/* Main Settings Body */}
-              <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
-                {/* Left Settings Sidebar (Matching Screenshot 2) */}
-                <aside className="w-64 bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col shrink-0 overflow-y-auto shadow-sm">
+              <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-3 md:p-6 gap-6">
+                {/* Left Settings Sidebar (Hidden on mobile, visible md:flex) */}
+                <aside className="hidden md:flex w-64 bg-white border border-slate-200/90 rounded-2xl p-4 flex-col shrink-0 overflow-y-auto shadow-sm">
                   {/* Search Bar */}
                   <div className="relative mb-4">
                     <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -10015,92 +10131,123 @@ export default function MerchantDashboard() {
                 </aside>
 
                 {/* Right Settings Content Panel */}
-                <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-6 md:p-8 overflow-y-auto shadow-sm space-y-6">
-                  {/* 1. GENERAL SETTINGS (MATCHING SCREENSHOT 2) */}
+                <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-4 md:p-8 overflow-y-auto shadow-sm space-y-6">
+                  {/* 1. GENERAL SETTINGS (MATCHING SCREENSHOT 2 & CONNECTED TO D1 DATABASE) */}
                   {settingsSubTab === "general" && (
                     <div className="space-y-6 animate-fade-in max-w-4xl">
-                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
-                        <Home className="h-5 w-5 text-slate-700" />
-                        <h2 className="text-xl font-bold tracking-tight text-slate-900">General</h2>
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2">
+                          <Home className="h-5 w-5 text-slate-700" />
+                          <h2 className="text-lg md:text-xl font-bold tracking-tight text-slate-900">General</h2>
+                        </div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">
+                          D1 Sync Active
+                        </span>
                       </div>
 
                       {/* Business details */}
-                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
                         <div>
                           <h3 className="text-sm font-bold text-slate-900">Business details</h3>
-                          <p className="text-xs text-slate-500">Business entity used for financial products, markets, apps, and taxes in this shop</p>
+                          <p className="text-xs text-slate-500">Business entity registered in database for financial compliance, taxes, and storefront</p>
                         </div>
 
-                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="text-xl">🇮🇳</div>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <div className="text-xs font-bold text-slate-900">{settings.storeName || "My Store 2"} - entity</div>
-                              <div className="text-[11px] text-slate-500 font-medium">India</div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Store Legal / Entity Name</label>
+                              <input
+                                type="text"
+                                value={settings.storeName || ""}
+                                onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Registered GSTIN / Tax ID</label>
+                              <input
+                                type="text"
+                                placeholder="32AAAAA0000A1Z5"
+                                value={settings.gstin || ""}
+                                onChange={(e) => setSettings({ ...settings, gstin: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none uppercase"
+                              />
                             </div>
                           </div>
-                          <button
-                            onClick={() => setActionSuccess("Business entity details updated")}
-                            className="p-1 text-slate-400 hover:text-slate-600"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
                         </div>
                       </div>
 
                       {/* Store contact details */}
-                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
                         <h3 className="text-sm font-bold text-slate-900">Store contact details</h3>
 
-                        <div className="space-y-3">
-                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <Home className="h-4 w-4 text-slate-500" />
-                              <div>
-                                <div className="text-xs font-bold text-slate-900">{settings.storeName || "IRON FORGE"}</div>
-                                <div className="text-[11px] text-slate-500 font-medium">{email || "kirankichu6151@gmail.com"} · No phone number</div>
-                              </div>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Customer Support Email</label>
+                              <input
+                                type="email"
+                                value={settings.supportEmail || email || ""}
+                                onChange={(e) => setSettings({ ...settings, supportEmail: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              />
                             </div>
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Support Phone Number</label>
+                              <input
+                                type="text"
+                                placeholder="+91 98765 43210"
+                                value={settings.supportPhone || ""}
+                                onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              />
+                            </div>
                           </div>
 
-                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <MapPin className="h-4 w-4 text-slate-500" />
-                              <div>
-                                <div className="text-xs font-bold text-slate-900">Store address</div>
-                                <div className="text-[11px] text-slate-500 font-medium max-w-xl">
-                                  {settings.registeredBusinessAddress || "Oottupara Road, Kalleli, Kerala, India, Arunodhayam, 689691 Konni Kerala, India"}
-                                </div>
-                              </div>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Registered Store Address</label>
+                            <textarea
+                              rows={2}
+                              value={settings.registeredBusinessAddress || ""}
+                              onChange={(e) => setSettings({ ...settings, registeredBusinessAddress: e.target.value })}
+                              placeholder="Full registered address..."
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none resize-none"
+                            />
                           </div>
                         </div>
                       </div>
 
                       {/* Store defaults (Matching Screenshot 2) */}
-                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
                         <h3 className="text-sm font-bold text-slate-900">Store defaults</h3>
 
                         <div className="space-y-4">
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">Currency display</label>
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-xs font-bold text-slate-800">
-                              <span>Indian Rupee (INR ₹)</span>
-                              <span className="text-[11px] text-slate-500">To manage currencies, go to Markets</span>
-                            </div>
+                            <select
+                              value={settings.currency || "INR ₹"}
+                              onChange={(e) => setSettings({ ...settings, currency: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            >
+                              <option value="INR ₹">Indian Rupee (INR ₹)</option>
+                              <option value="USD $">US Dollar (USD $)</option>
+                              <option value="EUR €">Euro (EUR €)</option>
+                              <option value="GBP £">British Pound (GBP £)</option>
+                            </select>
                           </div>
 
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">Backup Region</label>
-                            <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-                              <option>India</option>
-                              <option>United States</option>
-                              <option>United Kingdom</option>
-                              <option>Canada</option>
+                            <select
+                              value={settings.backupRegion || "India"}
+                              onChange={(e) => setSettings({ ...settings, backupRegion: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            >
+                              <option value="India">India</option>
+                              <option value="United States">United States</option>
+                              <option value="United Kingdom">United Kingdom</option>
+                              <option value="Canada">Canada</option>
                             </select>
-                            <span className="text-[11px] text-slate-500 mt-1 block">Determines settings for customers outside of your markets</span>
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -10113,30 +10260,33 @@ export default function MerchantDashboard() {
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-slate-700 mb-1">Default weight unit</label>
-                              <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-                                <option>Kilogram (kg)</option>
-                                <option>Gram (g)</option>
-                                <option>Pound (lb)</option>
-                                <option>Ounce (oz)</option>
+                              <select
+                                value={settings.weightUnit || "Kilogram (kg)"}
+                                onChange={(e) => setSettings({ ...settings, weightUnit: e.target.value })}
+                                className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              >
+                                <option value="Kilogram (kg)">Kilogram (kg)</option>
+                                <option value="Gram (g)">Gram (g)</option>
+                                <option value="Pound (lb)">Pound (lb)</option>
+                                <option value="Ounce (oz)">Ounce (oz)</option>
                               </select>
                             </div>
                           </div>
 
                           <div>
                             <label className="block text-xs font-bold text-slate-700 mb-1">Time zone</label>
-                            <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
-                              <option>(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
-                              <option>(GMT+00:00) UTC</option>
-                              <option>(GMT-05:00) Eastern Time (US & Canada)</option>
-                              <option>(GMT+01:00) Central European Time</option>
+                            <select
+                              value={settings.timezone || "(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi"}
+                              onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            >
+                              <option value="(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi">(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
+                              <option value="(GMT+00:00) UTC">(GMT+00:00) UTC</option>
+                              <option value="(GMT-05:00) Eastern Time (US & Canada)">(GMT-05:00) Eastern Time (US & Canada)</option>
+                              <option value="(GMT+01:00) Central European Time">(GMT+01:00) Central European Time</option>
                             </select>
-                            <span className="text-[11px] text-slate-500 mt-1 block">Sets the time for when orders and analytics are recorded</span>
                           </div>
                         </div>
-
-                        <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
-                          To change your user level time zone and language visit your <span className="text-indigo-600 underline font-semibold cursor-pointer">account settings</span>
-                        </p>
                       </div>
                     </div>
                   )}
@@ -10149,8 +10299,14 @@ export default function MerchantDashboard() {
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Payment Providers & Gateways</h2>
                       </div>
 
-                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-                        <h3 className="text-sm font-bold text-slate-900">Razorpay Payment Gateway</h3>
+                      {/* Razorpay Gateway */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-sm font-bold text-slate-900">Razorpay India Integration</h3>
+                          <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                            Encrypted at Rest
+                          </span>
+                        </div>
                         <p className="text-xs text-slate-500">Accept Credit Cards, Debit Cards, Netbanking, UPI & Wallets seamlessly in Indian Rupees.</p>
 
                         <div className="space-y-3">
@@ -10161,7 +10317,7 @@ export default function MerchantDashboard() {
                               placeholder="rzp_live_..."
                               value={settings.razorpayKey || ""}
                               onChange={(e) => setSettings({ ...settings, razorpayKey: e.target.value })}
-                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none font-mono"
                             />
                           </div>
 
@@ -10177,25 +10333,330 @@ export default function MerchantDashboard() {
                           </div>
                         </div>
                       </div>
+
+                      {/* Cash on Delivery & UPI */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Manual Payment Methods</h3>
+
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                            <div>
+                              <div className="text-xs font-bold text-slate-900">Cash on Delivery (COD)</div>
+                              <div className="text-[11px] text-slate-500 font-medium">Allow customers to pay in cash upon package delivery</div>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={settings.codEnabled !== false}
+                              onChange={(e) => setSettings({ ...settings, codEnabled: e.target.checked })}
+                              className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Minimum COD Order Amount (₹)</label>
+                              <input
+                                type="number"
+                                value={settings.codMinAmount || 0}
+                                onChange={(e) => setSettings({ ...settings, codMinAmount: Number(e.target.value) })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Direct UPI ID / VPA</label>
+                              <input
+                                type="text"
+                                placeholder="merchant@upi"
+                                value={settings.upiVpa || ""}
+                                onChange={(e) => setSettings({ ...settings, upiVpa: e.target.value })}
+                                className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
 
-                  {/* 3. BRAND & IDENTITY SETTINGS */}
+                  {/* 3. SHIPPING & DELIVERY SETTINGS */}
+                  {settingsSubTab === "shipping" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <Truck className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Shipping and Delivery</h2>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Standard Shipping Rules</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Flat Rate Shipping Fee (₹)</label>
+                            <input
+                              type="number"
+                              value={settings.shippingFee ?? 50}
+                              onChange={(e) => setSettings({ ...settings, shippingFee: Number(e.target.value) })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Free Shipping Minimum Threshold (₹)</label>
+                            <input
+                              type="number"
+                              value={settings.freeShippingMinOrder ?? 999}
+                              onChange={(e) => setSettings({ ...settings, freeShippingMinOrder: Number(e.target.value) })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Estimated Handling Time</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. 1-2 business days"
+                            value={settings.handlingDays || "1-2 business days"}
+                            onChange={(e) => setSettings({ ...settings, handlingDays: e.target.value })}
+                            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 4. CHECKOUT SETTINGS */}
+                  {settingsSubTab === "checkout" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <ShoppingCart className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Checkout Preferences</h2>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Customer Accounts</h3>
+                        <p className="text-xs text-slate-500">Determine whether customer login is required before checkout</p>
+
+                        <select
+                          value={settings.customerAccountPolicy || "optional"}
+                          onChange={(e) => setSettings({ ...settings, customerAccountPolicy: e.target.value })}
+                          className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        >
+                          <option value="optional">Accounts are optional (Guest checkout enabled)</option>
+                          <option value="required">Accounts are required (Must sign in before checkout)</option>
+                          <option value="disabled">Accounts are disabled (Guest checkout only)</option>
+                        </select>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Customer Address Form Options</h3>
+
+                        <div className="space-y-3">
+                          <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={settings.phoneRequired !== false}
+                              onChange={(e) => setSettings({ ...settings, phoneRequired: e.target.checked })}
+                              className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300"
+                            />
+                            <div>
+                              <div className="text-xs font-bold text-slate-900">Require customer phone number</div>
+                              <div className="text-[11px] text-slate-500">Needed for SMS updates & delivery courier notifications</div>
+                            </div>
+                          </label>
+
+                          <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={settings.address2Required === true}
+                              onChange={(e) => setSettings({ ...settings, address2Required: e.target.checked })}
+                              className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300"
+                            />
+                            <div>
+                              <div className="text-xs font-bold text-slate-900">Require Apartment / Suite / Address Line 2</div>
+                              <div className="text-[11px] text-slate-500">Make address line 2 a mandatory field</div>
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 5. TAXES AND DUTIES SETTINGS */}
+                  {settingsSubTab === "taxes" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <Scale className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Taxes and Duties</h2>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">GST & Indirect Tax Configurations</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">GST Tax Rate (%)</label>
+                            <input
+                              type="number"
+                              value={settings.taxRate ?? 18}
+                              onChange={(e) => setSettings({ ...settings, taxRate: Number(e.target.value) })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Place of Supply (State)</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Kerala / Maharashtra"
+                              value={settings.placeOfSupply || ""}
+                              onChange={(e) => setSettings({ ...settings, placeOfSupply: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <label className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={settings.pricesIncludeTax !== false}
+                            onChange={(e) => setSettings({ ...settings, pricesIncludeTax: e.target.checked })}
+                            className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500 border-slate-300"
+                          />
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">All storefront prices include tax</div>
+                            <div className="text-[11px] text-slate-500">Tax is calculated as inclusive in cart & invoices</div>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 6. DOMAINS SETTINGS */}
+                  {settingsSubTab === "domains" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <Globe className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Domains & URL Setup</h2>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Basecart Subdomain</h3>
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                          <div className="font-mono text-xs font-bold text-slate-800">
+                            {settings.subdomain || "iron-forge-12"}.basecart.app
+                          </div>
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-emerald-200">
+                            Primary Active
+                          </span>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100 space-y-3">
+                          <h4 className="text-xs font-bold text-slate-900">Connect Custom Domain (Pro Plan)</h4>
+                          <input
+                            type="text"
+                            placeholder="e.g. shop.yourdomain.com"
+                            value={settings.customDomain || ""}
+                            onChange={(e) => setSettings({ ...settings, customDomain: e.target.value })}
+                            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          />
+                          <p className="text-[11px] text-slate-500">
+                            Point your domain CNAME record to <code className="bg-slate-100 px-1 py-0.5 rounded font-mono font-bold text-indigo-600">custom.basecart.app</code>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 7. POLICIES SETTINGS */}
+                  {settingsSubTab === "policies" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-5 w-5 text-slate-700" />
+                          <h2 className="text-xl font-bold tracking-tight text-slate-900">Store Legal Policies</h2>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSettings({
+                              ...settings,
+                              refundPolicy: `Standard Refund Policy for ${settings.storeName || "Store"}:\nCustomers can request a return within 7 days of package delivery. Items must be unused and in original packaging.`,
+                              privacyPolicy: `Privacy Policy for ${settings.storeName || "Store"}:\nWe respect customer data privacy. We never share customer personal information with third parties except for order processing.`,
+                              termsOfService: `Terms of Service for ${settings.storeName || "Store"}:\nBy accessing this website, customers agree to comply with our terms and applicable laws.`,
+                              shippingPolicy: `Shipping Policy for ${settings.storeName || "Store"}:\nOrders are dispatched within 1-2 business days via express courier with real-time tracking.`,
+                            });
+                            setActionSuccess("Default policies generated!");
+                          }}
+                          className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl transition-colors cursor-pointer border border-indigo-200"
+                        >
+                          ⚡ Auto-Generate Defaults
+                        </button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-2">
+                          <label className="block text-xs font-bold text-slate-900">Refund Policy</label>
+                          <textarea
+                            rows={4}
+                            value={settings.refundPolicy || ""}
+                            onChange={(e) => setSettings({ ...settings, refundPolicy: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            placeholder="Enter refund and returns policy terms..."
+                          />
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-2">
+                          <label className="block text-xs font-bold text-slate-900">Privacy Policy</label>
+                          <textarea
+                            rows={4}
+                            value={settings.privacyPolicy || ""}
+                            onChange={(e) => setSettings({ ...settings, privacyPolicy: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            placeholder="Enter privacy policy terms..."
+                          />
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-2">
+                          <label className="block text-xs font-bold text-slate-900">Terms of Service</label>
+                          <textarea
+                            rows={4}
+                            value={settings.termsOfService || ""}
+                            onChange={(e) => setSettings({ ...settings, termsOfService: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            placeholder="Enter terms of service..."
+                          />
+                        </div>
+
+                        <div className="bg-white border border-slate-200 rounded-2xl p-4 md:p-6 shadow-xs space-y-2">
+                          <label className="block text-xs font-bold text-slate-900">Shipping Policy</label>
+                          <textarea
+                            rows={4}
+                            value={settings.shippingPolicy || ""}
+                            onChange={(e) => setSettings({ ...settings, shippingPolicy: e.target.value })}
+                            className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-medium text-slate-800 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            placeholder="Enter shipping timelines and courier policies..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 8. BRAND & IDENTITY SETTINGS */}
                   {settingsSubTab === "brand" && (
                     <div className="space-y-6 animate-fade-in max-w-4xl">
                       <BrandIdentityTab token={token} API_URL={API_URL} settings={settings} onUpdateSettings={(newSettings) => setSettings(newSettings)} />
                     </div>
                   )}
 
-                  {/* 4. NOTIFICATION & EMAIL SETTINGS */}
+                  {/* 9. NOTIFICATION & EMAIL SETTINGS */}
                   {settingsSubTab === "notifications" && (
                     <div className="space-y-6 animate-fade-in max-w-4xl">
                       <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
                     </div>
                   )}
 
-                  {/* 5. OTHER SUB-TABS FALLBACK */}
-                  {!["general", "payments", "brand", "notifications"].includes(settingsSubTab) && (
+                  {/* 10. OTHER SUB-TABS FALLBACK */}
+                  {!["general", "payments", "shipping", "checkout", "taxes", "domains", "policies", "brand", "notifications"].includes(settingsSubTab) && (
                     <div className="space-y-4 animate-fade-in max-w-4xl">
                       <h2 className="text-xl font-bold tracking-tight text-slate-900 capitalize">{settingsSubTab} Settings</h2>
                       <p className="text-xs text-slate-500">Configure your store settings and automated preferences for {settingsSubTab}.</p>
