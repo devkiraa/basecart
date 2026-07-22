@@ -63,6 +63,12 @@ import {
   ChevronsUpDown,
   Edit3,
   Folder,
+  Home,
+  Store,
+  Bot,
+  Code,
+  Scale,
+  MapPin,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -717,6 +723,10 @@ export default function MerchantDashboard() {
   const [storeFiles, setStoreFiles] = useState<any[]>([]);
   const [menuForm, setMenuForm] = useState<{ id?: string; name: string; items: string } | null>(null);
   const [blogForm, setBlogForm] = useState<{ id?: string; title: string; content: string; author?: string } | null>(null);
+
+  // Settings portal sub-tab state (Matching Screenshot 2)
+  const [settingsSearchQuery, setSettingsSearchQuery] = useState("");
+  const [isSettingsPortalOpen, setIsSettingsPortalOpen] = useState(false);
 
   const handleExportCustomersCSV = () => {
     const headers = [
@@ -2718,128 +2728,205 @@ export default function MerchantDashboard() {
             )}
           </div>
 
-          {/* Navigation Links */}
-          <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-            {[
-              { id: "summary", name: "Dashboard", icon: LayoutDashboard },
-              { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
-              { id: "products", name: "Products", icon: Package },
-              { id: "customers", name: "Customers", icon: Users },
-              { id: "content", name: "Content", icon: FileText },
-              { id: "discounts", name: "Discounts", icon: Tag },
-              { id: "marketing", name: "Marketing", icon: Megaphone },
-              { id: "brand", name: "Brand & Identity", icon: Sparkles },
-              { id: "store-design", name: "Store Design", icon: Palette },
-              { id: "emails", name: "Email Settings", icon: Mail },
-              { id: "addons", name: "Apps & Integrations", icon: Puzzle },
-              { id: "payments", name: "Payments", icon: CreditCard },
-              { id: "finances", name: "Analytics", icon: TrendingUp },
-              { id: "settings", name: "Settings", icon: SettingsIcon },
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive = activeTab === item.id;
-              return (
-                <React.Fragment key={item.id}>
+          {/* Navigation Links (Matching Screenshot 1) */}
+          <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto">
+            {/* Core Operations */}
+            <div className="space-y-0.5">
+              {[
+                { id: "summary", name: "Home", icon: Home },
+                { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
+                { id: "products", name: "Products", icon: Package },
+                { id: "customers", name: "Customers", icon: Users },
+                { id: "marketing", name: "Growth", icon: TrendingUp },
+                { id: "discounts", name: "Discounts", icon: Tag },
+                { id: "content", name: "Content", icon: FileText },
+                { id: "finances", name: "Analytics", icon: TrendingUp },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <React.Fragment key={item.id}>
+                    <button
+                      onClick={() => changeTab(item.id)}
+                      title={sidebarCollapsed ? item.name : undefined}
+                      className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
+                        sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
+                      } ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-bold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                      {!sidebarCollapsed && <span>{item.name}</span>}
+                      {!sidebarCollapsed && item.badge !== undefined && (
+                        <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Sub-items for Products */}
+                    {item.id === "products" && isActive && !sidebarCollapsed && (
+                      <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                        {[
+                          { id: "collections", label: "Collections" },
+                          { id: "inventory", label: "Inventory" },
+                          { id: "purchase-orders", label: "Purchase orders" },
+                          { id: "transfers", label: "Transfers" },
+                          { id: "gift-cards", label: "Gift cards" },
+                        ].map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              changeTab("products", sub.id);
+                              setProductForm(null);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                              productsSubTab === sub.id
+                                ? "bg-slate-100 text-slate-900 font-bold"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            {sub.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sub-items for Customers */}
+                    {item.id === "customers" && isActive && !sidebarCollapsed && (
+                      <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                        {[
+                          { id: "segments", label: "Segments" },
+                          { id: "companies", label: "Companies" },
+                        ].map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              changeTab("customers", sub.id);
+                              setCustomerForm(null);
+                            }}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                              customersSubTab === sub.id
+                                ? "bg-slate-100 text-slate-900 font-bold"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            {sub.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Sub-items for Content (Matching Screenshot 1) */}
+                    {item.id === "content" && isActive && !sidebarCollapsed && (
+                      <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                        {[
+                          { id: "metaobjects", label: "Metaobjects" },
+                          { id: "files", label: "Files" },
+                          { id: "menus", label: "Menus" },
+                          { id: "blog-posts", label: "Blog posts" },
+                        ].map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => changeTab("content", sub.id)}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                              contentSubTab === sub.id
+                                ? "bg-slate-100 text-slate-900 font-bold"
+                                : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            {sub.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+
+            {/* Sales channels section (Matching Screenshot 1) */}
+            <div className="pt-2 border-t border-slate-100 space-y-0.5">
+              {!sidebarCollapsed && (
+                <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Sales channels</span>
+                  <ChevronRight className="h-3 w-3 text-slate-400" />
+                </div>
+              )}
+              {[
+                { id: "store-design", name: "Online Store", icon: Store },
+                { id: "brand", name: "Agentic", icon: Bot },
+                { id: "emails", name: "Headless", icon: Code },
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
                   <button
+                    key={item.id}
                     onClick={() => changeTab(item.id)}
                     title={sidebarCollapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
                       sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
                     } ${
                       isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
+                        ? "bg-indigo-50 text-indigo-700 font-bold"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                     }`}
                   >
                     <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
                     {!sidebarCollapsed && <span>{item.name}</span>}
-                    {!sidebarCollapsed && item.badge !== undefined && (
-                      <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
-                        {item.badge}
-                      </span>
-                    )}
                   </button>
+                );
+              })}
+            </div>
 
-                  {/* Sub-items for Products */}
-                  {item.id === "products" && isActive && !sidebarCollapsed && (
-                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
-                      {[
-                        { id: "collections", label: "Collections" },
-                        { id: "inventory", label: "Inventory" },
-                        { id: "purchase-orders", label: "Purchase orders" },
-                        { id: "transfers", label: "Transfers" },
-                        { id: "gift-cards", label: "Gift cards" },
-                      ].map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => {
-                            changeTab("products", sub.id);
-                            setProductForm(null);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                            productsSubTab === sub.id
-                              ? "bg-slate-100 text-slate-900 font-bold"
-                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          {sub.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sub-items for Customers */}
-                  {item.id === "customers" && isActive && !sidebarCollapsed && (
-                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
-                      {[
-                        { id: "segments", label: "Segments" },
-                        { id: "companies", label: "Companies" },
-                      ].map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => {
-                            changeTab("customers", sub.id);
-                            setCustomerForm(null);
-                          }}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                            customersSubTab === sub.id
-                              ? "bg-slate-100 text-slate-900 font-bold"
-                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          {sub.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sub-items for Content (Matching Screenshot 1) */}
-                  {item.id === "content" && isActive && !sidebarCollapsed && (
-                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
-                      {[
-                        { id: "metaobjects", label: "Metaobjects" },
-                        { id: "files", label: "Files" },
-                        { id: "menus", label: "Menus" },
-                        { id: "blog-posts", label: "Blog posts" },
-                      ].map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => changeTab("content", sub.id)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
-                            contentSubTab === sub.id
-                              ? "bg-slate-100 text-slate-900 font-bold"
-                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          {sub.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
+            {/* Apps section (Matching Screenshot 1) */}
+            <div className="pt-2 border-t border-slate-100 space-y-0.5">
+              {!sidebarCollapsed && (
+                <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Apps</span>
+                  <ChevronRight className="h-3 w-3 text-slate-400" />
+                </div>
+              )}
+              <button
+                onClick={() => changeTab("addons")}
+                title={sidebarCollapsed ? "Apps & Integrations" : undefined}
+                className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
+                  sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
+                } ${
+                  activeTab === "addons"
+                    ? "bg-indigo-50 text-indigo-700 font-bold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <Puzzle className={`h-[18px] w-[18px] shrink-0 ${activeTab === "addons" ? "text-indigo-600" : "text-slate-400"}`} />
+                {!sidebarCollapsed && <span>Apps & Integrations</span>}
+              </button>
+            </div>
           </nav>
+        </div>
+
+        {/* Pinned Bottom Settings Link (Matching Screenshot 1 & 2) */}
+        <div className="px-3 py-2 border-t border-slate-100">
+          <button
+            onClick={() => {
+              setIsSettingsPortalOpen(true);
+              setActiveTab("settings");
+            }}
+            title={sidebarCollapsed ? "Settings" : undefined}
+            className={`w-full flex items-center gap-3 rounded-xl text-[13px] font-semibold transition-all ${
+              sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
+            } ${
+              activeTab === "settings" || isSettingsPortalOpen
+                ? "bg-indigo-50 text-indigo-700 font-bold"
+                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+            }`}
+          >
+            <SettingsIcon className={`h-[18px] w-[18px] shrink-0 ${activeTab === "settings" || isSettingsPortalOpen ? "text-indigo-600" : "text-slate-400"}`} />
+            {!sidebarCollapsed && <span>Settings</span>}
+          </button>
         </div>
 
         {/* Collapse toggle */}
@@ -9801,6 +9888,298 @@ export default function MerchantDashboard() {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* DEDICATED SETTINGS PORTAL WORKSPACE (MATCHING SCREENSHOT 2) */}
+          {(activeTab === "settings" || isSettingsPortalOpen) && (
+            <div className="fixed inset-0 bg-slate-100 z-50 flex flex-col font-sans overflow-hidden animate-fade-in">
+              {/* Top Global Bar */}
+              <div className="h-14 bg-white border-b border-slate-200/90 px-6 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                    {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "IF"}
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 leading-none">
+                      {settings.storeName || "IRON FORGE"}
+                    </h2>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      {settings.subdomain || "iron-forge-12"}.basecart.app
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setActionSuccess("Settings saved successfully!")}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
+                  >
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsSettingsPortalOpen(false);
+                      if (activeTab === "settings") setActiveTab("summary");
+                    }}
+                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                    title="Close Settings"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Settings Body */}
+              <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
+                {/* Left Settings Sidebar (Matching Screenshot 2) */}
+                <aside className="w-64 bg-white border border-slate-200/90 rounded-2xl p-4 flex flex-col shrink-0 overflow-y-auto shadow-sm">
+                  {/* Search Bar */}
+                  <div className="relative mb-4">
+                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search settings"
+                      value={settingsSearchQuery}
+                      onChange={(e) => setSettingsSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-600"
+                    />
+                  </div>
+
+                  {/* Settings Items Navigation List */}
+                  <div className="space-y-0.5 flex-1">
+                    {[
+                      { id: "general", label: "General", icon: Home },
+                      { id: "plan", label: "Plan", icon: Layers },
+                      { id: "billing", label: "Billing", icon: DollarSign },
+                      { id: "users", label: "Users & Permissions", icon: Users },
+                      { id: "payments", label: "Payments", icon: CreditCard },
+                      { id: "checkout", label: "Checkout", icon: ShoppingCart },
+                      { id: "shipping", label: "Shipping and delivery", icon: Truck },
+                      { id: "taxes", label: "Taxes and duties", icon: Scale },
+                      { id: "locations", label: "Locations", icon: MapPin },
+                      { id: "apps", label: "Apps & sales channels", icon: Puzzle },
+                      { id: "domains", label: "Domains", icon: Globe },
+                      { id: "notifications", label: "Notifications", icon: Bell },
+                      { id: "privacy", label: "Customer privacy", icon: Lock },
+                      { id: "policies", label: "Policies", icon: FileText },
+                    ]
+                      .filter((item) => item.label.toLowerCase().includes(settingsSearchQuery.toLowerCase()))
+                      .map((item) => {
+                        const Icon = item.icon;
+                        const isActive = settingsSubTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => setSettingsSubTab(item.id as any)}
+                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                              isActive
+                                ? "bg-slate-100 text-slate-900 font-bold"
+                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                            }`}
+                          >
+                            <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                            <span>{item.label}</span>
+                          </button>
+                        );
+                      })}
+                  </div>
+
+                  {/* Profile Footer */}
+                  <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
+                    <div className="h-8 w-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-xs text-slate-700">
+                      KS
+                    </div>
+                    <div className="overflow-hidden">
+                      <div className="text-xs font-bold text-slate-900 truncate">Kiran S</div>
+                      <div className="text-[10px] text-slate-500 truncate">{email || "kirankichu6151@gmail.com"}</div>
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Right Settings Content Panel */}
+                <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-6 md:p-8 overflow-y-auto shadow-sm space-y-6">
+                  {/* 1. GENERAL SETTINGS (MATCHING SCREENSHOT 2) */}
+                  {settingsSubTab === "general" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <Home className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">General</h2>
+                      </div>
+
+                      {/* Business details */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Business details</h3>
+                          <p className="text-xs text-slate-500">Business entity used for financial products, markets, apps, and taxes in this shop</p>
+                        </div>
+
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="text-xl">🇮🇳</div>
+                            <div>
+                              <div className="text-xs font-bold text-slate-900">{settings.storeName || "My Store 2"} - entity</div>
+                              <div className="text-[11px] text-slate-500 font-medium">India</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setActionSuccess("Business entity details updated")}
+                            className="p-1 text-slate-400 hover:text-slate-600"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Store contact details */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Store contact details</h3>
+
+                        <div className="space-y-3">
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Home className="h-4 w-4 text-slate-500" />
+                              <div>
+                                <div className="text-xs font-bold text-slate-900">{settings.storeName || "IRON FORGE"}</div>
+                                <div className="text-[11px] text-slate-500 font-medium">{email || "kirankichu6151@gmail.com"} · No phone number</div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+
+                          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <MapPin className="h-4 w-4 text-slate-500" />
+                              <div>
+                                <div className="text-xs font-bold text-slate-900">Store address</div>
+                                <div className="text-[11px] text-slate-500 font-medium max-w-xl">
+                                  {settings.registeredBusinessAddress || "Oottupara Road, Kalleli, Kerala, India, Arunodhayam, 689691 Konni Kerala, India"}
+                                </div>
+                              </div>
+                            </div>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Store defaults (Matching Screenshot 2) */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Store defaults</h3>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Currency display</label>
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between text-xs font-bold text-slate-800">
+                              <span>Indian Rupee (INR ₹)</span>
+                              <span className="text-[11px] text-slate-500">To manage currencies, go to Markets</span>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Backup Region</label>
+                            <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                              <option>India</option>
+                              <option>United States</option>
+                              <option>United Kingdom</option>
+                              <option>Canada</option>
+                            </select>
+                            <span className="text-[11px] text-slate-500 mt-1 block">Determines settings for customers outside of your markets</span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Unit system</label>
+                              <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                                <option>Metric system</option>
+                                <option>Imperial system</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-slate-700 mb-1">Default weight unit</label>
+                              <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                                <option>Kilogram (kg)</option>
+                                <option>Gram (g)</option>
+                                <option>Pound (lb)</option>
+                                <option>Ounce (oz)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Time zone</label>
+                            <select className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none">
+                              <option>(GMT+05:30) Chennai, Kolkata, Mumbai, New Delhi</option>
+                              <option>(GMT+00:00) UTC</option>
+                              <option>(GMT-05:00) Eastern Time (US & Canada)</option>
+                              <option>(GMT+01:00) Central European Time</option>
+                            </select>
+                            <span className="text-[11px] text-slate-500 mt-1 block">Sets the time for when orders and analytics are recorded</span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-slate-500 pt-2 border-t border-slate-100">
+                          To change your user level time zone and language visit your <span className="text-indigo-600 underline font-semibold cursor-pointer">account settings</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2. PAYMENTS SETTINGS */}
+                  {settingsSubTab === "payments" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
+                        <CreditCard className="h-5 w-5 text-slate-700" />
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">Payment Providers & Gateways</h2>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900">Razorpay Payment Gateway</h3>
+                        <p className="text-xs text-slate-500">Accept Credit Cards, Debit Cards, Netbanking, UPI & Wallets seamlessly in Indian Rupees.</p>
+
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Razorpay Key ID</label>
+                            <input
+                              type="text"
+                              placeholder="rzp_live_..."
+                              value={settings.razorpayKey || ""}
+                              onChange={(e) => setSettings({ ...settings, razorpayKey: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Razorpay Key Secret</label>
+                            <input
+                              type="password"
+                              placeholder="••••••••••••••••"
+                              value={settings.razorpaySecret || ""}
+                              onChange={(e) => setSettings({ ...settings, razorpaySecret: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. OTHER SUB-TABS FALLBACK */}
+                  {!["general", "payments"].includes(settingsSubTab) && (
+                    <div className="space-y-4 animate-fade-in max-w-4xl">
+                      <h2 className="text-xl font-bold tracking-tight text-slate-900 capitalize">{settingsSubTab} Settings</h2>
+                      <p className="text-xs text-slate-500">Configure your store settings and automated preferences for {settingsSubTab}.</p>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-xs">
+                        <SettingsIcon className="h-10 w-10 text-indigo-600 mx-auto" />
+                        <h3 className="text-base font-bold text-slate-900">Store Configurations</h3>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                          Preferences and operational settings for {settingsSubTab} are active and managed via your Basecart Merchant account.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </main>
               </div>
             </div>
           )}
