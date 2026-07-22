@@ -2854,14 +2854,14 @@ export default function MerchantDashboard() {
             {/* Core Operations */}
             <div className="space-y-0.5">
               {[
-                { id: "summary", name: "Home", icon: Home },
-                { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
-                { id: "products", name: "Products", icon: Package },
-                { id: "customers", name: "Customers", icon: Users },
-                { id: "marketing", name: "Growth", icon: TrendingUp },
-                { id: "discounts", name: "Discounts", icon: Tag },
-                { id: "content", name: "Content", icon: FileText },
-                { id: "finances", name: "Analytics", icon: TrendingUp },
+                { id: "summary", name: "Overview", icon: Home },
+                { id: "orders", name: "Orders & Sales", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
+                { id: "products", name: "Catalog & Items", icon: Package },
+                { id: "customers", name: "Customers & Contacts", icon: Users },
+                { id: "marketing", name: "Growth & Campaigns", icon: TrendingUp },
+                { id: "discounts", name: "Coupons & Offers", icon: Tag },
+                { id: "content", name: "Content & Media", icon: FileText },
+                { id: "finances", name: "Analytics & Performance", icon: TrendingUp },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -2968,18 +2968,18 @@ export default function MerchantDashboard() {
               })}
             </div>
 
-            {/* Sales channels section (Matching Screenshot 1) */}
+            {/* Sales channels section */}
             <div className="pt-2 border-t border-slate-100 space-y-0.5">
               {!sidebarCollapsed && (
                 <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Sales channels</span>
+                  <span>Store Channels</span>
                   <ChevronRight className="h-3 w-3 text-slate-400" />
                 </div>
               )}
               {[
-                { id: "store-design", name: "Online Store", icon: Store },
-                { id: "brand", name: "Agentic", icon: Bot },
-                { id: "emails", name: "Headless", icon: Code },
+                { id: "store-design", name: "Storefront Studio", icon: Store },
+                { id: "brand", name: "Agentic Store & AI", icon: Bot },
+                { id: "emails", name: "Headless Architecture", icon: Code, badge: "Soon" },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -2998,6 +2998,11 @@ export default function MerchantDashboard() {
                   >
                     <Icon className={`h-[18px] w-[18px] shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
                     {!sidebarCollapsed && <span>{item.name}</span>}
+                    {!sidebarCollapsed && item.badge && (
+                      <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200">
+                        {item.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -9942,6 +9947,77 @@ export default function MerchantDashboard() {
             );
           })()}
 
+          {/* Headless Architecture Tab */}
+          {activeTab === "emails" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Coming Soon Hero Banner */}
+              <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="relative z-10 space-y-3 max-w-2xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-500/20 border border-amber-400/30 rounded-full text-amber-300 font-extrabold text-xs">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>Coming Soon — Headless Architecture</span>
+                  </div>
+                  <h2 className="text-2xl md:text-3xl font-black tracking-tight">
+                    Build Any Frontend with Basecart Headless Storefront APIs ⚡
+                  </h2>
+                  <p className="text-sm text-slate-300 leading-relaxed font-medium">
+                    Deploy custom React, Next.js, Vue, or iOS/Android native apps using our high-performance GraphQL & REST Storefront APIs powered by Cloudflare Workers.
+                  </p>
+
+                  <div className="pt-2 flex flex-wrap items-center gap-3">
+                    <div className="bg-white/10 backdrop-blur-md px-3.5 py-1.5 rounded-xl border border-white/10 text-xs font-bold text-slate-200">
+                      🔑 Storefront API Key: <code className="text-amber-300 font-mono">pk_live_basecart_head_2026</code>
+                    </div>
+                    <button
+                      onClick={() => alert("Headless Architecture features & SDKs are coming soon! Stay tuned.")}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                    >
+                      View API Specs (Coming Soon)
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Feature Preview Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
+                  <div className="h-8 w-8 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center font-bold">
+                    <Code className="h-4 w-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900">GraphQL & REST APIs</h4>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Query products, collections, checkout, and customer sessions with millisecond latency globally.
+                  </p>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
+                  <div className="h-8 w-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-bold">
+                    <Globe className="h-4 w-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900">Next.js & Mobile SDKs</h4>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Pre-built starter kits for Next.js 14 App Router, Expo React Native, and Swift iOS.
+                  </p>
+                </div>
+                <div className="bg-white border border-slate-200 p-4 rounded-xl shadow-xs space-y-1.5">
+                  <div className="h-8 w-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center font-bold">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-900">Autonomous Edge Checkout</h4>
+                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                    Decoupled checkout pipeline supporting Razorpay India, UPI, and Instant COD verification.
+                  </p>
+                </div>
+              </div>
+
+              {/* Email Notifications Sub-Section */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
+                <h3 className="text-sm font-bold text-slate-900">Email Notifications & Templates</h3>
+                <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
+              </div>
+            </div>
+          )}
+
           {/* 13. Payments Tab */}
           {activeTab === "payments" && (
             <div className="space-y-6 animate-fade-in">
@@ -10957,14 +11033,14 @@ export default function MerchantDashboard() {
               {/* Core Operations */}
               <div className="space-y-0.5">
                 {[
-                  { id: "summary", name: "Home", icon: Home },
-                  { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
-                  { id: "products", name: "Products", icon: Package },
-                  { id: "customers", name: "Customers", icon: Users },
-                  { id: "marketing", name: "Growth", icon: TrendingUp },
-                  { id: "discounts", name: "Discounts", icon: Tag },
-                  { id: "content", name: "Content", icon: FileText },
-                  { id: "finances", name: "Analytics", icon: TrendingUp },
+                  { id: "summary", name: "Overview", icon: Home },
+                  { id: "orders", name: "Orders & Sales", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
+                  { id: "products", name: "Catalog & Items", icon: Package },
+                  { id: "customers", name: "Customers & Contacts", icon: Users },
+                  { id: "marketing", name: "Growth & Campaigns", icon: TrendingUp },
+                  { id: "discounts", name: "Coupons & Offers", icon: Tag },
+                  { id: "content", name: "Content & Media", icon: FileText },
+                  { id: "finances", name: "Analytics & Performance", icon: TrendingUp },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -11079,13 +11155,13 @@ export default function MerchantDashboard() {
               {/* Sales channels section */}
               <div className="pt-2 border-t border-slate-100 space-y-0.5">
                 <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
-                  <span>Sales channels</span>
+                  <span>Store Channels</span>
                   <ChevronRight className="h-3 w-3 text-slate-400" />
                 </div>
                 {[
-                  { id: "store-design", name: "Online Store", icon: Store },
-                  { id: "brand", name: "Agentic", icon: Bot },
-                  { id: "emails", name: "Headless", icon: Code },
+                  { id: "store-design", name: "Storefront Studio", icon: Store },
+                  { id: "brand", name: "Agentic Store & AI", icon: Bot },
+                  { id: "emails", name: "Headless Architecture", icon: Code, badge: "Soon" },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;
@@ -11104,6 +11180,11 @@ export default function MerchantDashboard() {
                     >
                       <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
                       <span>{item.name}</span>
+                      {item.badge && (
+                        <span className="ml-auto bg-amber-100 text-amber-800 text-[9px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border border-amber-200">
+                          {item.badge}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
