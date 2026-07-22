@@ -17,6 +17,8 @@ import {
   DollarSign,
   TrendingUp,
   Users,
+  User,
+  MoreHorizontal,
   CreditCard,
   Grid,
   Bell,
@@ -675,6 +677,81 @@ export default function MerchantDashboard() {
     { code: "GC-8849-2026", initialValue: 2000, balance: 2000, customerEmail: "priya@gmail.com", status: "Active", createdAt: new Date().toISOString() },
     { code: "GC-9102-2026", initialValue: 5000, balance: 1250, customerEmail: "rahul@outlook.com", status: "Active", createdAt: new Date().toISOString() }
   ]);
+  // Customers sub-tab & CSV Import/Export state
+  const [customersSubTab, setCustomersSubTab] = useState<"list" | "segments" | "companies">("list");
+  const [customerSearchQuery, setCustomerSearchQuery] = useState("");
+  const [segmentSearchQuery, setSegmentSearchQuery] = useState("");
+  const [customerForm, setCustomerForm] = useState<any | null>(null);
+  const [isImportCustomerModalOpen, setIsImportCustomerModalOpen] = useState(false);
+  const [importCsvText, setImportCsvText] = useState("");
+  const [importingCsvLoading, setImportingCsvLoading] = useState(false);
+  const [customerSegments, setCustomerSegments] = useState<any[]>([
+    { id: "seg-1", name: "Customers who have purchased at least once", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+    { id: "seg-2", name: "Email subscribers", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+    { id: "seg-3", name: "Abandoned checkouts in the last 30 days", percent: "100%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+    { id: "seg-4", name: "Customers who have purchased more than once", percent: "0%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+    { id: "seg-5", name: "Customers who haven't purchased", percent: "100%", lastActivity: "Created on May 27, 2026", createdBy: "Shopify" },
+  ]);
+
+  const handleExportCustomersCSV = () => {
+    const headers = [
+      "First Name", "Last Name", "Email", "Accepts Email Marketing",
+      "Default Address Company", "Default Address Address1", "Default Address Address2",
+      "Default Address City", "Default Address Province Code", "Default Address Country Code",
+      "Default Address Zip", "Default Address Phone", "Phone",
+      "Accepts SMS Marketing", "Accepts WhatsApp Marketing", "Tags", "Note", "Tax Exempt"
+    ];
+    const rows = customers.map((c) => [
+      `"${(c.firstName || "").replace(/"/g, '""')}"`,
+      `"${(c.lastName || "").replace(/"/g, '""')}"`,
+      `"${(c.email || "").replace(/"/g, '""')}"`,
+      c.acceptsEmailMarketing ? "yes" : "no",
+      `"${(c.company || "").replace(/"/g, '""')}"`,
+      `"${(c.address1 || "").replace(/"/g, '""')}"`,
+      `"${(c.address2 || "").replace(/"/g, '""')}"`,
+      `"${(c.city || "").replace(/"/g, '""')}"`,
+      `"${(c.provinceCode || "").replace(/"/g, '""')}"`,
+      `"${(c.countryCode || "IN").replace(/"/g, '""')}"`,
+      `"${(c.zip || "").replace(/"/g, '""')}"`,
+      `"${(c.addressPhone || c.phone || "").replace(/"/g, '""')}"`,
+      `"${(c.phone || "").replace(/"/g, '""')}"`,
+      c.acceptsSmsMarketing ? "yes" : "no",
+      c.acceptsWhatsAppMarketing ? "yes" : "no",
+      `"${(c.tags || "").replace(/"/g, '""')}"`,
+      `"${(c.note || "").replace(/"/g, '""')}"`,
+      c.taxExempt ? "yes" : "no"
+    ]);
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `shopify_customers_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleDownloadSampleCsvTemplate = () => {
+    const headers = [
+      "First Name", "Last Name", "Email", "Accepts Email Marketing",
+      "Default Address Company", "Default Address Address1", "Default Address Address2",
+      "Default Address City", "Default Address Province Code", "Default Address Country Code",
+      "Default Address Zip", "Default Address Phone", "Phone",
+      "Accepts SMS Marketing", "Accepts WhatsApp Marketing", "Tags", "Note", "Tax Exempt"
+    ];
+    const sampleRows = [
+      ["John", "Doe", "john.doe@example.com", "yes", "Acme Corp", "123 Main St", "Suite 400", "Mumbai", "MH", "IN", "400001", "+919876543210", "+919876543210", "yes", "yes", "VIP, Wholesale", "Preferred buyer", "no"],
+      ["Priya", "Sharma", "priya.sharma@example.com", "no", "", "45 Park Street", "", "Bengaluru", "KA", "IN", "560001", "", "+919876543211", "no", "no", "Retail", "New signup", "no"]
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...sampleRows.map((e) => e.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `shopify_customers_sample_template.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   // Settings sub-tab navigation state
   const [settingsSubTab, setSettingsSubTab] = useState<string>("general");
@@ -686,7 +763,23 @@ export default function MerchantDashboard() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Advanced screens state
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([
+    {
+      customerId: "cust-1",
+      name: "kirankichu8151@gmail.com",
+      firstName: "",
+      lastName: "",
+      email: "kirankichu8151@gmail.com",
+      phone: "",
+      acceptsEmailMarketing: false,
+      acceptsSmsMarketing: false,
+      acceptsWhatsAppMarketing: false,
+      location: "-",
+      ordersCount: 0,
+      totalSpent: 0,
+      createdAt: "2026-05-27T10:00:00Z"
+    }
+  ]);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [financeSummary, setFinanceSummary] = useState<any>({
@@ -2660,6 +2753,31 @@ export default function MerchantDashboard() {
                           }}
                           className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                             productsSubTab === sub.id
+                              ? "bg-slate-100 text-slate-900 font-bold"
+                              : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          {sub.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sub-items for Customers */}
+                  {item.id === "customers" && isActive && !sidebarCollapsed && (
+                    <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                      {[
+                        { id: "segments", label: "Segments" },
+                        { id: "companies", label: "Companies" },
+                      ].map((sub) => (
+                        <button
+                          key={sub.id}
+                          onClick={() => {
+                            changeTab("customers", sub.id);
+                            setCustomerForm(null);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                            customersSubTab === sub.id
                               ? "bg-slate-100 text-slate-900 font-bold"
                               : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
                           }`}
@@ -5298,6 +5416,696 @@ export default function MerchantDashboard() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Customers Tab (Shopify Standard Layout) */}
+          {activeTab === "customers" && (
+            <div className="space-y-6 animate-fade-in">
+              {/* NEW CUSTOMER FORM (MATCHING SCREENSHOT 3) */}
+              {customerForm ? (
+                <div className="space-y-6">
+                  {/* Top Breadcrumb & Actions */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-slate-500 font-semibold">
+                      <button
+                        onClick={() => setCustomerForm(null)}
+                        className="hover:text-slate-900 transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <User className="h-4 w-4" />
+                        <span>Customers</span>
+                      </button>
+                      <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="font-bold text-slate-900">
+                        {customerForm.customerId ? `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim() || customerForm.email : "New customer"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setCustomerForm(null)}
+                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!customerForm.email && !customerForm.firstName) return;
+                          if (customerForm.customerId) {
+                            setCustomers(customers.map((c) => (c.customerId === customerForm.customerId ? { ...c, ...customerForm } : c)));
+                          } else {
+                            const newCust = {
+                              customerId: `cust-${Date.now()}`,
+                              name: `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim() || customerForm.email,
+                              ...customerForm,
+                              location: customerForm.city ? `${customerForm.city}, ${customerForm.countryCode || "IN"}` : "-",
+                              ordersCount: 0,
+                              totalSpent: 0,
+                              createdAt: new Date().toISOString(),
+                            };
+                            setCustomers([newCust, ...customers]);
+                          }
+                          setCustomerForm(null);
+                        }}
+                        className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Two Column Layout */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Main Column (2 Cols) */}
+                    <div className="lg:col-span-2 space-y-6">
+                      {/* Card 1: Customer Overview */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Customer overview</h3>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">First name</label>
+                            <input
+                              type="text"
+                              value={customerForm.firstName || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, firstName: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Last name</label>
+                            <input
+                              type="text"
+                              value={customerForm.lastName || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, lastName: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Language</label>
+                          <select
+                            value={customerForm.language || "English [Default]"}
+                            onChange={(e) => setCustomerForm({ ...customerForm, language: e.target.value })}
+                            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          >
+                            <option value="English [Default]">English [Default]</option>
+                            <option value="Hindi">Hindi</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="French">French</option>
+                            <option value="German">German</option>
+                          </select>
+                          <p className="text-[11px] text-slate-400 mt-1 font-medium">This customer will receive notifications in this language.</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            required
+                            value={customerForm.email || ""}
+                            onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Phone number</label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5 px-3 py-2 border border-slate-300 rounded-xl bg-slate-50 text-xs font-bold shrink-0">
+                              <span>🇮🇳</span>
+                              <span>+91</span>
+                            </div>
+                            <input
+                              type="tel"
+                              placeholder="98765 43210"
+                              value={customerForm.phone || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-slate-100 space-y-2">
+                          <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={customerForm.acceptsEmailMarketing || false}
+                              onChange={(e) => setCustomerForm({ ...customerForm, acceptsEmailMarketing: e.target.checked })}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                            />
+                            <span>Customer agreed to receive marketing emails.</span>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={customerForm.acceptsSmsMarketing || false}
+                              onChange={(e) => setCustomerForm({ ...customerForm, acceptsSmsMarketing: e.target.checked })}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                            />
+                            <span>Customer agreed to receive SMS marketing text messages.</span>
+                          </label>
+
+                          <label className="flex items-center gap-2.5 text-xs font-semibold text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={customerForm.acceptsWhatsAppMarketing || false}
+                              onChange={(e) => setCustomerForm({ ...customerForm, acceptsWhatsAppMarketing: e.target.checked })}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
+                            />
+                            <span>Customer agreed to receive WhatsApp marketing messages.</span>
+                          </label>
+                        </div>
+
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 text-[11px] text-slate-500 font-medium leading-relaxed">
+                          You should ask your customers for permission before you subscribe them to your marketing emails or SMS.
+                        </div>
+                      </div>
+
+                      {/* Card 2: Default Address */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                        <div>
+                          <h3 className="text-sm font-bold text-slate-900">Default address</h3>
+                          <p className="text-xs text-slate-400 mt-0.5">The primary address of this customer</p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Company</label>
+                            <input
+                              type="text"
+                              value={customerForm.company || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, company: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Address 1</label>
+                            <input
+                              type="text"
+                              value={customerForm.address1 || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, address1: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Address 2</label>
+                            <input
+                              type="text"
+                              value={customerForm.address2 || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, address2: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">City</label>
+                            <input
+                              type="text"
+                              value={customerForm.city || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">Province / State Code</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. MH, KA, DL"
+                              value={customerForm.provinceCode || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, provinceCode: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 mb-1">ZIP / Postal Code</label>
+                            <input
+                              type="text"
+                              value={customerForm.zip || ""}
+                              onChange={(e) => setCustomerForm({ ...customerForm, zip: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Tax Details */}
+                      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Tax details</h3>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Tax settings</label>
+                          <select
+                            value={customerForm.taxSettings || "Collect tax"}
+                            onChange={(e) => setCustomerForm({ ...customerForm, taxSettings: e.target.value, taxExempt: e.target.value === "Exempt from tax" })}
+                            className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold bg-white focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          >
+                            <option value="Collect tax">Collect tax</option>
+                            <option value="Exempt from tax">Exempt from tax</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Sidebar Column (1 Col) */}
+                    <div className="space-y-6">
+                      {/* Notes Card */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Notes</h4>
+                          <Edit className="h-3.5 w-3.5 text-slate-400" />
+                        </div>
+                        <textarea
+                          rows={3}
+                          placeholder="Notes are private and won't be shared with the customer."
+                          value={customerForm.note || ""}
+                          onChange={(e) => setCustomerForm({ ...customerForm, note: e.target.value })}
+                          className="w-full p-3 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Tags Card */}
+                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Tags</h4>
+                          <Edit className="h-3.5 w-3.5 text-slate-400" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="VIP, Wholesale, Retail"
+                          value={customerForm.tags || ""}
+                          onChange={(e) => setCustomerForm({ ...customerForm, tags: e.target.value })}
+                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                /* MAIN CUSTOMERS SUB-VIEWS */
+                <div className="space-y-6">
+                  {/* 1. CUSTOMERS LIST SUB-VIEW (MATCHING SCREENSHOT 1) */}
+                  {customersSubTab === "list" && (
+                    <div className="space-y-4">
+                      {/* Top Action Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-slate-700" />
+                          <h2 className="text-xl font-bold tracking-tight text-slate-900">Customers</h2>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleExportCustomersCSV}
+                            className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                          >
+                            Export
+                          </button>
+                          <button
+                            onClick={() => setIsImportCustomerModalOpen(true)}
+                            className="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-xl shadow-2xs transition-colors cursor-pointer"
+                          >
+                            Import
+                          </button>
+                          <button
+                            onClick={() =>
+                              setCustomerForm({
+                                firstName: "",
+                                lastName: "",
+                                email: "",
+                                phone: "",
+                                language: "English [Default]",
+                                acceptsEmailMarketing: false,
+                                acceptsSmsMarketing: false,
+                                acceptsWhatsAppMarketing: false,
+                                company: "",
+                                address1: "",
+                                address2: "",
+                                city: "",
+                                provinceCode: "",
+                                countryCode: "IN",
+                                zip: "",
+                                addressPhone: "",
+                                tags: "",
+                                note: "",
+                                taxExempt: false,
+                                taxSettings: "Collect tax",
+                              })
+                            }
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                          >
+                            Add customer
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Describe Your Segment AI Bar */}
+                      <div className="bg-white p-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3 cursor-pointer hover:border-slate-300 transition-colors">
+                        <div className="flex items-center gap-2.5 text-xs font-semibold text-slate-500">
+                          <Sparkles className="h-4 w-4 text-indigo-600" />
+                          <span>Describe your segment</span>
+                        </div>
+                        <ChevronDown className="h-4 w-4 text-slate-400" />
+                      </div>
+
+                      {/* Search Customers Bar */}
+                      <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Search customers"
+                            value={customerSearchQuery}
+                            onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-1.5 border-none text-slate-900 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Customers Table */}
+                      <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                          <thead className="bg-slate-50/80 font-bold text-slate-600 text-xs tracking-wider">
+                            <tr>
+                              <th className="px-4 py-3.5 w-10">
+                                <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
+                              </th>
+                              <th className="px-6 py-3.5">Customer name</th>
+                              <th className="px-6 py-3.5 text-center">Email subscription</th>
+                              <th className="px-6 py-3.5">Location</th>
+                              <th className="px-6 py-3.5 text-center">Orders</th>
+                              <th className="px-6 py-3.5 text-right">Amount spent</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                            {customers
+                              .filter((c) => {
+                                const q = customerSearchQuery.toLowerCase();
+                                return (
+                                  c.email?.toLowerCase().includes(q) ||
+                                  c.name?.toLowerCase().includes(q) ||
+                                  c.firstName?.toLowerCase().includes(q) ||
+                                  c.lastName?.toLowerCase().includes(q)
+                                );
+                              })
+                              .map((cust) => (
+                                <tr key={cust.customerId} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-4 py-4">
+                                    <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <button
+                                      onClick={() => setCustomerForm({ ...cust })}
+                                      className="font-bold text-slate-900 text-sm hover:underline cursor-pointer text-left"
+                                    >
+                                      {cust.email || cust.name || `${cust.firstName} ${cust.lastName}`}
+                                    </button>
+                                  </td>
+                                  <td className="px-6 py-4 text-center">
+                                    <span
+                                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                        cust.acceptsEmailMarketing
+                                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                          : "bg-slate-100 text-slate-600 border border-slate-200"
+                                      }`}
+                                    >
+                                      {cust.acceptsEmailMarketing ? "Subscribed" : "Not subscribed"}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                                    {cust.location || "-"}
+                                  </td>
+                                  <td className="px-6 py-4 text-center font-mono font-bold text-slate-800">
+                                    {cust.ordersCount || 0}
+                                  </td>
+                                  <td className="px-6 py-4 text-right font-mono font-black text-slate-900">
+                                    {formatINR(cust.totalSpent || 0)}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="text-center pt-4">
+                        <a href="#learn-customers" className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline">
+                          Learn more about customers
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 2. SEGMENTS SUB-VIEW (MATCHING SCREENSHOT 2) */}
+                  {customersSubTab === "segments" && (
+                    <div className="space-y-4">
+                      {/* Top Action Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-slate-700" />
+                          <h2 className="text-xl font-bold tracking-tight text-slate-900">Segments</h2>
+                        </div>
+
+                        <button
+                          onClick={() => setCustomerSegments([...customerSegments, { id: `seg-${Date.now()}`, name: "New Custom Segment", percent: "0%", lastActivity: "Created today", createdBy: "Merchant" }])}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                        >
+                          Create segment
+                        </button>
+                      </div>
+
+                      {/* Search Segments Bar */}
+                      <div className="bg-white p-2.5 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                          <input
+                            type="text"
+                            placeholder="Search segments"
+                            value={segmentSearchQuery}
+                            onChange={(e) => setSegmentSearchQuery(e.target.value)}
+                            className="w-full pl-9 pr-3 py-1.5 border-none text-slate-900 text-xs font-semibold focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Segments Table */}
+                      <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+                        <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                          <thead className="bg-slate-50/80 font-bold text-slate-600 text-xs tracking-wider">
+                            <tr>
+                              <th className="px-4 py-3.5 w-10">
+                                <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
+                              </th>
+                              <th className="px-6 py-3.5">Name</th>
+                              <th className="px-6 py-3.5 text-right">% of customers</th>
+                              <th className="px-6 py-3.5">Last activity</th>
+                              <th className="px-6 py-3.5">Created by</th>
+                              <th className="px-4 py-3.5 w-10"></th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                            {customerSegments
+                              .filter((s) => s.name.toLowerCase().includes(segmentSearchQuery.toLowerCase()))
+                              .map((seg) => (
+                                <tr key={seg.id} className="hover:bg-slate-50 transition-colors">
+                                  <td className="px-4 py-4">
+                                    <input type="checkbox" className="rounded border-slate-300 text-slate-900 h-4 w-4" />
+                                  </td>
+                                  <td className="px-6 py-4 font-bold text-slate-900 text-sm">
+                                    {seg.name}
+                                  </td>
+                                  <td className="px-6 py-4 text-right font-mono font-bold text-slate-800">
+                                    {seg.percent}
+                                  </td>
+                                  <td className="px-6 py-4 text-xs font-semibold text-slate-500">
+                                    {seg.lastActivity}
+                                  </td>
+                                  <td className="px-6 py-4 text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                                    <ShoppingBag className="h-3.5 w-3.5 text-emerald-600" />
+                                    <span>{seg.createdBy}</span>
+                                  </td>
+                                  <td className="px-4 py-4 text-right">
+                                    <button className="p-1 text-slate-400 hover:text-slate-600">
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="text-center pt-4">
+                        <a href="#learn-segments" className="text-xs font-semibold text-slate-400 hover:text-slate-600 underline">
+                          Learn more about segments
+                        </a>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 3. COMPANIES SUB-VIEW */}
+                  {customersSubTab === "companies" && (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold tracking-tight text-slate-900">B2B Companies</h2>
+                        <button className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm">
+                          Add company
+                        </button>
+                      </div>
+
+                      <div className="bg-white p-8 border border-slate-200 rounded-2xl text-center space-y-3 shadow-2xs">
+                        <Building className="h-10 w-10 text-indigo-600 mx-auto" />
+                        <h3 className="text-base font-bold text-slate-900">B2B Corporate Customer Accounts</h3>
+                        <p className="text-xs text-slate-500 max-w-md mx-auto">
+                          Manage company locations, corporate buyers, wholesale price catalogs, and tax identification numbers.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* IMPORT CUSTOMERS CSV MODAL */}
+              {isImportCustomerModalOpen && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-white max-w-xl w-full rounded-2xl p-6 shadow-2xl space-y-5 border border-slate-200">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">Import Customers by CSV</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">Upload a CSV file formatted with Shopify customer headers.</p>
+                      </div>
+                      <button onClick={() => setIsImportCustomerModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
+                        <X className="h-5 w-5" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs font-mono text-slate-600 space-y-1">
+                        <div className="font-bold text-slate-900 font-sans">Supported Header Columns:</div>
+                        <div className="text-[11px] text-slate-500 leading-normal">
+                          First Name, Last Name, Email, Accepts Email Marketing, Default Address Company, Default Address Address1, Default Address Address2, Default Address City, Default Address Province Code, Default Address Country Code, Default Address Zip, Default Address Phone, Phone, Accepts SMS Marketing, Accepts WhatsApp Marketing, Tags, Note, Tax Exempt
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                          Upload CSV File or Paste Raw CSV
+                        </label>
+                        <textarea
+                          rows={6}
+                          placeholder={`First Name,Last Name,Email,Accepts Email Marketing,Phone\nJohn,Doe,john@example.com,yes,+919876543210`}
+                          value={importCsvText}
+                          onChange={(e) => setImportCsvText(e.target.value)}
+                          className="w-full p-3 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={handleDownloadSampleCsvTemplate}
+                        className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-800 text-xs font-bold cursor-pointer"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        <span>Download Sample CSV Template</span>
+                      </button>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsImportCustomerModalOpen(false)}
+                          className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!importCsvText.trim()}
+                          onClick={() => {
+                            if (!importCsvText.trim()) return;
+                            const parseCustomerCsv = (csvText: string) => {
+                              const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== "");
+                              if (lines.length <= 1) return [];
+                              const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+                              const parsedCustomers = [];
+                              for (let i = 1; i < lines.length; i++) {
+                                const regex = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g;
+                                const matches: string[] = [];
+                                let match: RegExpExecArray | null;
+                                while ((match = regex.exec(lines[i])) !== null) {
+                                  let val = match[1] ? match[1].replace(/^"|"$/g, "").replace(/""/g, '"') : "";
+                                  matches.push(val);
+                                  if (regex.lastIndex === lines[i].length) break;
+                                }
+                                if (matches.length < 3) continue;
+                                const row: Record<string, string> = {};
+                                headers.forEach((h, idx) => {
+                                  row[h] = matches[idx] || "";
+                                });
+                                const firstName = row["First Name"] || "";
+                                const lastName = row["Last Name"] || "";
+                                const email = row["Email"] || "";
+                                const phone = row["Phone"] || row["Default Address Phone"] || "";
+                                const acceptsEmail = (row["Accepts Email Marketing"] || "").toLowerCase() === "yes" || (row["Accepts Email Marketing"] || "").toLowerCase() === "true";
+                                const acceptsSms = (row["Accepts SMS Marketing"] || "").toLowerCase() === "yes" || (row["Accepts SMS Marketing"] || "").toLowerCase() === "true";
+                                const acceptsWhatsApp = (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "yes" || (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "true";
+                                const taxExempt = (row["Tax Exempt"] || "").toLowerCase() === "yes" || (row["Tax Exempt"] || "").toLowerCase() === "true";
+                                if (email || firstName || lastName) {
+                                  parsedCustomers.push({
+                                    customerId: `cust-csv-${Date.now()}-${i}`,
+                                    name: `${firstName} ${lastName}`.trim() || email,
+                                    firstName,
+                                    lastName,
+                                    email,
+                                    phone,
+                                    acceptsEmailMarketing: acceptsEmail,
+                                    acceptsSmsMarketing: acceptsSms,
+                                    acceptsWhatsAppMarketing: acceptsWhatsApp,
+                                    company: row["Default Address Company"] || "",
+                                    address1: row["Default Address Address1"] || "",
+                                    address2: row["Default Address Address2"] || "",
+                                    city: row["Default Address City"] || "",
+                                    provinceCode: row["Default Address Province Code"] || "",
+                                    countryCode: row["Default Address Country Code"] || "IN",
+                                    zip: row["Default Address Zip"] || "",
+                                    addressPhone: row["Default Address Phone"] || "",
+                                    tags: row["Tags"] || "",
+                                    note: row["Note"] || "",
+                                    taxExempt,
+                                    taxSettings: taxExempt ? "Exempt from tax" : "Collect tax",
+                                    totalSpent: 0,
+                                    ordersCount: 0,
+                                    createdAt: new Date().toISOString(),
+                                  });
+                                }
+                              }
+                              return parsedCustomers;
+                            };
+                            const parsed = parseCustomerCsv(importCsvText);
+                            if (parsed.length > 0) {
+                              setCustomers([...parsed, ...customers]);
+                              setActionSuccess(`Successfully imported ${parsed.length} customers from CSV!`);
+                            }
+                            setIsImportCustomerModalOpen(false);
+                            setImportCsvText("");
+                          }}
+                          className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer"
+                        >
+                          Import Customers
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
