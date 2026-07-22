@@ -10099,176 +10099,217 @@ export default function MerchantDashboard() {
             </div>
           )}
 
-          {/* DEDICATED SETTINGS PORTAL WORKSPACE (MATCHING SCREENSHOT 2) */}
+          {/* DEDICATED BASECART SETTINGS STUDIO */}
           {(activeTab === "settings" || isSettingsPortalOpen) && (
-            <div className="fixed inset-0 bg-slate-100 z-50 flex flex-col font-sans overflow-hidden animate-fade-in">
-              {/* Top Global Bar with Back Button */}
-              <div className="h-14 bg-white border-b border-slate-200/90 px-4 md:px-6 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3 md:gap-4 overflow-hidden">
-                  <button
-                    onClick={() => {
-                      setIsSettingsPortalOpen(false);
-                      if (activeTab === "settings") setActiveTab("summary");
-                    }}
-                    className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer shrink-0"
-                  >
-                    <ArrowRight className="h-4 w-4 rotate-180 text-slate-500" />
-                    <span className="hidden sm:inline">Back to Dashboard</span>
-                    <span className="sm:hidden">Back</span>
-                  </button>
-
-                  <div className="h-4 w-px bg-slate-200 shrink-0" />
-
-                  <div className="flex items-center gap-2.5 overflow-hidden">
-                    <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm shrink-0">
-                      {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "IF"}
-                    </div>
-                    <div className="truncate">
-                      <h2 className="text-xs md:text-sm font-bold text-slate-900 leading-none truncate">
-                        {settings.storeName || "IRON FORGE"}
-                      </h2>
-                      <span className="text-[10px] md:text-[11px] font-mono text-slate-500 truncate block">
-                        {settings.subdomain || "iron-forge-12"}.basecart.app
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 md:gap-3 shrink-0">
-                  <button
-                    disabled={loading}
-                    onClick={() => handleSaveSettings()}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                    Save
-                  </button>
-                  <button
-                    onClick={() => {
-                      setIsSettingsPortalOpen(false);
-                      if (activeTab === "settings") setActiveTab("summary");
-                    }}
-                    className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
-                    title="Close Settings"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Horizontal Sub-Tab Scrolling Pills (md:hidden) */}
-              <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 no-scrollbar">
-                {[
-                  { id: "general", label: "General", icon: Home },
-                  { id: "plan", label: "Plan", icon: Layers },
-                  { id: "billing", label: "Billing", icon: DollarSign },
-                  { id: "payments", label: "Payments", icon: CreditCard },
-                  { id: "brand", label: "Brand", icon: Sparkles },
-                  { id: "shipping", label: "Shipping", icon: Truck },
-                  { id: "checkout", label: "Checkout", icon: ShoppingCart },
-                  { id: "taxes", label: "Taxes", icon: Scale },
-                  { id: "domains", label: "Domains", icon: Globe },
-                  { id: "notifications", label: "Emails", icon: Bell },
-                  { id: "policies", label: "Policies", icon: FileText },
-                ].map((item) => {
-                  const Icon = item.icon;
-                  const isActive = settingsSubTab === item.id;
-                  return (
+            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col font-sans overflow-hidden animate-fade-in">
+              <div className="bg-[#F8FAFC] w-full h-full flex flex-col overflow-hidden">
+                {/* Top Settings Studio Control Bar */}
+                <div className="h-16 bg-white border-b border-slate-200/90 px-4 md:px-8 flex items-center justify-between shrink-0 shadow-xs">
+                  <div className="flex items-center gap-4">
                     <button
-                      key={item.id}
-                      onClick={() => setSettingsSubTab(item.id as any)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap shrink-0 transition-colors ${
-                        isActive
-                          ? "bg-indigo-600 text-white font-bold shadow-xs"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
+                      onClick={() => {
+                        setIsSettingsPortalOpen(false);
+                        if (activeTab === "settings") setActiveTab("summary");
+                      }}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer shadow-xs"
                     >
-                      <Icon className="h-3.5 w-3.5" />
-                      <span>{item.label}</span>
+                      <ArrowRight className="h-4 w-4 rotate-180 text-slate-500" />
+                      <span>Back to Dashboard</span>
                     </button>
-                  );
-                })}
-              </div>
 
-              {/* Main Settings Body */}
-              <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-3 md:p-6 gap-6">
-                {/* Left Settings Sidebar (Hidden on mobile, visible md:flex) */}
-                <aside className="hidden md:flex w-64 bg-white border border-slate-200/90 rounded-2xl p-4 flex-col shrink-0 overflow-y-auto shadow-sm">
-                  {/* Search Bar */}
-                  <div className="relative mb-4">
-                    <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search settings"
-                      value={settingsSearchQuery}
-                      onChange={(e) => setSettingsSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-indigo-600"
-                    />
+                    <div className="h-5 w-px bg-slate-200" />
+
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 bg-gradient-to-tr from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-xs uppercase shadow-sm">
+                        {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "BC"}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-sm font-extrabold text-slate-900 leading-tight">
+                            {settings.storeName || "Store Settings"}
+                          </h2>
+                          <span className="text-[9px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200/60 uppercase tracking-wider">
+                            Basecart Studio
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-500 block">
+                          {settings.subdomain || "store"}.basecart.app
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Settings Items Navigation List */}
-                  <div className="space-y-0.5 flex-1">
-                    {[
-                      { id: "general", label: "General", icon: Home },
-                      { id: "plan", label: "Plan", icon: Layers },
-                      { id: "billing", label: "Billing", icon: DollarSign },
-                      { id: "users", label: "Users & Permissions", icon: Users },
-                      { id: "payments", label: "Payments", icon: CreditCard },
-                      { id: "brand", label: "Brand & Identity", icon: Sparkles },
-                      { id: "checkout", label: "Checkout", icon: ShoppingCart },
-                      { id: "shipping", label: "Shipping and delivery", icon: Truck },
-                      { id: "taxes", label: "Taxes and duties", icon: Scale },
-                      { id: "locations", label: "Locations", icon: MapPin },
-                      { id: "apps", label: "Apps & sales channels", icon: Puzzle },
-                      { id: "domains", label: "Domains", icon: Globe },
-                      { id: "notifications", label: "Notifications & Emails", icon: Bell },
-                      { id: "privacy", label: "Customer privacy", icon: Lock },
-                      { id: "policies", label: "Policies", icon: FileText },
-                    ]
-                      .filter((item) => item.label.toLowerCase().includes(settingsSearchQuery.toLowerCase()))
-                      .map((item) => {
-                        const Icon = item.icon;
-                        const isActive = settingsSubTab === item.id;
+                  <div className="flex items-center gap-3">
+                    <button
+                      disabled={loading}
+                      onClick={() => handleSaveSettings()}
+                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-98"
+                    >
+                      {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                      <span>Save Changes</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsSettingsPortalOpen(false);
+                        if (activeTab === "settings") setActiveTab("summary");
+                      }}
+                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      title="Close Settings Studio"
+                    >
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mobile Horizontal Category Pills (md:hidden) */}
+                <div className="md:hidden bg-white border-b border-slate-200 px-3 py-2 flex items-center gap-1.5 overflow-x-auto shrink-0 no-scrollbar">
+                  {[
+                    { id: "general", label: "General", icon: Home },
+                    { id: "plan", label: "Plan", icon: Layers },
+                    { id: "billing", label: "Billing", icon: DollarSign },
+                    { id: "payments", label: "Payments", icon: CreditCard },
+                    { id: "brand", label: "Brand", icon: Sparkles },
+                    { id: "shipping", label: "Shipping", icon: Truck },
+                    { id: "checkout", label: "Checkout", icon: ShoppingCart },
+                    { id: "taxes", label: "Taxes", icon: Scale },
+                    { id: "domains", label: "Domains", icon: Globe },
+                    { id: "notifications", label: "Emails", icon: Bell },
+                    { id: "policies", label: "Policies", icon: FileText },
+                  ].map((item) => {
+                    const Icon = item.icon;
+                    const isActive = settingsSubTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setSettingsSubTab(item.id as any)}
+                        className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
+                          isActive
+                            ? "bg-indigo-600 text-white shadow-sm"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        <Icon className="h-3.5 w-3.5" />
+                        <span>{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Main Settings Canvas */}
+                <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
+                  {/* Left Categorized Navigation Panel */}
+                  <aside className="hidden md:flex w-72 bg-white border border-slate-200/90 rounded-2xl p-4 flex-col shrink-0 overflow-y-auto shadow-xs">
+                    {/* Search Bar */}
+                    <div className="relative mb-4">
+                      <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search settings..."
+                        value={settingsSearchQuery}
+                        onChange={(e) => setSettingsSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30 focus:border-indigo-600"
+                      />
+                    </div>
+
+                    {/* Grouped Categorized Navigation */}
+                    <div className="space-y-5 flex-1">
+                      {[
+                        {
+                          category: "STORE IDENTITY",
+                          items: [
+                            { id: "general", label: "Store Profile & Entity", icon: Home, badge: "D1 Active" },
+                            { id: "brand", label: "Brand & Visual Assets", icon: Sparkles },
+                            { id: "domains", label: "Custom Domains", icon: Globe },
+                            { id: "policies", label: "Store Legal Policies", icon: FileText },
+                          ],
+                        },
+                        {
+                          category: "FINANCIALS & TAXATION",
+                          items: [
+                            { id: "payments", label: "Payment Gateways", icon: CreditCard, badge: "Razorpay" },
+                            { id: "taxes", label: "GST & Tax Identifiers", icon: Scale, badge: "18% GST" },
+                            { id: "billing", label: "Billing & Invoices", icon: DollarSign },
+                            { id: "plan", label: "Subscription Plan", icon: Layers, badge: "Growth" },
+                          ],
+                        },
+                        {
+                          category: "LOGISTICS & CHECKOUT",
+                          items: [
+                            { id: "shipping", label: "Shipping & Rates", icon: Truck },
+                            { id: "checkout", label: "Checkout Rules", icon: ShoppingCart },
+                            { id: "locations", label: "Fulfillment Locations", icon: MapPin },
+                          ],
+                        },
+                        {
+                          category: "PLATFORM & TEAM",
+                          items: [
+                            { id: "users", label: "Staff & Permissions", icon: Users },
+                            { id: "notifications", label: "Email Notifications", icon: Bell },
+                            { id: "apps", label: "Apps & Integrations", icon: Puzzle },
+                            { id: "privacy", label: "Customer Data Privacy", icon: Lock },
+                          ],
+                        },
+                      ].map((grp) => {
+                        const matchingItems = grp.items.filter((item) =>
+                          item.label.toLowerCase().includes(settingsSearchQuery.toLowerCase())
+                        );
+                        if (matchingItems.length === 0) return null;
                         return (
-                          <button
-                            key={item.id}
-                            onClick={() => setSettingsSubTab(item.id as any)}
-                            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                              isActive
-                                ? "bg-slate-100 text-slate-900 font-bold"
-                                : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
-                            }`}
-                          >
-                            <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                            <span>{item.label}</span>
-                          </button>
+                          <div key={grp.category} className="space-y-1">
+                            <div className="px-2 py-1 text-[10px] font-extrabold text-slate-400 tracking-wider uppercase">
+                              {grp.category}
+                            </div>
+                            {matchingItems.map((item) => {
+                              const Icon = item.icon;
+                              const isActive = settingsSubTab === item.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  onClick={() => setSettingsSubTab(item.id as any)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                    isActive
+                                      ? "bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100"
+                                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                  }`}
+                                >
+                                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                                  <span className="truncate">{item.label}</span>
+                                  {item.badge && (
+                                    <span className="ml-auto bg-slate-100 text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-200/60 shrink-0">
+                                      {item.badge}
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
                         );
                       })}
-                  </div>
-
-                  {/* Profile Footer */}
-                  <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                    <div className="h-8 w-8 bg-slate-200 rounded-full flex items-center justify-center font-bold text-xs text-slate-700 uppercase">
-                      {(merchantOwnerName || email || "Kiran S")
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2) || "KS"}
                     </div>
-                    <div className="overflow-hidden">
-                      <div className="text-xs font-bold text-slate-900 truncate">
-                        {merchantOwnerName || (email ? email.split("@")[0] : "Kiran S")}
+
+                    {/* Profile Footer */}
+                    <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
+                      <div className="h-8 w-8 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center font-bold text-xs text-indigo-700 uppercase shrink-0">
+                        {(merchantOwnerName || email || "Kiran S")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2) || "KS"}
                       </div>
-                      <div className="text-[10px] text-slate-500 truncate">
-                        {email || "kirankichu6151@gmail.com"}
+                      <div className="overflow-hidden">
+                        <div className="text-xs font-bold text-slate-900 truncate">
+                          {merchantOwnerName || (email ? email.split("@")[0] : "Kiran S")}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {email || "kirankichu6151@gmail.com"}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </aside>
+                  </aside>
 
-                {/* Right Settings Content Panel */}
-                <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-4 md:p-8 overflow-y-auto shadow-sm space-y-6">
+                  {/* Right Settings Workspace Canvas */}
+                  <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-4 md:p-8 overflow-y-auto shadow-xs space-y-6">
                   {/* 1. GENERAL SETTINGS (MATCHING SCREENSHOT 2 & CONNECTED TO D1 DATABASE) */}
                   {settingsSubTab === "general" && (
                     <div className="space-y-6 animate-fade-in max-w-4xl">
@@ -10998,8 +11039,8 @@ export default function MerchantDashboard() {
                 </main>
               </div>
             </div>
-          )}
-
+          </div>
+        )}
         </div>
       </main>
 
