@@ -448,49 +448,100 @@ export default function MerchantDashboard() {
 
   useEffect(() => {
     setIsHydrated(true);
-    const handleHash = () => {
-      const hash = window.location.hash.replace("#", "");
-      if (hash === "signup" || hash === "register") {
+    const parseUrlRoute = () => {
+      if (typeof window === "undefined") return;
+
+      const path = window.location.pathname;
+      const parts = path.split("/").filter(Boolean);
+
+      let routeSlug = "";
+      if (parts[0] === "store" && parts.length >= 3) {
+        routeSlug = parts[2];
+      } else if (parts[0] === "store" && parts.length === 2) {
+        routeSlug = "";
+      } else if (parts[0] === "dashboard" && parts.length >= 2) {
+        routeSlug = parts[1];
+      } else {
+        routeSlug = window.location.hash.replace("#", "");
+      }
+
+      if (routeSlug === "signup" || routeSlug === "register") {
         setIsLoginView(false);
         setAuthActive(true);
         setWizardStep(1);
         return;
-      } else if (hash === "login" || hash === "signin") {
+      } else if (routeSlug === "login" || routeSlug === "signin") {
         setIsLoginView(true);
         setAuthActive(true);
         return;
-      } else if (hash === "" || hash.startsWith("features") || hash.startsWith("pricing") || hash.startsWith("testimonials")) {
+      } else if (routeSlug === "" || routeSlug.startsWith("features") || routeSlug.startsWith("pricing") || routeSlug.startsWith("testimonials")) {
         if (!token) {
           setAuthActive(false);
         }
         return;
       }
 
-      const validTabs = ["summary", "orders", "products", "collections", "inventory", "purchase-orders", "transfers", "gift-cards", "customers", "discounts", "marketing", "brand", "store-design", "emails", "addons", "payments", "finances", "settings"];
-      if (validTabs.includes(hash)) {
-        if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(hash)) {
-          setActiveTab("products");
-          setProductsSubTab(hash as any);
-        } else {
-          setActiveTab(hash as any);
-          if (hash === "products") setProductsSubTab("catalog");
-        }
+      const TAB_SLUG_MAP: Record<string, { tab: string; subTab?: string }> = {
+        "": { tab: "summary" },
+        "summary": { tab: "summary" },
+        "orders": { tab: "orders" },
+        "products": { tab: "products", subTab: "catalog" },
+        "collections": { tab: "products", subTab: "collections" },
+        "inventory": { tab: "products", subTab: "inventory" },
+        "purchase-orders": { tab: "products", subTab: "purchase-orders" },
+        "purchase_orders": { tab: "products", subTab: "purchase-orders" },
+        "transfers": { tab: "products", subTab: "transfers" },
+        "gift-cards": { tab: "products", subTab: "gift-cards" },
+        "gift_cards": { tab: "products", subTab: "gift-cards" },
+        "customers": { tab: "customers" },
+        "discounts": { tab: "discounts" },
+        "marketing": { tab: "marketing" },
+        "brand": { tab: "brand" },
+        "store-design": { tab: "store-design" },
+        "themes": { tab: "store-design" },
+        "emails": { tab: "emails" },
+        "addons": { tab: "addons" },
+        "apps": { tab: "addons" },
+        "payments": { tab: "payments" },
+        "finances": { tab: "finances" },
+        "analytics": { tab: "finances" },
+        "settings": { tab: "settings" },
+      };
+
+      const match = TAB_SLUG_MAP[routeSlug.toLowerCase()] || { tab: "summary" };
+      setActiveTab(match.tab.split(" ")[0] as any);
+      if (match.subTab) {
+        setProductsSubTab(match.subTab as any);
+      } else if (match.tab === "products") {
+        setProductsSubTab("catalog");
       }
     };
 
-    handleHash();
-    window.addEventListener("hashchange", handleHash);
-    return () => window.removeEventListener("hashchange", handleHash);
-  }, []);
+    parseUrlRoute();
+    window.addEventListener("popstate", parseUrlRoute);
+    window.addEventListener("hashchange", parseUrlRoute);
+    return () => {
+      window.removeEventListener("popstate", parseUrlRoute);
+      window.removeEventListener("hashchange", parseUrlRoute);
+    };
+  }, [token]);
 
   const changeTab = (tabId: string, subTabId?: string) => {
-    const targetHash = subTabId || tabId;
+    const targetKey = subTabId || tabId;
+    const storeSubdomain = settings.subdomain || "my-store";
+
+    let slug = targetKey;
+    if (targetKey === "catalog") slug = "products";
+
+    const newPath = `/store/${storeSubdomain}/${slug === "summary" ? "" : slug}`.replace(/\/$/, "");
+
     if (typeof window !== "undefined") {
-      window.history.pushState(null, "", `#${targetHash}`);
+      window.history.pushState(null, "", newPath);
     }
-    if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(targetHash)) {
+
+    if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(targetKey)) {
       setActiveTab("products");
-      setProductsSubTab(targetHash as any);
+      setProductsSubTab(targetKey as any);
     } else {
       setActiveTab(tabId as any);
       if (tabId === "products") setProductsSubTab("catalog");
