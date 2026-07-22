@@ -413,4 +413,187 @@ app.get("/store/:subdomain/products/:id", resolveStorefrontTenant, async (c) => 
   return c.json(formatProduct(product));
 });
 
+// -------------------------------------------------------------
+// 3. Merchant Sub-Resource Endpoints (Collections, POs, Gift Cards)
+// -------------------------------------------------------------
+
+/**
+ * GET /collections
+ */
+app.get("/collections", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS collections (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        description TEXT,
+        productCount INTEGER DEFAULT 0,
+        isAutomated INTEGER DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'Active',
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM collections ORDER BY createdAt DESC").all();
+  const rows = result.results || [];
+
+  // Also auto-group categories from D1 products table if no custom collection exists
+  const prodResult = await tenantDb.prepare("SELECT category FROM products").all();
+  const prods = prodResult.results || [];
+  const categoryCounts: Record<string, number> = {};
+  for (const p of prods) {
+    if (p.category && (p.category as string).trim() !== "") {
+      const cat = (p.category as string).trim();
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    }
+  }
+
+  const dynamicCollections = Object.entries(categoryCounts).map(([catName, count], idx) => ({
+    id: `col-cat-${idx}`,
+    name: catName,
+    description: `${catName} product catalog collection`,
+    productCount: count,
+    isAutomated: true,
+    status: "Active",
+  }));
+
+  const allCols = [...rows.map((r: any) => ({ ...r, isAutomated: r.isAutomated === 1 })), ...dynamicCollections];
+  return c.json(allCols);
+});
+
+/**
+ * POST /collections
+ */
+app.post("/collections", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { name, description, status } = body;
+
+  if (!name) return c.json({ error: "Collection name is required" }, 400);
+
+  const id = body.id || `col-${Date.now()}`;
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      `INSERT INTO collections (id, name, description, productCount, isAutomated, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         name = excluded.name,
+         description = excluded.description,
+         status = excluded.status`
+    )
+    .bind(id, name, description || "", 0, 0, status || "Active", createdAt)
+    .run();
+
+  return c.json({ success: true, id });
+});
+
+/**
+ * GET /purchase-orders
+ */
+app.get("/purchase-orders", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS purchase_orders (
+        poNumber TEXT PRIMARY KEY,
+        vendor TEXT NOT NULL,
+        expectedDate TEXT,
+        status TEXT NOT NULL DEFAULT 'Draft',
+        totalAmount REAL DEFAULT 0,
+        itemsCount INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM purchase_orders ORDER BY createdAt DESC").all();
+  return c.json(result.results || []);
+});
+
+/**
+ * POST /purchase-orders
+ */
+app.post("/purchase-orders", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { vendor, expectedDate, status, totalAmount, itemsCount } = body;
+
+  if (!vendor) return c.json({ error: "Vendor name is required" }, 400);
+
+  const poNumber = body.poNumber || `PO-2026-${Math.floor(100 + Math.random() * 900)}`;
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      `INSERT INTO purchase_orders (poNumber, vendor, expectedDate, status, totalAmount, itemsCount, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .bind(poNumber, vendor, expectedDate || "", status || "Draft", totalAmount || 0, itemsCount || 0, createdAt)
+    .run();
+
+  return c.json({ success: true, poNumber });
+});
+
+/**
+ * GET /gift-cards
+ */
+app.get("/gift-cards", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS gift_cards (
+        code TEXT PRIMARY KEY,
+        initialValue REAL NOT NULL,
+        balance REAL NOT NULL,
+        customerEmail TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'Active',
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM gift_cards ORDER BY createdAt DESC").all();
+  return c.json(result.results || []);
+});
+
+/**
+ * POST /gift-cards
+ */
+app.post("/gift-cards", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const { initialValue, customerEmail } = body;
+
+  if (!initialValue || !customerEmail) {
+    return c.json({ error: "Initial value and customer email are required" }, 400);
+  }
+
+  const code = body.code || `GC-${Math.floor(1000 + Math.random() * 9000)}-2026`;
+  const balance = body.balance !== undefined ? body.balance : initialValue;
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      `INSERT INTO gift_cards (code, initialValue, balance, customerEmail, status, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(code, initialValue, balance, customerEmail, "Active", createdAt)
+    .run();
+
+  return c.json({ success: true, code });
+});
+
 export default app;

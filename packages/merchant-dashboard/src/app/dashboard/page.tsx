@@ -669,21 +669,10 @@ export default function MerchantDashboard() {
 
   // Products sub-tab & Collections state
   const [productsSubTab, setProductsSubTab] = useState<"catalog" | "collections" | "inventory" | "purchase-orders" | "transfers" | "gift-cards">("catalog");
-  const [collections, setCollections] = useState<any[]>([
-    { id: "col-1", name: "Sneakers & Footwear", description: "High-performance sneakers and footwear catalog", productCount: 12, isAutomated: true, status: "Active" },
-    { id: "col-2", name: "Apparel & Activewear", description: "Streetwear hoodies, t-shirts, and gym activewear", productCount: 24, isAutomated: false, status: "Active" },
-    { id: "col-3", name: "Streetwear Accessories", description: "Caps, backpacks, socks, and fitness gear", productCount: 8, isAutomated: true, status: "Active" },
-    { id: "col-4", name: "Limited Edition Drops", description: "Exclusive seasonal streetwear releases", productCount: 5, isAutomated: false, status: "Active" }
-  ]);
+  const [collections, setCollections] = useState<any[]>([]);
   const [collectionForm, setCollectionForm] = useState<{ id?: string; name: string; description: string; status: string } | null>(null);
-  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([
-    { poNumber: "PO-2026-001", vendor: "Reebok Distribution", expectedDate: "2026-08-05", status: "Ordered", totalAmount: 45000, itemsCount: 50 },
-    { poNumber: "PO-2026-002", vendor: "Nike India Logistics", expectedDate: "2026-08-12", status: "Draft", totalAmount: 82000, itemsCount: 120 }
-  ]);
-  const [giftCards, setGiftCards] = useState<any[]>([
-    { code: "GC-8849-2026", initialValue: 2000, balance: 2000, customerEmail: "priya@gmail.com", status: "Active", createdAt: new Date().toISOString() },
-    { code: "GC-9102-2026", initialValue: 5000, balance: 1250, customerEmail: "rahul@outlook.com", status: "Active", createdAt: new Date().toISOString() }
-  ]);
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
+  const [giftCards, setGiftCards] = useState<any[]>([]);
   // Customers sub-tab & CSV Import/Export state
   const [customersSubTab, setCustomersSubTab] = useState<"list" | "segments" | "companies">("list");
   const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
@@ -1295,10 +1284,16 @@ export default function MerchantDashboard() {
         if (ordRes.ok) setOrders(await ordRes.json());
         if (prodRes.ok) setProducts(await prodRes.json());
       } else if (activeTab === "products") {
-        const res = await fetch(`${API_URL}/products`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) setProducts(await res.json());
+        const [prodRes, colRes, poRes, gcRes] = await Promise.all([
+          fetch(`${API_URL}/products`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/collections`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/purchase-orders`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/gift-cards`, { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
+        if (prodRes.ok) setProducts(await prodRes.json());
+        if (colRes.ok) setCollections(await colRes.json());
+        if (poRes.ok) setPurchaseOrders(await poRes.json());
+        if (gcRes.ok) setGiftCards(await gcRes.json());
       } else if (activeTab === "orders") {
         const res = await fetch(`${API_URL}/orders`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -5180,16 +5175,28 @@ export default function MerchantDashboard() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => {
+                            onClick={async () => {
                               if (!collectionForm.name) return;
-                              if (collectionForm.id) {
-                                setCollections(collections.map((c) => (c.id === collectionForm.id ? { ...c, ...collectionForm } : c)));
-                              } else {
-                                setCollections([...collections, { id: `col-${Date.now()}`, ...collectionForm, productCount: 0, isAutomated: false }]);
+                              try {
+                                const res = await fetch(`${API_URL}/collections`, {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${token}`,
+                                  },
+                                  credentials: "include",
+                                  body: JSON.stringify(collectionForm),
+                                });
+                                if (res.ok) {
+                                  setActionSuccess("Collection saved to database successfully!");
+                                  fetchDashboardData();
+                                }
+                              } catch (err: any) {
+                                setActionError(err.message);
                               }
                               setCollectionForm(null);
                             }}
-                            className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                            className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
                           >
                             Save Collection
                           </button>
