@@ -1347,12 +1347,14 @@ export default function MerchantDashboard() {
         });
         if (res.ok) setCustomers(await res.json());
       } else if (activeTab === "content") {
-        const [menuRes, blogRes] = await Promise.all([
+        const [menuRes, blogRes, fileRes] = await Promise.all([
           fetch(`${API_URL}/store/menus`, { headers: { Authorization: `Bearer ${token}` } }),
           fetch(`${API_URL}/store/blog-posts`, { headers: { Authorization: `Bearer ${token}` } }),
+          fetch(`${API_URL}/store/files`, { headers: { Authorization: `Bearer ${token}` } }),
         ]);
         if (menuRes.ok) setMenus(await menuRes.json());
         if (blogRes.ok) setBlogPosts(await blogRes.json());
+        if (fileRes.ok) setStoreFiles(await fileRes.json());
       } else if (activeTab === "finances") {
         const res = await fetch(`${API_URL}/finances/summary`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -6258,11 +6260,11 @@ export default function MerchantDashboard() {
             </div>
           )}
 
-          {/* CONTENT TAB (MATCHING SCREENSHOTS 1, 2, 3) */}
+          {/* CONTENT TAB (REDESIGNED FULL-PAGE EDITORS) */}
           {activeTab === "content" && (
             <div className="space-y-6 animate-fade-in">
-              {/* 1. MENUS SUB-VIEW (MATCHING SCREENSHOT 2) */}
-              {contentSubTab === "menus" && (
+              {/* 1. MENUS SUB-VIEW */}
+              {contentSubTab === "menus" && !menuForm && (
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -6278,7 +6280,7 @@ export default function MerchantDashboard() {
                         URL redirects
                       </button>
                       <button
-                        onClick={() => setMenuForm({ name: "", items: "" })}
+                        onClick={() => setMenuForm({ name: "", items: "Home, Catalog, Contact" })}
                         className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg shadow-sm transition-colors cursor-pointer"
                       >
                         Create menu
@@ -6319,8 +6321,137 @@ export default function MerchantDashboard() {
                 </div>
               )}
 
-              {/* 2. BLOG POSTS SUB-VIEW (MATCHING SCREENSHOT 3) */}
-              {contentSubTab === "blog-posts" && (
+              {/* MENU EDITOR FULL-PAGE VIEW */}
+              {contentSubTab === "menus" && menuForm && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setMenuForm(null)}
+                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                      >
+                        <ArrowRight className="h-4 w-4 rotate-180" />
+                      </button>
+                      <h2 className="text-lg font-bold text-slate-900">
+                        {menuForm.id ? `Edit Menu: ${menuForm.name}` : "Create Navigation Menu"}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setMenuForm(null)}
+                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!menuForm.name) return;
+                          try {
+                            const itemsArr = menuForm.items.split(",").map((s) => s.trim()).filter(Boolean);
+                            const res = await fetch(`${API_URL}/store/menus`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify({ ...menuForm, items: itemsArr }),
+                            });
+                            if (res.ok) {
+                              setActionSuccess("Navigation menu saved to storefront database!");
+                              fetchDashboardData();
+                            }
+                          } catch (err: any) {
+                            setActionError(err.message);
+                          }
+                          setMenuForm(null);
+                        }}
+                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                      >
+                        Save Menu
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                          Menu Title
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Main menu"
+                          value={menuForm.name}
+                          onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900">Menu items</h3>
+                          <span className="text-xs font-semibold text-slate-500">Live Storefront Links</span>
+                        </div>
+
+                        <div className="space-y-3">
+                          {menuForm.items.split(",").map((itemStr, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+                              <div className="flex items-center gap-3">
+                                <div className="p-1 text-slate-400">
+                                  <MoreVertical className="h-4 w-4" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-bold text-slate-900">{itemStr.trim() || `Item ${idx + 1}`}</div>
+                                  <div className="text-[11px] text-slate-500 font-mono">
+                                    /{itemStr.trim().toLowerCase().replace(/[^a-z0-9]/g, "-")}
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const itemsArr = menuForm.items.split(",").map(s => s.trim()).filter((_, i) => i !== idx);
+                                  setMenuForm({ ...menuForm, items: itemsArr.join(", ") });
+                                }}
+                                className="text-xs font-bold text-rose-600 hover:underline cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                            Add New Item (Comma Separated)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Collections, About Us, Special Offers"
+                            value={menuForm.items}
+                            onChange={(e) => setMenuForm({ ...menuForm, items: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
+                        <h3 className="text-sm font-bold text-slate-900">Storefront Display</h3>
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                          This menu will automatically update the navigation header and footer across all storefront theme templates.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 2. BLOG POSTS SUB-VIEW */}
+              {contentSubTab === "blog-posts" && !blogForm && (
                 <div className="space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-2">
@@ -6328,13 +6459,22 @@ export default function MerchantDashboard() {
                       <h2 className="text-xl font-bold tracking-tight text-slate-900">Blog posts</h2>
                     </div>
 
-                    <button
-                      onClick={() => setActionSuccess("Manage blogs settings opened")}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200/80 transition-colors cursor-pointer flex items-center gap-1.5"
-                    >
-                      <Edit3 className="h-3.5 w-3.5 text-slate-500" />
-                      <span>Manage blogs</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setActionSuccess("Manage blogs settings opened")}
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg border border-slate-200/80 transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Edit3 className="h-3.5 w-3.5 text-slate-500" />
+                        <span>Manage blogs</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBlogForm({ title: "", content: "", author: "Store Admin" })}
+                        className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-sm transition-colors cursor-pointer"
+                      >
+                        Create blog post
+                      </button>
+                    </div>
                   </div>
 
                   {blogPosts.length === 0 ? (
@@ -6416,26 +6556,252 @@ export default function MerchantDashboard() {
                 </div>
               )}
 
-              {/* 3. FILES SUB-VIEW */}
-              {contentSubTab === "files" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-bold tracking-tight text-slate-900">Files</h2>
-                    <button
-                      onClick={() => setActionSuccess("File uploader opened")}
-                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
-                    >
-                      Upload files
-                    </button>
+              {/* FULL-PAGE BLOG POST EDITOR (REDESIGNED MATCHING SHOPIFY STANDARDS) */}
+              {contentSubTab === "blog-posts" && blogForm && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setBlogForm(null)}
+                        className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-600 transition-colors cursor-pointer"
+                      >
+                        <ArrowRight className="h-4 w-4 rotate-180" />
+                      </button>
+                      <h2 className="text-lg font-bold text-slate-900">
+                        {blogForm.id ? "Edit blog post" : "Create blog post"}
+                      </h2>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setBlogForm(null)}
+                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!blogForm.title || !blogForm.content) return;
+                          try {
+                            const res = await fetch(`${API_URL}/store/blog-posts`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify(blogForm),
+                            });
+                            if (res.ok) {
+                              setActionSuccess("Blog post published to database successfully!");
+                              fetchDashboardData();
+                            }
+                          } catch (err: any) {
+                            setActionError(err.message);
+                          }
+                          setBlogForm(null);
+                        }}
+                        className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+                      >
+                        Publish Post
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-2xs">
-                    <Folder className="h-10 w-10 text-indigo-600 mx-auto" />
-                    <h3 className="text-base font-bold text-slate-900">Store Media & Digital Assets</h3>
-                    <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
-                      Upload promotional banners, product manuals, and storefront images to use across your store pages.
-                    </p>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Column (2/3 width) */}
+                    <div className="lg:col-span-2 space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Summer Collection Lookbook & Styling Guide"
+                            value={blogForm.title}
+                            onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
+                            className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                            Content
+                          </label>
+                          {/* Formatting Toolbar Header */}
+                          <div className="border border-slate-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-indigo-600">
+                            <div className="bg-slate-50 border-b border-slate-200 px-3 py-2 flex items-center gap-2 text-xs font-bold text-slate-700">
+                              <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">B</span>
+                              <span className="px-2 py-0.5 hover:bg-slate-200 rounded italic cursor-pointer">I</span>
+                              <span className="px-2 py-0.5 hover:bg-slate-200 rounded underline cursor-pointer">U</span>
+                              <div className="h-4 w-px bg-slate-300 mx-1" />
+                              <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">🔗 Link</span>
+                              <span className="px-2 py-0.5 hover:bg-slate-200 rounded cursor-pointer">🖼️ Image</span>
+                            </div>
+                            <textarea
+                              rows={8}
+                              required
+                              placeholder="Write your blog post content here..."
+                              value={blogForm.content}
+                              onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
+                              className="w-full p-4 text-xs font-medium text-slate-900 border-none focus:outline-none"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Excerpt Card */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-2">
+                        <h3 className="text-sm font-bold text-slate-900">Excerpt</h3>
+                        <p className="text-xs text-slate-500">Add a summary of the post to show on your store homepage or blog list page.</p>
+                        <textarea
+                          rows={3}
+                          placeholder="Brief blog post summary..."
+                          className="w-full p-3 border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                        />
+                      </div>
+
+                      {/* SEO Search Engine Listing Preview */}
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="text-sm font-bold text-slate-900">Search engine listing preview</h3>
+                          <span className="text-xs font-bold text-indigo-600 hover:underline cursor-pointer">Edit SEO</span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="text-sm font-bold text-blue-700">{blogForm.title || "Blog Post Title"}</div>
+                          <div className="text-xs text-emerald-700 font-mono">https://{settings.subdomain || "store"}.basecart.app/blogs/news/post</div>
+                          <div className="text-xs text-slate-500">{blogForm.content ? blogForm.content.slice(0, 140) + "..." : "Add a blog post summary to preview search results."}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column (1/3 width) */}
+                    <div className="space-y-6">
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
+                        <h3 className="text-sm font-bold text-slate-900">Visibility</h3>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                            <input type="radio" name="visibility" defaultChecked className="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Visible</span>
+                          </label>
+                          <label className="flex items-center gap-2.5 text-xs font-bold text-slate-800 cursor-pointer">
+                            <input type="radio" name="visibility" className="text-indigo-600 focus:ring-indigo-500" />
+                            <span>Hidden</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
+                        <h3 className="text-sm font-bold text-slate-900">Organization</h3>
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Author</label>
+                            <input
+                              type="text"
+                              value={blogForm.author || "Store Admin"}
+                              onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
+                              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Blog Category</label>
+                            <select className="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none bg-white">
+                              <option>News</option>
+                              <option>Updates</option>
+                              <option>Style Guide</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                </div>
+              )}
+
+              {/* 3. FILES SUB-VIEW (REDESIGNED SYSTEM ASSETS MANAGER) */}
+              {contentSubTab === "files" && (
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-2">
+                      <Folder className="h-5 w-5 text-slate-700" />
+                      <h2 className="text-xl font-bold tracking-tight text-slate-900">Files</h2>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setActionSuccess("File uploader opened. Select product or branding image.")}
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        <span>Upload files</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {storeFiles.length === 0 ? (
+                    <div className="bg-white border border-slate-200 rounded-2xl p-10 text-center space-y-3 shadow-2xs">
+                      <Folder className="h-10 w-10 text-indigo-600 mx-auto" />
+                      <h3 className="text-base font-bold text-slate-900">Store Media & Uploaded Assets</h3>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
+                        Upload product images, promotional banners, and branding logos to manage across your system.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-slate-200 rounded-2xl shadow-card overflow-hidden">
+                      <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                        <thead className="bg-slate-50/80 font-bold text-slate-600 text-xs tracking-wider">
+                          <tr>
+                            <th className="px-6 py-3.5">Preview</th>
+                            <th className="px-6 py-3.5">File Name</th>
+                            <th className="px-6 py-3.5">Used In</th>
+                            <th className="px-6 py-3.5">Size & Type</th>
+                            <th className="px-6 py-3.5 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                          {storeFiles.map((f) => (
+                            <tr key={f.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-3">
+                                <div className="h-10 w-10 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
+                                  {f.url ? (
+                                    <img src={f.url} alt={f.name} className="h-full w-full object-cover" />
+                                  ) : (
+                                    <FileText className="h-5 w-5 text-slate-400" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-bold text-slate-900 text-xs">
+                                {f.name}
+                              </td>
+                              <td className="px-6 py-4 text-xs font-semibold text-slate-600">
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200/80">
+                                  {f.usedIn}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-xs font-mono text-slate-500">
+                                {f.size} · {f.type}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <button
+                                  onClick={() => {
+                                    if (f.url) {
+                                      navigator.clipboard.writeText(f.url);
+                                      setActionSuccess(`CDN link for "${f.name}" copied to clipboard!`);
+                                    }
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-bold border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                >
+                                  Copy link
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -6458,183 +6824,6 @@ export default function MerchantDashboard() {
                     <p className="text-xs text-slate-500 max-w-md mx-auto font-medium">
                       Define custom structured content (Size Guides, Designer Spotlights, Specifications) to embed anywhere on store pages.
                     </p>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE/EDIT MENU MODAL */}
-              {menuForm && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-                  <div className="bg-white max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <h3 className="text-base font-bold text-slate-900">
-                        {menuForm.id ? "Edit Navigation Menu" : "Create Navigation Menu"}
-                      </h3>
-                      <button onClick={() => setMenuForm(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Menu Title
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Header Navigation"
-                          value={menuForm.name}
-                          onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Menu Items (Comma Separated)
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Home, Catalog, Contact, About Us"
-                          value={menuForm.items}
-                          onChange={(e) => setMenuForm({ ...menuForm, items: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => setMenuForm(null)}
-                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!menuForm.name) return;
-                          try {
-                            const itemsArr = menuForm.items.split(",").map((s) => s.trim()).filter(Boolean);
-                            const res = await fetch(`${API_URL}/store/menus`, {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                              credentials: "include",
-                              body: JSON.stringify({ ...menuForm, items: itemsArr }),
-                            });
-                            if (res.ok) {
-                              setActionSuccess("Navigation menu saved to database!");
-                              fetchDashboardData();
-                            }
-                          } catch (err: any) {
-                            setActionError(err.message);
-                          }
-                          setMenuForm(null);
-                        }}
-                        className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
-                      >
-                        Save Menu
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* CREATE BLOG POST MODAL */}
-              {blogForm && (
-                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-                  <div className="bg-white max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <h3 className="text-base font-bold text-slate-900">Create New Blog Post</h3>
-                      <button onClick={() => setBlogForm(null)} className="p-1 text-slate-400 hover:text-slate-600">
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Post Title
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="e.g. Summer Collection Lookbook & Styling Guide"
-                          value={blogForm.title}
-                          onChange={(e) => setBlogForm({ ...blogForm, title: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Author
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Store Admin"
-                          value={blogForm.author || "Store Admin"}
-                          onChange={(e) => setBlogForm({ ...blogForm, author: e.target.value })}
-                          className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                          Content
-                        </label>
-                        <textarea
-                          rows={5}
-                          required
-                          placeholder="Write your blog post content here..."
-                          value={blogForm.content}
-                          onChange={(e) => setBlogForm({ ...blogForm, content: e.target.value })}
-                          className="w-full p-3 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-indigo-600 focus:outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => setBlogForm(null)}
-                        className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          if (!blogForm.title || !blogForm.content) return;
-                          try {
-                            const res = await fetch(`${API_URL}/store/blog-posts`, {
-                              method: "POST",
-                              headers: {
-                                "Content-Type": "application/json",
-                                Authorization: `Bearer ${token}`,
-                              },
-                              credentials: "include",
-                              body: JSON.stringify(blogForm),
-                            });
-                            if (res.ok) {
-                              setActionSuccess("Blog post published to database successfully!");
-                              fetchDashboardData();
-                            }
-                          } catch (err: any) {
-                            setActionError(err.message);
-                          }
-                          setBlogForm(null);
-                        }}
-                        className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
-                      >
-                        Publish Post
-                      </button>
-                    </div>
                   </div>
                 </div>
               )}

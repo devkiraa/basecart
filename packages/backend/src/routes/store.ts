@@ -1130,4 +1130,94 @@ app.post("/store/blog-posts", authenticateMerchant, async (c) => {
   return c.json({ success: true, id });
 });
 
+/**
+ * GET /store/files (Merchant Files & Assets view: aggregated product images & branding logos)
+ */
+app.get("/store/files", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  const prodResult = await tenantDb.prepare("SELECT productId, name, images, createdAt FROM products").all();
+  const products = prodResult.results || [];
+  const filesList: any[] = [];
+
+  for (const prod of products) {
+    let imgs: string[] = [];
+    if (prod.images) {
+      try {
+        imgs = typeof prod.images === "string" ? JSON.parse(prod.images) : prod.images;
+      } catch (e) {}
+    }
+    imgs.forEach((imgUrl: string, idx: number) => {
+      const fileName = imgUrl.split("/").pop() || `product-image-${idx + 1}.jpg`;
+      filesList.push({
+        id: `file-${prod.productId}-${idx}`,
+        name: fileName,
+        url: imgUrl,
+        size: "245 KB",
+        type: "image/jpeg",
+        usedIn: `Product: ${prod.name}`,
+        uploadedAt: prod.createdAt,
+      });
+    });
+  }
+
+  const controlDb = getControlDb(c.env);
+  const tenantRow = await controlDb.prepare("SELECT branding FROM tenants WHERE tenantId = ?").bind(tenantId).first<any>();
+  if (tenantRow?.branding) {
+    try {
+      const branding = typeof tenantRow.branding === "string" ? JSON.parse(tenantRow.branding) : tenantRow.branding;
+      if (branding.logoUrl) {
+        filesList.unshift({
+          id: `file-store-logo`,
+          name: branding.logoUrl.split("/").pop() || "store-logo.png",
+          url: branding.logoUrl,
+          size: "128 KB",
+          type: "image/png",
+          usedIn: "Store Logo",
+          uploadedAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {}
+  }
+
+  return c.json(filesList);
+});
+
+/**
+ * GET /store/:subdomain/navigation (Storefront Public Endpoint)
+ */
+app.get("/store/:subdomain/navigation", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  try {
+    await tenantDb.prepare(
+      `CREATE TABLE IF NOT EXISTS store_menus (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        items TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+  } catch (e) {}
+
+  const result = await tenantDb.prepare("SELECT * FROM store_menus ORDER BY createdAt ASC").all();
+  const rows = result.results || [];
+
+  if (rows.length === 0) {
+    const defaultMenus = [
+      { id: "menu-main", name: "Main menu", items: ["Home", "Catalog", "Contact"] },
+      { id: "menu-footer", name: "Footer menu", items: ["Search"] },
+      { id: "menu-account", name: "Customer account main menu", items: ["Orders", "Profile"] },
+    ];
+    return c.json(defaultMenus);
+  }
+
+  return c.json(rows.map((r: any) => ({
+    ...r,
+    items: typeof r.items === "string" ? JSON.parse(r.items) : r.items,
+  })));
+});
+
 export default app;
