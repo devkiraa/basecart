@@ -770,23 +770,7 @@ export default function MerchantDashboard() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Advanced screens state
-  const [customers, setCustomers] = useState<any[]>([
-    {
-      customerId: "cust-1",
-      name: "kirankichu8151@gmail.com",
-      firstName: "",
-      lastName: "",
-      email: "kirankichu8151@gmail.com",
-      phone: "",
-      acceptsEmailMarketing: false,
-      acceptsSmsMarketing: false,
-      acceptsWhatsAppMarketing: false,
-      location: "-",
-      ordersCount: 0,
-      totalSpent: 0,
-      createdAt: "2026-05-27T10:00:00Z"
-    }
-  ]);
+  const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
   const [financeSummary, setFinanceSummary] = useState<any>({
@@ -5461,21 +5445,27 @@ export default function MerchantDashboard() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           if (!customerForm.email && !customerForm.firstName) return;
-                          if (customerForm.customerId) {
-                            setCustomers(customers.map((c) => (c.customerId === customerForm.customerId ? { ...c, ...customerForm } : c)));
-                          } else {
-                            const newCust = {
-                              customerId: `cust-${Date.now()}`,
-                              name: `${customerForm.firstName || ""} ${customerForm.lastName || ""}`.trim() || customerForm.email,
-                              ...customerForm,
-                              location: customerForm.city ? `${customerForm.city}, ${customerForm.countryCode || "IN"}` : "-",
-                              ordersCount: 0,
-                              totalSpent: 0,
-                              createdAt: new Date().toISOString(),
-                            };
-                            setCustomers([newCust, ...customers]);
+                          try {
+                            const res = await fetch(`${API_URL}/customers`, {
+                              method: "POST",
+                              headers: {
+                                "Content-Type": "application/json",
+                                Authorization: `Bearer ${token}`,
+                              },
+                              credentials: "include",
+                              body: JSON.stringify(customerForm),
+                            });
+                            if (res.ok) {
+                              setActionSuccess("Customer saved to database successfully!");
+                              fetchDashboardData();
+                            } else {
+                              const errData = await res.json();
+                              setActionError(errData.error || "Failed to save customer");
+                            }
+                          } catch (err: any) {
+                            setActionError(err.message);
                           }
                           setCustomerForm(null);
                         }}
@@ -6033,78 +6023,100 @@ export default function MerchantDashboard() {
                         </button>
                         <button
                           type="button"
-                          disabled={!importCsvText.trim()}
-                          onClick={() => {
+                          disabled={!importCsvText.trim() || importingCsvLoading}
+                          onClick={async () => {
                             if (!importCsvText.trim()) return;
-                            const parseCustomerCsv = (csvText: string) => {
-                              const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== "");
-                              if (lines.length <= 1) return [];
-                              const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
-                              const parsedCustomers = [];
-                              for (let i = 1; i < lines.length; i++) {
-                                const regex = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g;
-                                const matches: string[] = [];
-                                let match: RegExpExecArray | null;
-                                while ((match = regex.exec(lines[i])) !== null) {
-                                  let val = match[1] ? match[1].replace(/^"|"$/g, "").replace(/""/g, '"') : "";
-                                  matches.push(val);
-                                  if (regex.lastIndex === lines[i].length) break;
-                                }
-                                if (matches.length < 3) continue;
-                                const row: Record<string, string> = {};
-                                headers.forEach((h, idx) => {
-                                  row[h] = matches[idx] || "";
-                                });
-                                const firstName = row["First Name"] || "";
-                                const lastName = row["Last Name"] || "";
-                                const email = row["Email"] || "";
-                                const phone = row["Phone"] || row["Default Address Phone"] || "";
-                                const acceptsEmail = (row["Accepts Email Marketing"] || "").toLowerCase() === "yes" || (row["Accepts Email Marketing"] || "").toLowerCase() === "true";
-                                const acceptsSms = (row["Accepts SMS Marketing"] || "").toLowerCase() === "yes" || (row["Accepts SMS Marketing"] || "").toLowerCase() === "true";
-                                const acceptsWhatsApp = (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "yes" || (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "true";
-                                const taxExempt = (row["Tax Exempt"] || "").toLowerCase() === "yes" || (row["Tax Exempt"] || "").toLowerCase() === "true";
-                                if (email || firstName || lastName) {
-                                  parsedCustomers.push({
-                                    customerId: `cust-csv-${Date.now()}-${i}`,
-                                    name: `${firstName} ${lastName}`.trim() || email,
-                                    firstName,
-                                    lastName,
-                                    email,
-                                    phone,
-                                    acceptsEmailMarketing: acceptsEmail,
-                                    acceptsSmsMarketing: acceptsSms,
-                                    acceptsWhatsAppMarketing: acceptsWhatsApp,
-                                    company: row["Default Address Company"] || "",
-                                    address1: row["Default Address Address1"] || "",
-                                    address2: row["Default Address Address2"] || "",
-                                    city: row["Default Address City"] || "",
-                                    provinceCode: row["Default Address Province Code"] || "",
-                                    countryCode: row["Default Address Country Code"] || "IN",
-                                    zip: row["Default Address Zip"] || "",
-                                    addressPhone: row["Default Address Phone"] || "",
-                                    tags: row["Tags"] || "",
-                                    note: row["Note"] || "",
-                                    taxExempt,
-                                    taxSettings: taxExempt ? "Exempt from tax" : "Collect tax",
-                                    totalSpent: 0,
-                                    ordersCount: 0,
-                                    createdAt: new Date().toISOString(),
+                            setImportingCsvLoading(true);
+                            try {
+                              const parseCustomerCsv = (csvText: string) => {
+                                const lines = csvText.split(/\r?\n/).filter((l) => l.trim() !== "");
+                                if (lines.length <= 1) return [];
+                                const headers = lines[0].split(",").map((h) => h.trim().replace(/^"|"$/g, ""));
+                                const parsedCustomers = [];
+                                for (let i = 1; i < lines.length; i++) {
+                                  const regex = /(?:,|\n|^)("(?:(?:"")*[^"]*)*"|[^",\n]*|(?:\n|$))/g;
+                                  const matches: string[] = [];
+                                  let match: RegExpExecArray | null;
+                                  while ((match = regex.exec(lines[i])) !== null) {
+                                    let val = match[1] ? match[1].replace(/^"|"$/g, "").replace(/""/g, '"') : "";
+                                    matches.push(val);
+                                    if (regex.lastIndex === lines[i].length) break;
+                                  }
+                                  if (matches.length < 3) continue;
+                                  const row: Record<string, string> = {};
+                                  headers.forEach((h, idx) => {
+                                    row[h] = matches[idx] || "";
                                   });
+                                  const firstName = row["First Name"] || "";
+                                  const lastName = row["Last Name"] || "";
+                                  const email = row["Email"] || "";
+                                  const phone = row["Phone"] || row["Default Address Phone"] || "";
+                                  const acceptsEmail = (row["Accepts Email Marketing"] || "").toLowerCase() === "yes" || (row["Accepts Email Marketing"] || "").toLowerCase() === "true";
+                                  const acceptsSms = (row["Accepts SMS Marketing"] || "").toLowerCase() === "yes" || (row["Accepts SMS Marketing"] || "").toLowerCase() === "true";
+                                  const acceptsWhatsApp = (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "yes" || (row["Accepts WhatsApp Marketing"] || "").toLowerCase() === "true";
+                                  const taxExempt = (row["Tax Exempt"] || "").toLowerCase() === "yes" || (row["Tax Exempt"] || "").toLowerCase() === "true";
+                                  if (email || firstName || lastName) {
+                                    parsedCustomers.push({
+                                      customerId: `cust-csv-${Date.now()}-${i}`,
+                                      name: `${firstName} ${lastName}`.trim() || email,
+                                      firstName,
+                                      lastName,
+                                      email,
+                                      phone,
+                                      acceptsEmailMarketing: acceptsEmail,
+                                      acceptsSmsMarketing: acceptsSms,
+                                      acceptsWhatsAppMarketing: acceptsWhatsApp,
+                                      company: row["Default Address Company"] || "",
+                                      address1: row["Default Address Address1"] || "",
+                                      address2: row["Default Address Address2"] || "",
+                                      city: row["Default Address City"] || "",
+                                      provinceCode: row["Default Address Province Code"] || "",
+                                      countryCode: row["Default Address Country Code"] || "IN",
+                                      zip: row["Default Address Zip"] || "",
+                                      addressPhone: row["Default Address Phone"] || "",
+                                      tags: row["Tags"] || "",
+                                      note: row["Note"] || "",
+                                      taxExempt,
+                                      taxSettings: taxExempt ? "Exempt from tax" : "Collect tax",
+                                      totalSpent: 0,
+                                      ordersCount: 0,
+                                      createdAt: new Date().toISOString(),
+                                    });
+                                  }
+                                }
+                                return parsedCustomers;
+                              };
+                              const parsed = parseCustomerCsv(importCsvText);
+                              if (parsed.length > 0) {
+                                const res = await fetch(`${API_URL}/customers/bulk`, {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    Authorization: `Bearer ${token}`,
+                                  },
+                                  credentials: "include",
+                                  body: JSON.stringify({ customers: parsed }),
+                                });
+                                if (res.ok) {
+                                  const resData = await res.json();
+                                  setActionSuccess(`Successfully imported ${resData.count || parsed.length} customers to database!`);
+                                  fetchDashboardData();
+                                } else {
+                                  const errData = await res.json();
+                                  setActionError(errData.error || "Failed importing CSV to database");
                                 }
                               }
-                              return parsedCustomers;
-                            };
-                            const parsed = parseCustomerCsv(importCsvText);
-                            if (parsed.length > 0) {
-                              setCustomers([...parsed, ...customers]);
-                              setActionSuccess(`Successfully imported ${parsed.length} customers from CSV!`);
+                            } catch (err: any) {
+                              setActionError(err.message);
+                            } finally {
+                              setImportingCsvLoading(false);
+                              setIsImportCustomerModalOpen(false);
+                              setImportCsvText("");
                             }
-                            setIsImportCustomerModalOpen(false);
-                            setImportCsvText("");
                           }}
                           className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm disabled:opacity-50 cursor-pointer"
                         >
-                          Import Customers
+                          {importingCsvLoading ? "Importing..." : "Import Customers"}
                         </button>
                       </div>
                     </div>

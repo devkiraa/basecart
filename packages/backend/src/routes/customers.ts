@@ -7,70 +7,217 @@ const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
  * GET /customers
- * Retrieve all unique customers (registered and guest checkouts) with aggregated metrics
+ * Retrieve all unique customers from D1 database with aggregated transaction metrics
  */
 app.get("/customers", authenticateMerchant, async (c) => {
   const tenantId = c.get("tenantId")!;
   const tenantDb = await getTenantDb(tenantId, c.env);
 
-  // 1. Fetch all customer accounts from isolated D1 DB
-  const customersResult = await tenantDb.prepare("SELECT * FROM customers").all();
+  // Migration helper: Ensure metadata columns exist in D1 customers table
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN firstName TEXT").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN lastName TEXT").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsEmailMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsSmsMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN acceptsWhatsAppMarketing INTEGER DEFAULT 0").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN company TEXT").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN tags TEXT").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN note TEXT").run(); } catch (e) {}
+  try { await tenantDb.prepare("ALTER TABLE customers ADD COLUMN taxExempt INTEGER DEFAULT 0").run(); } catch (e) {}
+
+  const customersResult = await tenantDb.prepare("SELECT * FROM customers ORDER BY createdAt DESC").all();
   const registeredCustomers = customersResult.results || [];
 
-  // 2. Fetch all orders to compute transaction totals from isolated D1 DB
   const ordersResult = await tenantDb.prepare("SELECT * FROM orders").all();
   const orders = ordersResult.results || [];
 
-  // Map to track unique customers by email
   const customerMap = new Map<string, any>();
 
-  // Initialize with registered customers
   for (const rc of registeredCustomers) {
-    customerMap.set(rc.email.toLowerCase(), {
+    const email = (rc.email || "").toLowerCase().trim();
+    if (!email) continue;
+    customerMap.set(email, {
       customerId: rc.customerId,
-      name: rc.name,
-      email: rc.email.toLowerCase(),
+      name: rc.name || `${rc.firstName || ""} ${rc.lastName || ""}`.trim() || email,
+      firstName: rc.firstName || "",
+      lastName: rc.lastName || "",
+      email,
+      phone: rc.phone || "",
+      acceptsEmailMarketing: rc.acceptsEmailMarketing === 1,
+      acceptsSmsMarketing: rc.acceptsSmsMarketing === 1,
+      acceptsWhatsAppMarketing: rc.acceptsWhatsAppMarketing === 1,
+      company: rc.company || "",
+      shippingAddress: rc.shippingAddress || "",
+      tags: rc.tags || "",
+      note: rc.note || "",
+      taxExempt: rc.taxExempt === 1,
+      location: rc.shippingAddress || "-",
       registered: true,
-      totalOrders: 0,
-      totalSpend: 0,
+      ordersCount: 0,
+      totalSpent: 0,
       lastOrderDate: null as string | null,
+      createdAt: rc.createdAt || new Date().toISOString(),
     });
   }
 
-  // Aggregate orders
   for (const order of orders) {
-    const email = order.customerEmail?.toLowerCase();
+    const email = order.customerEmail?.toLowerCase()?.trim();
     if (!email) continue;
 
     let entry = customerMap.get(email);
     if (!entry) {
       entry = {
-        customerId: order.customerId || "GUEST",
+        customerId: order.customerId || `cust-${Date.now()}`,
         name: order.customerName || "Guest Customer",
+        firstName: "",
+        lastName: "",
         email,
+        phone: order.customerPhone || "",
+        acceptsEmailMarketing: false,
+        acceptsSmsMarketing: false,
+        acceptsWhatsAppMarketing: false,
+        company: "",
+        shippingAddress: "-",
+        tags: "",
+        note: "",
+        taxExempt: false,
+        location: "-",
         registered: false,
-        totalOrders: 0,
-        totalSpend: 0,
+        ordersCount: 0,
+        totalSpent: 0,
         lastOrderDate: null,
+        createdAt: order.createdAt || new Date().toISOString(),
       };
       customerMap.set(email, entry);
     }
 
-    entry.totalOrders++;
-
-    // Include in spend if order is paid, shipped, or delivered
+    entry.ordersCount++;
     const isPaid = ["paid", "shipped", "delivered"].includes(order.status);
     if (isPaid) {
-      entry.totalSpend += order.total || 0;
+      entry.totalSpent += order.total || 0;
     }
 
-    // Keep track of the latest order date
     if (!entry.lastOrderDate || new Date(order.createdAt) > new Date(entry.lastOrderDate)) {
       entry.lastOrderDate = order.createdAt;
     }
   }
 
   return c.json(Array.from(customerMap.values()));
+});
+
+/**
+ * POST /customers
+ * Create or update a customer record in isolated tenant database
+ */
+app.post("/customers", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+
+  const {
+    firstName, lastName, email, phone,
+    acceptsEmailMarketing, acceptsSmsMarketing, acceptsWhatsAppMarketing,
+    company, address1, address2, city, provinceCode, countryCode, zip,
+    tags, note, taxExempt
+  } = body;
+
+  if (!email) {
+    return c.json({ error: "Customer email is required" }, 400);
+  }
+
+  const customerId = body.customerId || `cust-${Date.now()}`;
+  const name = `${firstName || ""} ${lastName || ""}`.trim() || email;
+  const location = city ? `${city}, ${countryCode || "IN"}` : (address1 || "-");
+  const createdAt = new Date().toISOString();
+
+  await tenantDb
+    .prepare(
+      `INSERT INTO customers (
+        customerId, name, email, phone, firstName, lastName,
+        acceptsEmailMarketing, acceptsSmsMarketing, acceptsWhatsAppMarketing,
+        company, shippingAddress, tags, note, taxExempt, createdAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        name = excluded.name,
+        phone = excluded.phone,
+        firstName = excluded.firstName,
+        lastName = excluded.lastName,
+        acceptsEmailMarketing = excluded.acceptsEmailMarketing,
+        acceptsSmsMarketing = excluded.acceptsSmsMarketing,
+        acceptsWhatsAppMarketing = excluded.acceptsWhatsAppMarketing,
+        company = excluded.company,
+        shippingAddress = excluded.shippingAddress,
+        tags = excluded.tags,
+        note = excluded.note,
+        taxExempt = excluded.taxExempt`
+    )
+    .bind(
+      customerId, name, email.toLowerCase().trim(), phone || "", firstName || "", lastName || "",
+      acceptsEmailMarketing ? 1 : 0, acceptsSmsMarketing ? 1 : 0, acceptsWhatsAppMarketing ? 1 : 0,
+      company || "", location, tags || "", note || "", taxExempt ? 1 : 0, createdAt
+    )
+    .run();
+
+  return c.json({ success: true, customerId });
+});
+
+/**
+ * POST /customers/bulk
+ * Bulk insert customer records from CSV import into tenant database
+ */
+app.post("/customers/bulk", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const tenantDb = await getTenantDb(tenantId, c.env);
+  const body = await c.req.json().catch(() => ({}));
+  const customersList = body.customers || [];
+
+  if (!Array.isArray(customersList) || customersList.length === 0) {
+    return c.json({ error: "No customer records provided" }, 400);
+  }
+
+  let importedCount = 0;
+  for (const item of customersList) {
+    const email = (item.email || "").toLowerCase().trim();
+    if (!email) continue;
+    const customerId = item.customerId || `cust-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const name = `${item.firstName || ""} ${item.lastName || ""}`.trim() || email;
+    const location = item.city ? `${item.city}, ${item.countryCode || "IN"}` : (item.address1 || "-");
+    const createdAt = item.createdAt || new Date().toISOString();
+
+    try {
+      await tenantDb
+        .prepare(
+          `INSERT INTO customers (
+            customerId, name, email, phone, firstName, lastName,
+            acceptsEmailMarketing, acceptsSmsMarketing, acceptsWhatsAppMarketing,
+            company, shippingAddress, tags, note, taxExempt, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ON CONFLICT(email) DO UPDATE SET
+            name = excluded.name,
+            phone = excluded.phone,
+            firstName = excluded.firstName,
+            lastName = excluded.lastName,
+            acceptsEmailMarketing = excluded.acceptsEmailMarketing,
+            acceptsSmsMarketing = excluded.acceptsSmsMarketing,
+            acceptsWhatsAppMarketing = excluded.acceptsWhatsAppMarketing,
+            company = excluded.company,
+            shippingAddress = excluded.shippingAddress,
+            tags = excluded.tags,
+            note = excluded.note,
+            taxExempt = excluded.taxExempt`
+        )
+        .bind(
+          customerId, name, email, item.phone || "", item.firstName || "", item.lastName || "",
+          item.acceptsEmailMarketing ? 1 : 0, item.acceptsSmsMarketing ? 1 : 0, item.acceptsWhatsAppMarketing ? 1 : 0,
+          item.company || "", location, item.tags || "", item.note || "", item.taxExempt ? 1 : 0, createdAt
+        )
+        .run();
+      importedCount++;
+    } catch (err) {
+      console.error(`Failed inserting customer ${email}:`, err);
+    }
+  }
+
+  return c.json({ success: true, count: importedCount });
 });
 
 /**
