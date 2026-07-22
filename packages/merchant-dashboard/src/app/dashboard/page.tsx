@@ -10243,56 +10243,208 @@ export default function MerchantDashboard() {
               </button>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-              {[
-                { id: "summary", name: "Dashboard", icon: LayoutDashboard },
-                { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
-                { id: "products", name: "Products", icon: Package },
-                { id: "customers", name: "Customers", icon: Users },
-                { id: "discounts", name: "Discounts", icon: Tag },
-                { id: "marketing", name: "Marketing", icon: Megaphone },
-                { id: "brand", name: "Brand & Identity", icon: Sparkles },
-                { id: "store-design", name: "Store Design", icon: Palette },
-                { id: "emails", name: "Email Settings", icon: Mail },
-                { id: "addons", name: "Apps & Integrations", icon: Puzzle },
-                { id: "payments", name: "Payments", icon: CreditCard },
-                { id: "finances", name: "Analytics", icon: TrendingUp },
-                { id: "settings", name: "Settings", icon: SettingsIcon },
-              ].map((item) => {
-                const Icon = item.icon;
-                const isActive = activeTab === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      setMobileDrawerOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 rounded-lg text-sm font-semibold px-3 py-2.5 transition-all ${
-                      isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-slate-500 hover:bg-slate-50 hover:text-slate-800"
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
-                    <span>{item.name}</span>
-                    {item.badge !== undefined && (
-                      <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
-                        {item.badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+            <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto">
+              {/* Core Operations */}
+              <div className="space-y-0.5">
+                {[
+                  { id: "summary", name: "Home", icon: Home },
+                  { id: "orders", name: "Orders", icon: ShoppingCart, badge: orders.length > 0 ? orders.length : undefined },
+                  { id: "products", name: "Products", icon: Package },
+                  { id: "customers", name: "Customers", icon: Users },
+                  { id: "marketing", name: "Growth", icon: TrendingUp },
+                  { id: "discounts", name: "Discounts", icon: Tag },
+                  { id: "content", name: "Content", icon: FileText },
+                  { id: "finances", name: "Analytics", icon: TrendingUp },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <React.Fragment key={item.id}>
+                      <button
+                        onClick={() => {
+                          changeTab(item.id);
+                          setMobileDrawerOpen(false);
+                        }}
+                        className={`w-full flex items-center gap-3 rounded-lg text-xs font-semibold px-3 py-2.5 transition-all ${
+                          isActive
+                            ? "bg-indigo-50 text-indigo-700 font-bold"
+                            : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                        }`}
+                      >
+                        <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                        <span>{item.name}</span>
+                        {item.badge !== undefined && (
+                          <span className="ml-auto bg-slate-100 text-slate-500 text-[10px] px-2 py-0.5 rounded-full font-bold border border-slate-200/60">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Sub-items for Products */}
+                      {item.id === "products" && isActive && (
+                        <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                          {[
+                            { id: "collections", label: "Collections" },
+                            { id: "inventory", label: "Inventory" },
+                            { id: "purchase-orders", label: "Purchase orders" },
+                            { id: "transfers", label: "Transfers" },
+                            { id: "gift-cards", label: "Gift cards" },
+                          ].map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                changeTab("products", sub.id);
+                                setProductForm(null);
+                                setMobileDrawerOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                productsSubTab === sub.id
+                                  ? "bg-slate-100 text-slate-900 font-bold"
+                                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                              }`}
+                            >
+                              {sub.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Sub-items for Customers */}
+                      {item.id === "customers" && isActive && (
+                        <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                          {[
+                            { id: "segments", label: "Segments" },
+                            { id: "companies", label: "Companies" },
+                          ].map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                changeTab("customers", sub.id);
+                                setCustomerForm(null);
+                                setMobileDrawerOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                customersSubTab === sub.id
+                                  ? "bg-slate-100 text-slate-900 font-bold"
+                                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                              }`}
+                            >
+                              {sub.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Sub-items for Content */}
+                      {item.id === "content" && isActive && (
+                        <div className="pl-9 pr-2 py-1 space-y-0.5 animate-fade-in">
+                          {[
+                            { id: "metaobjects", label: "Metaobjects" },
+                            { id: "files", label: "Files" },
+                            { id: "menus", label: "Menus" },
+                            { id: "blog-posts", label: "Blog posts" },
+                          ].map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                changeTab("content", sub.id);
+                                setMobileDrawerOpen(false);
+                              }}
+                              className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                                contentSubTab === sub.id
+                                  ? "bg-slate-100 text-slate-900 font-bold"
+                                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                              }`}
+                            >
+                              {sub.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+
+              {/* Sales channels section */}
+              <div className="pt-2 border-t border-slate-100 space-y-0.5">
+                <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Sales channels</span>
+                  <ChevronRight className="h-3 w-3 text-slate-400" />
+                </div>
+                {[
+                  { id: "store-design", name: "Online Store", icon: Store },
+                  { id: "brand", name: "Agentic", icon: Bot },
+                  { id: "emails", name: "Headless", icon: Code },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        changeTab(item.id);
+                        setMobileDrawerOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 rounded-lg text-xs font-semibold px-3 py-2.5 transition-all ${
+                        isActive
+                          ? "bg-indigo-50 text-indigo-700 font-bold"
+                          : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <Icon className={`h-4.5 w-4.5 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                      <span>{item.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Apps section */}
+              <div className="pt-2 border-t border-slate-100 space-y-0.5">
+                <div className="px-3 py-1 text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                  <span>Apps</span>
+                  <ChevronRight className="h-3 w-3 text-slate-400" />
+                </div>
+                <button
+                  onClick={() => {
+                    changeTab("addons");
+                    setMobileDrawerOpen(false);
+                  }}
+                  className={`w-full flex items-center gap-3 rounded-lg text-xs font-semibold px-3 py-2.5 transition-all ${
+                    activeTab === "addons"
+                      ? "bg-indigo-50 text-indigo-700 font-bold"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <Puzzle className={`h-4.5 w-4.5 shrink-0 ${activeTab === "addons" ? "text-indigo-600" : "text-slate-400"}`} />
+                  <span>Apps & Integrations</span>
+                </button>
+              </div>
             </nav>
 
-            {/* Logout button at bottom of drawer */}
-            <div className="p-4 border-t border-slate-100 shrink-0">
+            {/* Pinned Bottom Settings & Sign Out */}
+            <div className="p-3 border-t border-slate-100 shrink-0 space-y-2">
+              <button
+                onClick={() => {
+                  setIsSettingsPortalOpen(true);
+                  setActiveTab("settings");
+                  setMobileDrawerOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 rounded-xl text-xs font-semibold px-3 py-2.5 transition-all ${
+                  activeTab === "settings" || isSettingsPortalOpen
+                    ? "bg-indigo-50 text-indigo-700 font-bold"
+                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                }`}
+              >
+                <SettingsIcon className={`h-4.5 w-4.5 shrink-0 ${activeTab === "settings" || isSettingsPortalOpen ? "text-indigo-600" : "text-slate-400"}`} />
+                <span>Settings</span>
+              </button>
+
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 border border-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-650 font-bold rounded-lg text-xs transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2 border border-slate-200 hover:bg-red-50 text-slate-700 hover:text-red-650 font-bold rounded-xl text-xs transition-colors"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-4 w-4 text-slate-400" />
                 Sign Out
               </button>
             </div>
@@ -10303,19 +10455,25 @@ export default function MerchantDashboard() {
       {/* Mobile Bottom Navigation */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-40 flex items-center justify-around px-2 select-none">
         {[
-          { id: "summary", name: "Dashboard", icon: LayoutDashboard },
+          { id: "summary", name: "Home", icon: Home },
           { id: "orders", name: "Orders", icon: ShoppingCart },
           { id: "products", name: "Products", icon: Package },
-          { id: "store-design", name: "Design", icon: Palette },
+          { id: "store-design", name: "Store", icon: Store },
           { id: "settings", name: "Settings", icon: SettingsIcon },
         ].map((item) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = activeTab === item.id || (item.id === "settings" && isSettingsPortalOpen);
           return (
             <button
               key={item.id}
               onClick={() => {
-                setActiveTab(item.id as any);
+                if (item.id === "settings") {
+                  setIsSettingsPortalOpen(true);
+                  setActiveTab("settings");
+                } else {
+                  setActiveTab(item.id as any);
+                  setIsSettingsPortalOpen(false);
+                }
                 setMobileDrawerOpen(false);
               }}
               className={`flex flex-col items-center justify-center gap-1 flex-1 py-1.5 transition-all ${
