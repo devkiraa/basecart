@@ -9895,19 +9895,34 @@ export default function MerchantDashboard() {
           {/* DEDICATED SETTINGS PORTAL WORKSPACE (MATCHING SCREENSHOT 2) */}
           {(activeTab === "settings" || isSettingsPortalOpen) && (
             <div className="fixed inset-0 bg-slate-100 z-50 flex flex-col font-sans overflow-hidden animate-fade-in">
-              {/* Top Global Bar */}
+              {/* Top Global Bar with Back Button */}
               <div className="h-14 bg-white border-b border-slate-200/90 px-6 flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
-                    {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "IF"}
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-slate-900 leading-none">
-                      {settings.storeName || "IRON FORGE"}
-                    </h2>
-                    <span className="text-[11px] font-mono text-slate-500">
-                      {settings.subdomain || "iron-forge-12"}.basecart.app
-                    </span>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      setIsSettingsPortalOpen(false);
+                      if (activeTab === "settings") setActiveTab("summary");
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    <ArrowRight className="h-4 w-4 rotate-180 text-slate-500" />
+                    <span>Back to Dashboard</span>
+                  </button>
+
+                  <div className="h-4 w-px bg-slate-200" />
+
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 bg-emerald-500 rounded-lg flex items-center justify-center text-white font-bold text-xs uppercase shadow-sm">
+                      {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "IF"}
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900 leading-none">
+                        {settings.storeName || "IRON FORGE"}
+                      </h2>
+                      <span className="text-[11px] font-mono text-slate-500">
+                        {settings.subdomain || "iron-forge-12"}.basecart.app
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -9955,13 +9970,14 @@ export default function MerchantDashboard() {
                       { id: "billing", label: "Billing", icon: DollarSign },
                       { id: "users", label: "Users & Permissions", icon: Users },
                       { id: "payments", label: "Payments", icon: CreditCard },
+                      { id: "brand", label: "Brand & Identity", icon: Sparkles },
                       { id: "checkout", label: "Checkout", icon: ShoppingCart },
                       { id: "shipping", label: "Shipping and delivery", icon: Truck },
                       { id: "taxes", label: "Taxes and duties", icon: Scale },
                       { id: "locations", label: "Locations", icon: MapPin },
                       { id: "apps", label: "Apps & sales channels", icon: Puzzle },
                       { id: "domains", label: "Domains", icon: Globe },
-                      { id: "notifications", label: "Notifications", icon: Bell },
+                      { id: "notifications", label: "Notifications & Emails", icon: Bell },
                       { id: "privacy", label: "Customer privacy", icon: Lock },
                       { id: "policies", label: "Policies", icon: FileText },
                     ]
@@ -10164,8 +10180,22 @@ export default function MerchantDashboard() {
                     </div>
                   )}
 
-                  {/* 3. OTHER SUB-TABS FALLBACK */}
-                  {!["general", "payments"].includes(settingsSubTab) && (
+                  {/* 3. BRAND & IDENTITY SETTINGS */}
+                  {settingsSubTab === "brand" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <BrandIdentityTab token={token} API_URL={API_URL} settings={settings} onUpdateSettings={(newSettings) => setSettings(newSettings)} />
+                    </div>
+                  )}
+
+                  {/* 4. NOTIFICATION & EMAIL SETTINGS */}
+                  {settingsSubTab === "notifications" && (
+                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                      <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
+                    </div>
+                  )}
+
+                  {/* 5. OTHER SUB-TABS FALLBACK */}
+                  {!["general", "payments", "brand", "notifications"].includes(settingsSubTab) && (
                     <div className="space-y-4 animate-fade-in max-w-4xl">
                       <h2 className="text-xl font-bold tracking-tight text-slate-900 capitalize">{settingsSubTab} Settings</h2>
                       <p className="text-xs text-slate-500">Configure your store settings and automated preferences for {settingsSubTab}.</p>
@@ -10182,14 +10212,6 @@ export default function MerchantDashboard() {
                 </main>
               </div>
             </div>
-          )}
-
-          {activeTab === "brand" && (
-            <BrandIdentityTab token={token} API_URL={API_URL} settings={settings} onUpdateSettings={(newSettings) => setSettings(newSettings)} />
-          )}
-
-          {activeTab === "emails" && (
-            <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
           )}
 
         </div>
