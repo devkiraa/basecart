@@ -449,17 +449,31 @@ export default function MerchantDashboard() {
   useEffect(() => {
     setIsHydrated(true);
     const handleHash = () => {
-      const hash = window.location.hash;
-      if (hash === "#signup" || hash === "#register") {
+      const hash = window.location.hash.replace("#", "");
+      if (hash === "signup" || hash === "register") {
         setIsLoginView(false);
         setAuthActive(true);
         setWizardStep(1);
-      } else if (hash === "#login" || hash === "#signin") {
+        return;
+      } else if (hash === "login" || hash === "signin") {
         setIsLoginView(true);
         setAuthActive(true);
-      } else if (hash === "" || hash.startsWith("#features") || hash.startsWith("#pricing") || hash.startsWith("#testimonials")) {
+        return;
+      } else if (hash === "" || hash.startsWith("features") || hash.startsWith("pricing") || hash.startsWith("testimonials")) {
         if (!token) {
           setAuthActive(false);
+        }
+        return;
+      }
+
+      const validTabs = ["summary", "orders", "products", "collections", "inventory", "purchase-orders", "transfers", "gift-cards", "customers", "discounts", "marketing", "brand", "store-design", "emails", "addons", "payments", "finances", "settings"];
+      if (validTabs.includes(hash)) {
+        if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(hash)) {
+          setActiveTab("products");
+          setProductsSubTab(hash as any);
+        } else {
+          setActiveTab(hash as any);
+          if (hash === "products") setProductsSubTab("catalog");
         }
       }
     };
@@ -468,6 +482,20 @@ export default function MerchantDashboard() {
     window.addEventListener("hashchange", handleHash);
     return () => window.removeEventListener("hashchange", handleHash);
   }, []);
+
+  const changeTab = (tabId: string, subTabId?: string) => {
+    const targetHash = subTabId || tabId;
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", `#${targetHash}`);
+    }
+    if (["collections", "inventory", "purchase-orders", "transfers", "gift-cards"].includes(targetHash)) {
+      setActiveTab("products");
+      setProductsSubTab(targetHash as any);
+    } else {
+      setActiveTab(tabId as any);
+      if (tabId === "products") setProductsSubTab("catalog");
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -2544,12 +2572,7 @@ export default function MerchantDashboard() {
               return (
                 <React.Fragment key={item.id}>
                   <button
-                    onClick={() => {
-                      setActiveTab(item.id as any);
-                      if (item.id === "products") {
-                        setProductsSubTab("catalog");
-                      }
-                    }}
+                    onClick={() => changeTab(item.id)}
                     title={sidebarCollapsed ? item.name : undefined}
                     className={`w-full flex items-center gap-3 rounded-lg text-[13px] font-semibold transition-all ${
                       sidebarCollapsed ? "px-3 py-2.5 justify-center" : "px-3 py-2"
@@ -2581,8 +2604,7 @@ export default function MerchantDashboard() {
                         <button
                           key={sub.id}
                           onClick={() => {
-                            setActiveTab("products");
-                            setProductsSubTab(sub.id as any);
+                            changeTab("products", sub.id);
                             setProductForm(null);
                           }}
                           className={`w-full text-left px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
@@ -3823,9 +3845,12 @@ export default function MerchantDashboard() {
                 )}
               </div>
 
-              {/* Product Catalog Metrics Bar */}
-              {!productForm && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Product Catalog Section */}
+              {productsSubTab === "catalog" && (
+                <>
+                  {/* Product Catalog Metrics Bar */}
+                  {!productForm && (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-500">
                       <span>TOTAL CATALOG</span>
@@ -4829,6 +4854,399 @@ export default function MerchantDashboard() {
                         No products found matching filters.
                       </div>
                     )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+              {/* 2. COLLECTIONS SUB-PAGE */}
+              {productsSubTab === "collections" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                        <span>TOTAL COLLECTIONS</span>
+                        <Layers className="h-4 w-4 text-indigo-600" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">{collections.length}</div>
+                      <p className="text-[11px] text-slate-400 font-medium">Storefront categories</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
+                        <span>ACTIVE LIVE</span>
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {collections.filter((c) => c.status === "Active").length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">Published on menu</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-indigo-600">
+                        <span>AUTOMATED RULES</span>
+                        <Sparkles className="h-4 w-4 text-indigo-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {collections.filter((c) => c.isAutomated).length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">Auto-tagged catalog items</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-600">
+                        <span>MANUAL SELECTIONS</span>
+                        <Tag className="h-4 w-4 text-amber-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {collections.filter((c) => !c.isAutomated).length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">Custom product lists</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3.5">Collection Title</th>
+                          <th className="px-6 py-3.5">Condition Type</th>
+                          <th className="px-6 py-3.5">Assigned Products</th>
+                          <th className="px-6 py-3.5">Status</th>
+                          <th className="px-6 py-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {collections.map((col) => (
+                          <tr key={col.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="space-y-0.5">
+                                <div className="font-bold text-slate-900 text-sm">{col.name}</div>
+                                <div className="text-xs text-slate-500">{col.description}</div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4">
+                              {col.isAutomated ? (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold">
+                                  <Sparkles className="h-3 w-3 text-indigo-600" /> Automated
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-bold">
+                                  Manual Group
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 font-mono font-bold text-slate-800">
+                              {col.productCount} items
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                                col.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {col.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              <button
+                                onClick={() => setCollectionForm({ ...col })}
+                                className="px-3 py-1.5 text-xs font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => setCollections(collections.filter((c) => c.id !== col.id))}
+                                className="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {collectionForm && (
+                    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+                      <div className="bg-white max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-5 border border-slate-200">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                          <h3 className="text-base font-bold text-slate-900">
+                            {collectionForm.id ? "Edit Collection" : "Create Storefront Collection"}
+                          </h3>
+                          <button onClick={() => setCollectionForm(null)} className="p-1 text-slate-400 hover:text-slate-600">
+                            <X className="h-5 w-5" />
+                          </button>
+                        </div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Collection Title
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Summer Footwear Drops"
+                              value={collectionForm.name}
+                              onChange={(e) => setCollectionForm({ ...collectionForm, name: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-sm font-semibold focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                              Description
+                            </label>
+                            <textarea
+                              rows={3}
+                              placeholder="Add collection description for storefront SEO..."
+                              value={collectionForm.description}
+                              onChange={(e) => setCollectionForm({ ...collectionForm, description: e.target.value })}
+                              className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setCollectionForm(null)}
+                            className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!collectionForm.name) return;
+                              if (collectionForm.id) {
+                                setCollections(collections.map((c) => (c.id === collectionForm.id ? { ...c, ...collectionForm } : c)));
+                              } else {
+                                setCollections([...collections, { id: `col-${Date.now()}`, ...collectionForm, productCount: 0, isAutomated: false }]);
+                              }
+                              setCollectionForm(null);
+                            }}
+                            className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm"
+                          >
+                            Save Collection
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. INVENTORY SUB-PAGE */}
+              {productsSubTab === "inventory" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
+                        <span>TOTAL SKUs</span>
+                        <Warehouse className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">{products.length}</div>
+                      <p className="text-[11px] text-slate-400 font-medium">Tracked catalog products</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
+                        <span>IN STOCK UNITS</span>
+                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {products.reduce((acc, curr) => acc + (curr.stockQuantity || 0), 0)}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">Available in warehouse</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-600">
+                        <span>LOW STOCK ALERT</span>
+                        <AlertCircle className="h-4 w-4 text-amber-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {products.filter((p) => (p.stockQuantity || 0) > 0 && (p.stockQuantity || 0) <= 5).length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">≤ 5 units remaining</p>
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-xs font-bold text-rose-600">
+                        <span>OUT OF STOCK</span>
+                        <X className="h-4 w-4 text-rose-500" />
+                      </div>
+                      <div className="text-2xl font-black text-slate-900">
+                        {products.filter((p) => (p.stockQuantity || 0) <= 0).length}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-medium">Needs reordering</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3.5">Product Item</th>
+                          <th className="px-6 py-3.5">SKU / Code</th>
+                          <th className="px-6 py-3.5">Status</th>
+                          <th className="px-6 py-3.5 text-center">Available Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {products.map((prod) => {
+                          const stock = prod.stockQuantity || 0;
+                          return (
+                            <tr key={prod.productId} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={getOptimizedImageUrl(prod.images?.[0] || "", "thumbnail")}
+                                    alt={prod.name}
+                                    className="h-10 w-10 object-cover rounded-lg border border-slate-200"
+                                  />
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-sm">{prod.name}</div>
+                                    <div className="text-xs text-slate-500">{prod.category || "Uncategorized"}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 font-mono font-bold text-slate-700 text-xs">
+                                {prod.sku || "NO-SKU"}
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                                  stock <= 0
+                                    ? "bg-rose-50 text-rose-700 border border-rose-200"
+                                    : stock <= 5
+                                    ? "bg-amber-50 text-amber-700 border border-amber-200"
+                                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                }`}>
+                                  {stock <= 0 ? "Out of Stock" : stock <= 5 ? "Low Stock" : "In Stock"}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      const updated = Math.max(0, stock - 1);
+                                      setProducts(products.map((p) => (p.productId === prod.productId ? { ...p, stockQuantity: updated } : p)));
+                                    }}
+                                    className="h-7 w-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer"
+                                  >
+                                    -
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    value={stock}
+                                    onChange={(e) => {
+                                      const val = Math.max(0, parseInt(e.target.value) || 0);
+                                      setProducts(products.map((p) => (p.productId === prod.productId ? { ...p, stockQuantity: val } : p)));
+                                    }}
+                                    className="w-16 text-center py-1 border border-slate-300 rounded-lg text-sm font-bold font-mono text-slate-900"
+                                  />
+                                  <button
+                                    onClick={() => {
+                                      setProducts(products.map((p) => (p.productId === prod.productId ? { ...p, stockQuantity: stock + 1 } : p)));
+                                    }}
+                                    className="h-7 w-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg flex items-center justify-center font-bold text-sm cursor-pointer"
+                                  >
+                                    +
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. PURCHASE ORDERS SUB-PAGE */}
+              {productsSubTab === "purchase-orders" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3.5">PO Reference</th>
+                          <th className="px-6 py-3.5">Supplier / Vendor</th>
+                          <th className="px-6 py-3.5">Expected Date</th>
+                          <th className="px-6 py-3.5">Total Value</th>
+                          <th className="px-6 py-3.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {purchaseOrders.map((po) => (
+                          <tr key={po.poNumber} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-mono font-bold text-slate-900">{po.poNumber}</td>
+                            <td className="px-6 py-4 font-bold text-slate-800">{po.vendor}</td>
+                            <td className="px-6 py-4 text-xs font-semibold text-slate-600">{po.expectedDate}</td>
+                            <td className="px-6 py-4 font-black text-slate-900">{formatINR(po.totalAmount)}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
+                                po.status === "Ordered" ? "bg-blue-50 text-blue-700 border border-blue-200" : "bg-slate-100 text-slate-600"
+                              }`}>
+                                {po.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. TRANSFERS SUB-PAGE */}
+              {productsSubTab === "transfers" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-white p-8 border border-slate-200 rounded-2xl text-center space-y-3 shadow-sm">
+                    <ArrowRightLeft className="h-10 w-10 text-indigo-600 mx-auto" />
+                    <h3 className="text-base font-bold text-slate-900">Multi-Warehouse Inventory Transfers</h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto">
+                      Move product stock between central fulfillment centers, retail store branches, and online store inventories.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. GIFT CARDS SUB-PAGE */}
+              {productsSubTab === "gift-cards" && (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
+                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
+                      <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
+                        <tr>
+                          <th className="px-6 py-3.5">Voucher Code</th>
+                          <th className="px-6 py-3.5">Recipient Email</th>
+                          <th className="px-6 py-3.5">Initial Value</th>
+                          <th className="px-6 py-3.5">Remaining Balance</th>
+                          <th className="px-6 py-3.5">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                        {giftCards.map((gc) => (
+                          <tr key={gc.code} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-6 py-4 font-mono font-black text-slate-900">{gc.code}</td>
+                            <td className="px-6 py-4 text-xs font-semibold text-slate-700">{gc.customerEmail}</td>
+                            <td className="px-6 py-4 font-bold text-slate-900">{formatINR(gc.initialValue)}</td>
+                            <td className="px-6 py-4 font-black text-emerald-700">{formatINR(gc.balance)}</td>
+                            <td className="px-6 py-4">
+                              <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {gc.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
