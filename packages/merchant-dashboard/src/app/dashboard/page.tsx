@@ -379,6 +379,25 @@ export default function MerchantDashboard() {
 
   const [email, setEmail] = useState("");
   const [merchantOwnerName, setMerchantOwnerName] = useState("");
+  const [isTrialBannerDismissed, setIsTrialBannerDismissed] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const lastDismissedDate = localStorage.getItem("basecart_trial_banner_dismissed_date");
+      if (lastDismissedDate === todayStr) {
+        setIsTrialBannerDismissed(true);
+      }
+    }
+  }, []);
+
+  const handleDismissTrialBanner = () => {
+    if (typeof window !== "undefined") {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      localStorage.setItem("basecart_trial_banner_dismissed_date", todayStr);
+    }
+    setIsTrialBannerDismissed(true);
+  };
   const [password, setPassword] = useState("");
   const [storeNameInput, setStoreNameInput] = useState("");
   const [subdomainInput, setSubdomainInput] = useState("");
@@ -3046,14 +3065,24 @@ export default function MerchantDashboard() {
 
         {/* Profile & Upgrade */}
         <div className="border-t border-slate-100">
-          {/* Upgrade & Free Trial Card - hidden when collapsed */}
-          {!sidebarCollapsed && (
+          {/* Upgrade & Free Trial Card - hidden when collapsed or dismissed for the day */}
+          {!sidebarCollapsed && !isTrialBannerDismissed && (
             <div className="p-3">
               {(() => {
                 const daysRemaining = calculateTrialDaysRemaining(settings.createdAt);
                 return (
-                  <div className="p-3 bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-violet-50/90 rounded-xl border border-indigo-100/90 space-y-2.5 shadow-xs">
-                    <div className="flex items-center justify-between">
+                  <div className="relative p-3 bg-gradient-to-br from-indigo-50/90 via-blue-50/40 to-violet-50/90 rounded-xl border border-indigo-100/90 space-y-2.5 shadow-xs group">
+                    {/* Close button - dismisses banner once per day */}
+                    <button
+                      onClick={handleDismissTrialBanner}
+                      className="absolute top-2 right-2 p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+                      title="Dismiss for today"
+                      aria-label="Dismiss trial banner for today"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+
+                    <div className="flex items-center justify-between pr-6">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[9px] bg-amber-100 text-amber-800 font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
                           FREE TRIAL
