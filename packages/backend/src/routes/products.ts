@@ -433,13 +433,31 @@ app.get("/collections", authenticateMerchant, async (c) => {
         productCount INTEGER DEFAULT 0,
         isAutomated INTEGER DEFAULT 0,
         status TEXT NOT NULL DEFAULT 'Active',
+        productIds TEXT,
         createdAt TEXT NOT NULL
       )`
     ).run();
   } catch (e) {}
 
+  try {
+    await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+  } catch (e) {}
+
   const result = await tenantDb.prepare("SELECT * FROM collections ORDER BY createdAt DESC").all();
-  const rows = result.results || [];
+  const rows = (result.results || []).map((r: any) => {
+    let parsedIds: string[] = [];
+    if (r.productIds) {
+      try {
+        parsedIds = typeof r.productIds === "string" ? JSON.parse(r.productIds) : r.productIds;
+      } catch (e) {}
+    }
+    return {
+      ...r,
+      isAutomated: r.isAutomated === 1,
+      productIds: parsedIds,
+      productCount: parsedIds.length || r.productCount || 0,
+    };
+  });
 
   // Also auto-group categories from D1 products table if no custom collection exists
   const prodResult = await tenantDb.prepare("SELECT category FROM products").all();
@@ -459,9 +477,10 @@ app.get("/collections", authenticateMerchant, async (c) => {
     productCount: count,
     isAutomated: true,
     status: "Active",
+    productIds: [],
   }));
 
-  const allCols = [...rows.map((r: any) => ({ ...r, isAutomated: r.isAutomated === 1 })), ...dynamicCollections];
+  const allCols = [...rows, ...dynamicCollections];
   return c.json(allCols);
 });
 
@@ -472,26 +491,47 @@ app.post("/collections", authenticateMerchant, async (c) => {
   const tenantId = c.get("tenantId")!;
   const tenantDb = await getTenantDb(tenantId, c.env);
   const body = await c.req.json().catch(() => ({}));
-  const { name, description, status } = body;
+  const { name, description, status, productIds } = body;
 
   if (!name) return c.json({ error: "Collection name is required" }, 400);
 
   const id = body.id || `col-${Date.now()}`;
   const createdAt = new Date().toISOString();
+  const prodIdsArr = Array.isArray(productIds) ? productIds : [];
+  const prodIdsStr = JSON.stringify(prodIdsArr);
+  const productCount = prodIdsArr.length || body.productCount || 0;
+
+  try {
+    await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+  } catch (e) {}
 
   await tenantDb
     .prepare(
-      `INSERT INTO collections (id, name, description, productCount, isAutomated, status, createdAt)
-       VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO collections (id, name, description, productCount, isAutomated, status, productIds, createdAt)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(id) DO UPDATE SET
          name = excluded.name,
          description = excluded.description,
-         status = excluded.status`
+         productCount = excluded.productCount,
+         status = excluded.status,
+         productIds = excluded.productIds`
     )
-    .bind(id, name, description || "", 0, 0, status || "Active", createdAt)
+    .bind(id, name, description || "", productCount, 0, status || "Active", prodIdsStr, createdAt)
     .run();
 
   return c.json({ success: true, id });
+});
+
+/**
+ * DELETE /collections/:id
+ */
+app.delete("/collections/:id", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const id = c.req.param("id");
+  const tenantDb = await getTenantDb(tenantId, c.env);
+
+  await tenantDb.prepare("DELETE FROM collections WHERE id = ?").bind(id).run();
+  return c.json({ success: true });
 });
 
 /**

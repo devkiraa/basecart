@@ -755,7 +755,8 @@ export default function MerchantDashboard() {
   // Products sub-tab & Collections state
   const [productsSubTab, setProductsSubTab] = useState<"catalog" | "collections" | "inventory" | "purchase-orders" | "transfers" | "gift-cards">("catalog");
   const [collections, setCollections] = useState<any[]>([]);
-  const [collectionForm, setCollectionForm] = useState<{ id?: string; name: string; description: string; status: string } | null>(null);
+  const [collectionForm, setCollectionForm] = useState<{ id?: string; name: string; description: string; status: string; productIds: string[] } | null>(null);
+  const [collectionProductSearch, setCollectionProductSearch] = useState("");
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
   const [giftCards, setGiftCards] = useState<any[]>([]);
   // Customers sub-tab & CSV Import/Export state
@@ -4299,7 +4300,10 @@ export default function MerchantDashboard() {
 
                 {productsSubTab === "collections" && (
                   <button
-                    onClick={() => setCollectionForm({ name: "", description: "", status: "Active" })}
+                    onClick={() => {
+                      setCollectionProductSearch("");
+                      setCollectionForm({ name: "", description: "", status: "Active", productIds: [] });
+                    }}
                     className="flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
                   >
                     <Plus className="h-3.5 w-3.5" /> Create Collection
@@ -5412,13 +5416,25 @@ export default function MerchantDashboard() {
                             </td>
                             <td className="px-6 py-4 text-right space-x-2">
                               <button
-                                onClick={() => setCollectionForm({ ...col })}
+                                onClick={() => {
+                                  setCollectionProductSearch("");
+                                  setCollectionForm({ ...col, productIds: col.productIds || [] });
+                                }}
                                 className="px-3 py-1.5 text-xs font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
                               >
                                 Edit
                               </button>
                               <button
-                                onClick={() => setCollections(collections.filter((c) => c.id !== col.id))}
+                                onClick={async () => {
+                                  try {
+                                    await fetch(`${API_URL}/collections/${col.id}`, {
+                                      method: "DELETE",
+                                      headers: { Authorization: `Bearer ${token}` },
+                                      credentials: "include",
+                                    });
+                                  } catch (e) {}
+                                  setCollections(collections.filter((c) => c.id !== col.id));
+                                }}
                                 className="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
                               >
                                 Delete
@@ -5432,8 +5448,8 @@ export default function MerchantDashboard() {
 
                   {collectionForm && (
                     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
-                      <div className="bg-white max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-5 border border-slate-200">
-                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <div className="bg-white max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-5 border border-slate-200 max-h-[90vh] flex flex-col">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3 shrink-0">
                           <h3 className="text-base font-bold text-slate-900">
                             {collectionForm.id ? "Edit Collection" : "Create Storefront Collection"}
                           </h3>
@@ -5442,7 +5458,7 @@ export default function MerchantDashboard() {
                           </button>
                         </div>
 
-                        <div className="space-y-4">
+                        <div className="space-y-4 overflow-y-auto pr-1 flex-1">
                           <div>
                             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                               Collection Title
@@ -5462,20 +5478,121 @@ export default function MerchantDashboard() {
                               Description
                             </label>
                             <textarea
-                              rows={3}
+                              rows={2}
                               placeholder="Add collection description for storefront SEO..."
                               value={collectionForm.description}
                               onChange={(e) => setCollectionForm({ ...collectionForm, description: e.target.value })}
                               className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-slate-900 text-xs focus:ring-2 focus:ring-indigo-600 focus:outline-none"
                             />
                           </div>
+
+                          {/* Store Product / Item Selector */}
+                          <div className="space-y-2 pt-1 border-t border-slate-100">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Select Store Items / Products
+                              </label>
+                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                {(collectionForm.productIds || []).length} Selected
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+                                <input
+                                  type="text"
+                                  placeholder="Search store items..."
+                                  value={collectionProductSearch}
+                                  onChange={(e) => setCollectionProductSearch(e.target.value)}
+                                  className="w-full pl-8 pr-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const allIds = products.map((p) => p.productId);
+                                  setCollectionForm({ ...collectionForm, productIds: allIds });
+                                }}
+                                className="px-2.5 py-1.5 text-[11px] font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg shrink-0 transition-colors cursor-pointer"
+                              >
+                                Select All
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCollectionForm({ ...collectionForm, productIds: [] });
+                                }}
+                                className="px-2.5 py-1.5 text-[11px] font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg shrink-0 transition-colors cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl divide-y divide-slate-100 bg-slate-50/50 p-1">
+                              {products.filter(p => 
+                                p.name.toLowerCase().includes(collectionProductSearch.toLowerCase()) || 
+                                (p.category && p.category.toLowerCase().includes(collectionProductSearch.toLowerCase()))
+                              ).length === 0 ? (
+                                <div className="py-6 text-center text-xs text-slate-400 font-medium">
+                                  No matching store products found in catalog.
+                                </div>
+                              ) : (
+                                products.filter(p => 
+                                  p.name.toLowerCase().includes(collectionProductSearch.toLowerCase()) || 
+                                  (p.category && p.category.toLowerCase().includes(collectionProductSearch.toLowerCase()))
+                                ).map((prod) => {
+                                  const isSelected = (collectionForm.productIds || []).includes(prod.productId);
+                                  return (
+                                    <label
+                                      key={prod.productId}
+                                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                                        isSelected ? "bg-indigo-50/80 border border-indigo-200" : "hover:bg-white"
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3 min-w-0">
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={(e) => {
+                                            const currentIds = collectionForm.productIds || [];
+                                            const nextIds = e.target.checked
+                                              ? [...currentIds, prod.productId]
+                                              : currentIds.filter((id: string) => id !== prod.productId);
+                                            setCollectionForm({ ...collectionForm, productIds: nextIds });
+                                          }}
+                                          className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                        />
+                                        <div className="h-8 w-8 bg-white border border-slate-200 rounded-lg overflow-hidden shrink-0 flex items-center justify-center">
+                                          {prod.images?.[0] ? (
+                                            <img src={getOptimizedImageUrl(prod.images[0], "thumbnail")} alt={prod.name} className="w-full h-full object-cover" />
+                                          ) : (
+                                            <Package className="h-4 w-4 text-slate-400" />
+                                          )}
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="text-xs font-bold text-slate-800 truncate">{prod.name}</p>
+                                          <p className="text-[10px] text-slate-400 font-medium">
+                                            {prod.category || "General"} · Stock: {prod.stockQuantity}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs font-black text-slate-900 shrink-0 ml-2">
+                                        ₹{prod.price}
+                                      </span>
+                                    </label>
+                                  );
+                                })
+                              )}
+                            </div>
+                          </div>
                         </div>
 
-                        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                        <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 shrink-0">
                           <button
                             type="button"
                             onClick={() => setCollectionForm(null)}
-                            className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl"
+                            className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
                           >
                             Cancel
                           </button>
@@ -5484,6 +5601,10 @@ export default function MerchantDashboard() {
                             onClick={async () => {
                               if (!collectionForm.name) return;
                               try {
+                                const payload = {
+                                  ...collectionForm,
+                                  productCount: (collectionForm.productIds || []).length,
+                                };
                                 const res = await fetch(`${API_URL}/collections`, {
                                   method: "POST",
                                   headers: {
@@ -5491,7 +5612,7 @@ export default function MerchantDashboard() {
                                     Authorization: `Bearer ${token}`,
                                   },
                                   credentials: "include",
-                                  body: JSON.stringify(collectionForm),
+                                  body: JSON.stringify(payload),
                                 });
                                 if (res.ok) {
                                   setActionSuccess("Collection saved to database successfully!");
