@@ -757,6 +757,8 @@ export default function MerchantDashboard() {
   const [collections, setCollections] = useState<any[]>([]);
   const [collectionForm, setCollectionForm] = useState<{ id?: string; name: string; description: string; status: string; productIds: string[] } | null>(null);
   const [collectionProductSearch, setCollectionProductSearch] = useState("");
+  const [collectionSearchQuery, setCollectionSearchQuery] = useState("");
+  const [collectionTypeFilter, setCollectionTypeFilter] = useState<"all" | "active" | "automated" | "manual">("all");
   const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
   const [giftCards, setGiftCards] = useState<any[]>([]);
   // Customers sub-tab & CSV Import/Export state
@@ -5328,123 +5330,250 @@ export default function MerchantDashboard() {
 
               {/* 2. COLLECTIONS SUB-PAGE */}
               {productsSubTab === "collections" && (
-                <div className="space-y-6 animate-fade-in">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-500">
-                        <span>TOTAL COLLECTIONS</span>
-                        <Layers className="h-4 w-4 text-indigo-600" />
+                <div className="space-y-6 animate-fade-in select-none">
+                  {/* Metric Summary Cards */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Total Collections</span>
+                        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                          <Layers className="h-4 w-4" />
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-slate-900">{collections.length}</div>
-                      <p className="text-[11px] text-slate-400 font-medium">Storefront categories</p>
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-2xl font-black text-slate-900 tracking-tight">{collections.length}</div>
+                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">Storefront Categories</span>
+                      </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-emerald-600">
-                        <span>ACTIVE LIVE</span>
-                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Active Live</span>
+                        <div className="h-7 w-7 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600">
+                          <CheckCircle className="h-4 w-4" />
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {collections.filter((c) => c.status === "Active").length}
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-2xl font-black text-slate-900 tracking-tight">
+                          {collections.filter((c) => c.status === "Active").length}
+                        </div>
+                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Published</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 font-medium">Published on menu</p>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-indigo-600">
-                        <span>AUTOMATED RULES</span>
-                        <Sparkles className="h-4 w-4 text-indigo-500" />
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Automated Rules</span>
+                        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                          <Sparkles className="h-4 w-4" />
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {collections.filter((c) => c.isAutomated).length}
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-2xl font-black text-slate-900 tracking-tight">
+                          {collections.filter((c) => c.isAutomated).length}
+                        </div>
+                        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">Auto-Tagged</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 font-medium">Auto-tagged catalog items</p>
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-2xs space-y-1">
-                      <div className="flex items-center justify-between text-xs font-bold text-amber-600">
-                        <span>MANUAL SELECTIONS</span>
-                        <Tag className="h-4 w-4 text-amber-500" />
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Manual Selections</span>
+                        <div className="h-7 w-7 rounded-lg bg-amber-50 flex items-center justify-center text-amber-600">
+                          <Tag className="h-4 w-4" />
+                        </div>
                       </div>
-                      <div className="text-2xl font-black text-slate-900">
-                        {collections.filter((c) => !c.isAutomated).length}
+                      <div className="flex items-baseline justify-between">
+                        <div className="text-2xl font-black text-slate-900 tracking-tight">
+                          {collections.filter((c) => !c.isAutomated).length}
+                        </div>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">Custom Lists</span>
                       </div>
-                      <p className="text-[11px] text-slate-400 font-medium">Custom product lists</p>
                     </div>
                   </div>
 
-                  <div className="bg-white border border-slate-200 rounded-card shadow-card overflow-hidden">
-                    <table className="min-w-full divide-y divide-slate-200 text-left text-sm">
-                      <thead className="bg-slate-50 font-bold text-slate-500 text-xs uppercase tracking-wider">
-                        <tr>
-                          <th className="px-6 py-3.5">Collection Title</th>
-                          <th className="px-6 py-3.5">Condition Type</th>
-                          <th className="px-6 py-3.5">Assigned Products</th>
-                          <th className="px-6 py-3.5">Status</th>
-                          <th className="px-6 py-3.5 text-right">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                        {collections.map((col) => (
-                          <tr key={col.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="px-6 py-4">
-                              <div className="space-y-0.5">
-                                <div className="font-bold text-slate-900 text-sm">{col.name}</div>
-                                <div className="text-xs text-slate-500">{col.description}</div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4">
-                              {col.isAutomated ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md text-xs font-bold">
-                                  <Sparkles className="h-3 w-3 text-indigo-600" /> Automated
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-md text-xs font-bold">
-                                  Manual Group
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-6 py-4 font-mono font-bold text-slate-800">
-                              {col.productCount} items
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${
-                                col.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"
-                              }`}>
-                                {col.status}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-right space-x-2">
-                              <button
-                                onClick={() => {
-                                  setCollectionProductSearch("");
-                                  setCollectionForm({ ...col, productIds: col.productIds || [] });
-                                }}
-                                className="px-3 py-1.5 text-xs font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={async () => {
-                                  try {
-                                    await fetch(`${API_URL}/collections/${col.id}`, {
-                                      method: "DELETE",
-                                      headers: { Authorization: `Bearer ${token}` },
-                                      credentials: "include",
-                                    });
-                                  } catch (e) {}
-                                  setCollections(collections.filter((c) => c.id !== col.id));
-                                }}
-                                className="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
-                              >
-                                Delete
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  {/* Collections Control Toolbar (Search, Filter Pills, Add Button) */}
+                  <div className="bg-white border border-slate-200/90 rounded-2xl p-4 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div className="flex flex-1 items-center gap-3">
+                      <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                        <input
+                          type="text"
+                          placeholder="Search collection title or description..."
+                          value={collectionSearchQuery}
+                          onChange={(e) => setCollectionSearchQuery(e.target.value)}
+                          className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5]"
+                        />
+                      </div>
+                      <div className="flex items-center bg-slate-100/80 p-1 rounded-xl gap-1">
+                        <button
+                          onClick={() => setCollectionTypeFilter("all")}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                            collectionTypeFilter === "all" ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          All ({collections.length})
+                        </button>
+                        <button
+                          onClick={() => setCollectionTypeFilter("active")}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                            collectionTypeFilter === "active" ? "bg-white text-emerald-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Active
+                        </button>
+                        <button
+                          onClick={() => setCollectionTypeFilter("automated")}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                            collectionTypeFilter === "automated" ? "bg-white text-indigo-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Automated
+                        </button>
+                        <button
+                          onClick={() => setCollectionTypeFilter("manual")}
+                          className={`px-3 py-1 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                            collectionTypeFilter === "manual" ? "bg-white text-amber-700 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          Manual
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setCollectionProductSearch("");
+                        setCollectionForm({ name: "", description: "", status: "Active", productIds: [] });
+                      }}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                    >
+                      <Plus className="h-4 w-4" /> Create Collection
+                    </button>
                   </div>
+
+                  {/* Collections List Table / Empty State */}
+                  {(() => {
+                    const filteredCollections = collections.filter((c) => {
+                      const matchesSearch =
+                        c.name.toLowerCase().includes(collectionSearchQuery.toLowerCase()) ||
+                        (c.description && c.description.toLowerCase().includes(collectionSearchQuery.toLowerCase()));
+                      if (!matchesSearch) return false;
+                      if (collectionTypeFilter === "active") return c.status === "Active";
+                      if (collectionTypeFilter === "automated") return c.isAutomated;
+                      if (collectionTypeFilter === "manual") return !c.isAutomated;
+                      return true;
+                    });
+
+                    if (filteredCollections.length === 0) {
+                      return (
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-12 text-center shadow-2xs space-y-4">
+                          <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center mx-auto text-indigo-600">
+                            <Layers className="h-6 w-6" />
+                          </div>
+                          <div className="max-w-md mx-auto space-y-1">
+                            <h3 className="text-base font-extrabold text-slate-900">No Storefront Collections Found</h3>
+                            <p className="text-xs text-slate-500 leading-relaxed font-medium">
+                              Group products into manual or automated collections to feature on your storefront navigation and home page.
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              setCollectionProductSearch("");
+                              setCollectionForm({ name: "", description: "", status: "Active", productIds: [] });
+                            }}
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+                          >
+                            <Plus className="h-4 w-4" /> Create First Collection
+                          </button>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-2xs overflow-hidden">
+                        <table className="min-w-full divide-y divide-slate-100 text-left text-xs">
+                          <thead className="bg-slate-50/80 font-extrabold text-slate-400 text-[10px] uppercase tracking-wider">
+                            <tr>
+                              <th className="px-6 py-3.5">Collection Title</th>
+                              <th className="px-6 py-3.5">Condition Type</th>
+                              <th className="px-6 py-3.5">Assigned Items</th>
+                              <th className="px-6 py-3.5">Status</th>
+                              <th className="px-6 py-3.5 text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                            {filteredCollections.map((col) => (
+                              <tr key={col.id} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="px-6 py-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-9 w-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 font-bold">
+                                      <Layers className="h-4 w-4" />
+                                    </div>
+                                    <div className="min-w-0 space-y-0.5">
+                                      <div className="font-extrabold text-slate-900 text-sm truncate">{col.name}</div>
+                                      <div className="text-xs text-slate-400 truncate max-w-xs">{col.description || "No description set"}</div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  {col.isAutomated ? (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200/80 rounded-lg text-[11px] font-extrabold">
+                                      <Sparkles className="h-3 w-3 text-indigo-600" /> Automated
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/80 rounded-lg text-[11px] font-extrabold">
+                                      <Tag className="h-3 w-3 text-amber-600" /> Manual Group
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4">
+                                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100/90 text-slate-800 rounded-lg text-xs font-bold border border-slate-200/70">
+                                    <Package className="h-3.5 w-3.5 text-slate-500" />
+                                    <span>{col.productCount || 0} Products</span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                    col.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"
+                                  }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${col.status === "Active" ? "bg-emerald-500" : "bg-slate-400"}`}></span>
+                                    {col.status}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 text-right space-x-2">
+                                  <button
+                                    onClick={() => {
+                                      setCollectionProductSearch("");
+                                      setCollectionForm({ ...col, productIds: col.productIds || [] });
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-bold border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await fetch(`${API_URL}/collections/${col.id}`, {
+                                          method: "DELETE",
+                                          headers: { Authorization: `Bearer ${token}` },
+                                          credentials: "include",
+                                        });
+                                      } catch (e) {}
+                                      setCollections(collections.filter((c) => c.id !== col.id));
+                                    }}
+                                    className="px-3 py-1.5 text-xs font-bold border border-rose-200 text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  })()}
 
                   {collectionForm && (
                     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
