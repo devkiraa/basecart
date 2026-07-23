@@ -223,6 +223,7 @@ export default function Storefront() {
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
   // Satoshi Theme Interactive States
   const [selectedSatoshiSize, setSelectedSatoshiSize] = useState("41");
   const [selectedSatoshiColor, setSelectedSatoshiColor] = useState("White");
@@ -856,13 +857,17 @@ export default function Storefront() {
   const isThemePreview = typeof window !== "undefined" && (window.location.search.includes("previewThemeBase") || window.location.search.includes("previewPrimaryColor"));
   const isSatoshi = templateBase === "Satoshi";
   const displayProducts = products.length > 0 ? products : (isThemePreview ? (isSatoshi ? MOCK_SATO_PRODUCTS : MOCK_WATCH_PRODUCTS) : []);
-  const filteredProducts = displayProducts.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const storeCategories = Array.from(new Set(displayProducts.map((p) => p.category).filter(Boolean)));
+  
+  const filteredProducts = displayProducts.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = activeCategory === "All" || p.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
 
-  const getHeroTitle = () => theme?.pageContent?.home?.heroTitle || "BUILT FOR PERFORMANCE";
-  const getHeroSubtext = () => theme?.pageContent?.home?.heroSubtext || "Premium active gear for those who never compromise.";
+  const getHeroTitle = () => theme?.pageContent?.home?.heroTitle || storeInfo?.storeName || "Welcome to Our Store";
+  const getHeroSubtext = () => theme?.pageContent?.home?.heroSubtext || storeInfo?.description || "Explore our latest collection and shop quality products.";
   const getCtaText = () => theme?.pageContent?.home?.ctaText || "SHOP NOW";
 
   const getCatalogTitle = () => theme?.pageContent?.catalog?.pageTitle || "Our Products";
@@ -917,55 +922,29 @@ export default function Storefront() {
             <span className={`text-xl font-bold tracking-tight text-slate-900 ${
               templateBase === "Satoshi" ? "text-2xl font-black tracking-tighter text-slate-950 font-sans" : templateBase === "Pulse" ? "tracking-widest font-black uppercase" : templateBase === "Origin" ? "font-serif font-bold italic uppercase" : templateBase === "Aura" ? "tracking-widest font-bold text-lg uppercase" : "uppercase"
             }`}>
-              {templateBase === "Satoshi" ? (
-                <>BR<span className="text-[#EDCF5D]">.</span>F</>
-              ) : (
-                storeInfo.storeName
-              )}
+              {storeInfo.storeName}
             </span>
           )}
         </div>
 
-        {/* Center: Navigation / Search based on template */}
-        {templateBase === "Satoshi" ? (
-          <div className="hidden lg:flex items-center gap-7 text-xs font-bold text-slate-700 font-sans tracking-tight">
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Women</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Men</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Kids</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Sports</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Brands</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>New</span>
-            <span className="cursor-pointer text-[#F43F5E] font-extrabold hover:text-rose-600 transition-colors" onClick={() => setView("catalog")}>Sale</span>
-          </div>
-        ) : templateBase === "Pulse" ? (
-          <div className="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-full px-3 py-1 w-64">
-            <span className="text-xs text-slate-400">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Search products..." 
-              className="bg-transparent border-none text-xs w-full focus:outline-none text-slate-600"
-            />
-          </div>
-        ) : templateBase === "Origin" ? (
-          <div className="hidden md:flex items-center gap-6 text-sm font-bold uppercase tracking-wider text-slate-600">
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Home</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>Catalog</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors">About</span>
-          </div>
-        ) : templateBase === "Stride" ? (
-          <div className="hidden md:flex items-center gap-6 text-sm font-extrabold uppercase tracking-wide text-slate-600">
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Home</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors" onClick={() => setView("catalog")}>Collections</span>
-            <span className="cursor-pointer hover:text-slate-950 transition-colors">Shop</span>
-          </div>
-        ) : (
-          /* Aura default center nav */
-          <div className="hidden md:flex items-center gap-8 text-xs font-semibold uppercase tracking-widest text-slate-500">
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>her</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>him</span>
-            <span className="cursor-pointer hover:text-slate-900 transition-colors" onClick={() => setView("catalog")}>brands</span>
-          </div>
-        )}
+        {/* Center: Dynamic Category Navigation */}
+        <div className="hidden lg:flex items-center gap-6 text-xs font-bold text-slate-700 font-sans tracking-tight">
+          <button
+            onClick={() => { setActiveCategory("All"); setView("catalog"); }}
+            className={`hover:text-slate-950 transition-colors cursor-pointer ${activeCategory === "All" ? "text-indigo-600 font-black border-b-2 border-indigo-600 pb-0.5" : ""}`}
+          >
+            All Products
+          </button>
+          {storeCategories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => { setActiveCategory(cat); setView("catalog"); }}
+              className={`hover:text-slate-950 transition-colors cursor-pointer ${activeCategory === cat ? "text-indigo-600 font-black border-b-2 border-indigo-600 pb-0.5" : ""}`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
 
         {/* Right Side: Local Subdomain Swapper + Customer Actions */}
         <div className="flex items-center gap-6">
@@ -1038,7 +1017,8 @@ export default function Storefront() {
                   <div className="space-y-4 max-w-xl relative z-10">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-[10px] font-extrabold text-slate-800 tracking-wider uppercase border border-slate-200/80 shadow-2xs">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                      <span>Satoshi New Collection '26</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      <span>{storeInfo.storeName} Collection</span>
                     </div>
                     <h1 className="text-3xl md:text-5xl font-black text-slate-950 font-sans tracking-tight leading-none">
                       {getHeroTitle()}
@@ -1066,46 +1046,53 @@ export default function Storefront() {
                   <div className="relative w-full md:w-80 h-72 bg-white rounded-2xl p-6 border border-slate-200/60 shadow-lg flex items-center justify-center group overflow-hidden shrink-0">
                     <img
                       src={displayProducts[0]?.images?.[0] || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800&auto=format&fit=crop&q=80"}
-                      alt="Featured Storefront Spotlight"
+                      alt={displayProducts[0]?.name || storeInfo.storeName}
                       className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200/80 shadow-sm flex items-center justify-between">
                       <div className="overflow-hidden">
                         <div className="text-[10px] font-extrabold text-slate-400 uppercase">Featured Arrival</div>
                         <div className="text-xs font-black text-slate-900 truncate max-w-[140px]">
-                          {displayProducts[0]?.name || "Zig Kinetica 3"}
+                          {displayProducts[0]?.name || storeInfo.storeName}
                         </div>
                       </div>
                       <span className="text-xs font-black text-slate-950">
-                        ₹{displayProducts[0]?.price || 199}
+                        ₹{displayProducts[0]?.price || 0}
                       </span>
                     </div>
                   </div>
                 </div>
 
                 {/* 2. Featured Categories Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {[
-                    { title: "Sneakers & Footwear", count: "12 Items", img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80" },
-                    { title: "Apparel & Activewear", count: "24 Items", img: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&auto=format&fit=crop&q=80" },
-                    { title: "Streetwear Accessories", count: "8 Items", img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&auto=format&fit=crop&q=80" },
-                    { title: "Limited Editions", count: "5 Items", img: "https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=400&auto=format&fit=crop&q=80" }
-                  ].map((cat) => (
-                    <div
-                      key={cat.title}
-                      onClick={() => document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" })}
-                      className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3"
-                    >
-                      <div className="w-12 h-12 bg-[#F2F0EA] rounded-xl p-1 shrink-0 overflow-hidden">
-                        <img src={cat.img} alt={cat.title} className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform" />
-                      </div>
-                      <div className="text-left overflow-hidden">
-                        <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-blue-600 transition-colors truncate">{cat.title}</h4>
-                        <span className="text-[10px] text-slate-400 font-bold block">{cat.count}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                {storeCategories.length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {storeCategories.map((cat) => {
+                      const catProducts = displayProducts.filter((p) => p.category === cat);
+                      const catImg = catProducts[0]?.images?.[0] || "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&auto=format&fit=crop&q=80";
+                      const isSelected = activeCategory === cat;
+                      return (
+                        <div
+                          key={cat}
+                          onClick={() => {
+                            setActiveCategory(isSelected ? "All" : cat);
+                            document.getElementById("products-grid")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className={`border rounded-2xl p-4 shadow-xs hover:shadow-md transition-all cursor-pointer group flex items-center gap-3 ${
+                            isSelected ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20" : "bg-white border-slate-200/80"
+                          }`}
+                        >
+                          <div className="w-12 h-12 bg-[#F2F0EA] rounded-xl p-1 shrink-0 overflow-hidden">
+                            <img src={catImg} alt={cat} className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform" />
+                          </div>
+                          <div className="text-left overflow-hidden">
+                            <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{cat}</h4>
+                            <span className="text-[10px] text-slate-400 font-bold block">{catProducts.length} {catProducts.length === 1 ? "Item" : "Items"}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             ) : templateBase === "Pulse" ? (
               <div className="bg-slate-950 text-white rounded-2xl p-8 md:p-16 text-center relative overflow-hidden mb-8 border border-slate-800/40 shadow-xl select-none">
@@ -1875,12 +1862,28 @@ export default function Storefront() {
             </div>
             
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center pt-8 border-t border-slate-100 gap-4 text-xs text-slate-400">
-              <div>
-                &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+              <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                <span>&copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>.</span>
+                <span className="text-slate-300">•</span>
+                <a
+                  href="https://basecart.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-bold text-slate-700 hover:text-indigo-600 transition-colors"
+                >
+                  <span>Powered by</span>
+                  <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-tight shadow-2xs">
+                    Basecart
+                  </span>
+                </a>
               </div>
               <div className="flex gap-6 font-medium text-slate-500">
-                <span className="hover:underline cursor-pointer">Privacy Policy</span>
-                <span className="hover:underline cursor-pointer">Terms of Use</span>
+                {storeInfo.privacyPolicy && (
+                  <button onClick={() => setSelectedPolicy({ title: "Privacy Policy", content: storeInfo.privacyPolicy })} className="hover:underline cursor-pointer">Privacy Policy</button>
+                )}
+                {storeInfo.termsOfService && (
+                  <button onClick={() => setSelectedPolicy({ title: "Terms of Service", content: storeInfo.termsOfService })} className="hover:underline cursor-pointer">Terms of Use</button>
+                )}
                 <button 
                   onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                   className="px-3 py-1 bg-black text-white text-[10px] font-bold tracking-wider uppercase hover:opacity-90 transition-opacity"
@@ -1893,8 +1896,20 @@ export default function Storefront() {
         ) : (
           <footer className="mt-12 border-t border-slate-200 bg-white py-8 px-6 text-center select-none shrink-0 w-full">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-slate-500">
-              <div>
-                &copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>. Powered by <span className="font-bold text-slate-700">Basecart</span>.
+              <div className="flex items-center gap-1.5 font-medium text-slate-600">
+                <span>&copy; {new Date().getFullYear()} <strong>{storeInfo.storeName}</strong>.</span>
+                <span className="text-slate-300">•</span>
+                <a
+                  href="https://basecart.app"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-bold text-slate-700 hover:text-indigo-600 transition-colors"
+                >
+                  <span>Powered by</span>
+                  <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-tight shadow-2xs">
+                    Basecart
+                  </span>
+                </a>
               </div>
               <div className="flex gap-4 font-medium text-slate-600">
                 {storeInfo.termsOfService && (

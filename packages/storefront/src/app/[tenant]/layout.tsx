@@ -93,7 +93,21 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
       {/* Footer */}
       <footer className="border-t border-slate-200/60 bg-white py-12 mt-16 text-center text-xs text-slate-400 font-medium">
         <div className="max-w-7xl mx-auto space-y-3">
-          <p>&copy; {new Date().getFullYear()} {store.name}. Powered by <a href="https://basecart.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-bold hover:underline">Basecart</a></p>
+          <div className="flex items-center justify-center gap-1.5 font-medium text-slate-600">
+            <span>&copy; {new Date().getFullYear()} <strong>{store.name}</strong>.</span>
+            <span className="text-slate-300">•</span>
+            <a
+              href="https://basecart.app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-slate-700 hover:text-indigo-600 transition-colors"
+            >
+              <span>Powered by</span>
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-tight shadow-2xs">
+                Basecart
+              </span>
+            </a>
+          </div>
           <div className="flex justify-center gap-4 select-none">
             <a href="#privacy" className="hover:text-slate-650 transition-colors">Privacy Policy</a>
             <a href="#terms" className="hover:text-slate-650 transition-colors">Terms of Service</a>
