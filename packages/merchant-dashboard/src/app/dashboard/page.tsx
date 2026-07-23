@@ -94,12 +94,33 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
 const STOREFRONT_PROTOCOL = process.env.NEXT_PUBLIC_STOREFRONT_PROTOCOL || "https";
+
+const isLocalDev = typeof window !== "undefined" 
+  ? (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+  : process.env.NODE_ENV !== "production";
+
+const STOREFRONT_PORT = process.env.NEXT_PUBLIC_STOREFRONT_PORT || "3002";
+
 const getStorefrontLink = (subdomain: string) => {
+  if (process.env.NEXT_PUBLIC_STOREFRONT_URL) {
+    const url = process.env.NEXT_PUBLIC_STOREFRONT_URL;
+    return url.includes("?") ? `${url}&subdomain=${subdomain}` : `${url}?subdomain=${subdomain}`;
+  }
+  if (isLocalDev && (!process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN.includes("localhost"))) {
+    return `http://localhost:${STOREFRONT_PORT}?subdomain=${subdomain}`;
+  }
   const isPagesDev = STOREFRONT_DOMAIN.includes(".pages.dev");
   if (isPagesDev) {
     return `${STOREFRONT_PROTOCOL}://${STOREFRONT_DOMAIN}?store=${subdomain}`;
   }
   return `${STOREFRONT_PROTOCOL}://${subdomain}.${STOREFRONT_DOMAIN}`;
+};
+
+const getStorefrontDisplayUrl = (subdomain: string) => {
+  if (isLocalDev && (!process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN.includes("localhost"))) {
+    return `localhost:${STOREFRONT_PORT}?subdomain=${subdomain}`;
+  }
+  return `${subdomain}.${STOREFRONT_DOMAIN}`;
 };
 
 interface ProductVariant {
@@ -3236,7 +3257,7 @@ export default function MerchantDashboard() {
               })()}
             </h1>
             <p className="hidden md:block text-[10px] text-slate-400 leading-tight mt-0.5 truncate">
-              <span className="font-semibold text-[#4F46E5]">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</span>
+              <span className="font-semibold text-[#4F46E5]">{getStorefrontDisplayUrl(settings.subdomain || "demo")}</span>
               <span className="mx-1">·</span>Here's what's happening today
             </p>
           </div>
@@ -3354,7 +3375,7 @@ export default function MerchantDashboard() {
                   <div className="px-3 py-2 border-b border-slate-100 mb-1">
                     <p className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Active Store</p>
                     <p className="text-xs font-bold text-slate-800 mt-0.5 truncate">{settings.storeName || "My Store"}</p>
-                    <p className="text-[9px] text-slate-400 truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</p>
+                    <p className="text-[9px] text-slate-400 truncate">{getStorefrontDisplayUrl(settings.subdomain || "demo")}</p>
                   </div>
 
                   {merchantStores.length > 1 && (
@@ -9632,7 +9653,7 @@ export default function MerchantDashboard() {
                               <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
                               <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
                             </div>
-                            <div className="bg-slate-200/50 border border-slate-300/30 rounded px-4 py-0.5 text-[9px] font-mono w-60 text-center truncate">{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}</div>
+                            <div className="bg-slate-200/50 border border-slate-300/30 rounded px-4 py-0.5 text-[9px] font-mono w-60 text-center truncate">{getStorefrontDisplayUrl(settings.subdomain || "demo")}</div>
                             <span className="text-[10px] font-black uppercase text-slate-800 tracking-wider">Live Preview</span>
                           </div>
                           <iframe id="storefront-preview-iframe" src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${selectedTheme?.templateBase || "Aura"}&previewPrimaryColor=${encodeURIComponent(selectedTheme?.pageContent?.settings?.colorPrimary || selectedTheme?.colors?.primary || "#2563EB")}`} className="w-full flex-1 border-none bg-slate-50" />
@@ -9743,7 +9764,7 @@ export default function MerchantDashboard() {
                             <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
                           </div>
                           <span className="truncate max-w-xs font-mono text-center mx-auto text-slate-600 font-semibold bg-white/80 px-4 py-0.5 rounded-md border border-slate-200">
-                            https://{settings.subdomain || "demo"}.{STOREFRONT_DOMAIN}
+                            {getStorefrontDisplayUrl(settings.subdomain || "demo")}
                           </span>
                           <div className="w-10"></div>
                         </div>
@@ -10082,7 +10103,7 @@ export default function MerchantDashboard() {
                           </span>
                         </div>
                         <span className="text-[11px] font-mono text-slate-500 block">
-                          {settings.subdomain || "store"}.basecart.app
+                          {getStorefrontDisplayUrl(settings.subdomain || "store")}
                         </span>
                       </div>
                     </div>
@@ -10858,7 +10879,7 @@ export default function MerchantDashboard() {
 
                         <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between">
                           <div className="font-mono text-xs font-bold text-slate-800">
-                            {settings.subdomain || "iron-forge-12"}.basecart.app
+                            {getStorefrontDisplayUrl(settings.subdomain || "demo")}
                           </div>
                           <span className="bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full border border-emerald-200">
                             Primary Active
