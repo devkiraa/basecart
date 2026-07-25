@@ -450,7 +450,21 @@ app.get("/admin/auth/me", authenticateAdmin, async (c) => {
  * Admin Logout
  */
 app.post("/admin/auth/logout", async (c) => {
-  const refreshToken = getCookie(c, "basecart_admin_refresh_token");
+  let refreshToken = getCookie(c, "basecart_admin_refresh_token");
+  if (!refreshToken) {
+    const authHeader = c.req.header("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      refreshToken = authHeader.split(" ")[1];
+    }
+  }
+  if (!refreshToken) {
+    refreshToken = c.req.header("x-refresh-token");
+  }
+  if (!refreshToken) {
+    const body = await c.req.json().catch(() => ({}));
+    if (body && body.refreshToken) refreshToken = body.refreshToken;
+  }
+
   if (refreshToken) {
     try {
       const controlDb = getControlDb(c.env);
@@ -798,14 +812,7 @@ app.get("/admin/admins", authenticateAdmin, async (c) => {
   return c.json(result.results || []);
 });
 
-/**
- * Admin Logout
- */
-app.post("/admin/auth/logout", authenticateAdmin, async (c) => {
-  deleteCookie(c, "basecart_admin_token", getAdminDeleteOptions(c));
-  deleteCookie(c, "basecart_admin_refresh_token", getAdminDeleteOptions(c));
-  return c.json({ message: "Logged out successfully" });
-});
+
 
 /**
  * Global Search

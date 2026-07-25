@@ -16,7 +16,7 @@ interface ProductPageProps {
 
 // Generate dynamic metadata for the specific product
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const product = await getProductData(params.productId);
+  const product = await getProductData(params.productId, params.tenant);
   const store = await getTenantStoreData(params.tenant);
   
   if (!product) {
@@ -54,7 +54,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 }
 
 export default async function ProductDetailPage({ params }: ProductPageProps) {
-  const product = await getProductData(params.productId);
+  const product = await getProductData(params.productId, params.tenant);
   const store = await getTenantStoreData(params.tenant);
 
   if (!product) {

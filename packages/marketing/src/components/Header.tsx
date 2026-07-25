@@ -1,50 +1,51 @@
 "use client";
 
 import React, { useState } from "react";
-import { ShoppingBag, ChevronDown, Menu, X } from "lucide-react";
+import { ShoppingBag, Menu, X, ArrowUpRight } from "lucide-react";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const merchantDashboardUrl = process.env.NEXT_PUBLIC_MERCHANT_DASHBOARD_URL || "http://localhost:3004";
 
   return (
-    <header className="sticky top-0 bg-white/80 backdrop-blur-md z-50 border-b border-slate-100 px-6 lg:px-16 py-3.5 flex items-center justify-between select-none">
-      <div className="flex items-center gap-6">
-        {/* Logo */}
+    <header className="sticky top-0 bg-white/90 backdrop-blur-md z-50 border-b border-slate-100 px-6 lg:px-16 py-3 flex items-center justify-between select-none">
+      <div className="flex items-center gap-8">
+        {/* Light Theme Logo */}
         <a 
           href="/"
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-2.5 group"
         >
-          <div className="h-9 w-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
-            <ShoppingBag className="h-5 w-5" />
+          <div className="h-8.5 w-8.5 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black shadow-md shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
+            <ShoppingBag className="h-4.5 w-4.5 fill-white" />
           </div>
           <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
         </a>
 
-        {/* Navigation Links */}
+        {/* Light Theme Navigation Links */}
         <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-600">
-          <a href="/features" className="hover:text-slate-900 py-1.5 transition-colors">Features</a>
-          <a href="/pricing" className="hover:text-slate-900 py-1.5 transition-colors">Pricing</a>
-          <a href="/themes" className="hover:text-slate-900 py-1.5 transition-colors">Themes</a>
-          <a href="/integrations" className="hover:text-slate-900 py-1.5 transition-colors">Integrations</a>
-          <a href="/faq" className="hover:text-slate-900 py-1.5 transition-colors">FAQ</a>
-          <a href="/blog" className="hover:text-slate-900 py-1.5 transition-colors">Blog</a>
+          <a href="/features" className="hover:text-blue-600 py-1.5 transition-colors">Features</a>
+          <a href="/pricing" className="hover:text-blue-600 py-1.5 transition-colors">Pricing</a>
+          <a href="/themes" className="hover:text-blue-600 py-1.5 transition-colors">Themes</a>
+          <a href="/integrations" className="hover:text-blue-600 py-1.5 transition-colors">Integrations</a>
+          <a href="/faq" className="hover:text-blue-600 py-1.5 transition-colors">FAQ</a>
+          <a href="/blog" className="hover:text-blue-600 py-1.5 transition-colors">Blog</a>
         </nav>
       </div>
 
-      {/* Auth Actions */}
+      {/* Light Theme Auth Actions (Royal Blue CTA) */}
       <div className="hidden lg:flex items-center gap-4">
         <a 
           href={`${merchantDashboardUrl}/login`}
-          className="text-sm font-bold text-slate-600 hover:text-slate-900 px-3 py-1.5 transition-colors"
+          className="text-sm font-bold text-slate-600 hover:text-blue-600 px-3 py-1.5 transition-colors"
         >
-          Login
+          Sign in
         </a>
         <a 
           href="/signup"
-          className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm shadow-blue-500/10 transition-all hover:shadow-md active:scale-95"
+          className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm shadow-blue-500/10 transition-all hover:shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
         >
-          Sign up
+          <span>Start 60-day free trial</span>
+          <ArrowUpRight className="w-4 h-4" />
         </a>
       </div>
 
@@ -58,25 +59,25 @@ export default function Header() {
 
       {/* Mobile Menu Drawer */}
       {mobileMenuOpen && (
-        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-lg p-6 lg:hidden flex flex-col gap-4 animate-fade-in">
-          <a href="/features" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">Features</a>
-          <a href="/pricing" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">Pricing</a>
-          <a href="/themes" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">Themes</a>
-          <a href="/integrations" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">Integrations</a>
-          <a href="/faq" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">FAQ</a>
-          <a href="/blog" className="text-sm font-semibold text-slate-650 hover:text-slate-900 py-2">Blog</a>
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-xl p-6 lg:hidden flex flex-col gap-4 animate-fade-in">
+          <a href="/features" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Features</a>
+          <a href="/pricing" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Pricing</a>
+          <a href="/themes" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Themes</a>
+          <a href="/integrations" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Integrations</a>
+          <a href="/faq" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">FAQ</a>
+          <a href="/blog" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Blog</a>
           <div className="h-px bg-slate-100 my-2" />
           <a 
             href={`${merchantDashboardUrl}/login`}
-            className="text-sm font-bold text-slate-600 hover:text-slate-900 py-2"
+            className="text-sm font-bold text-slate-700 hover:text-blue-600 py-2"
           >
-            Login
+            Sign in
           </a>
           <a 
             href="/signup"
             className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white text-center py-2.5 rounded-lg shadow-sm"
           >
-            Sign up
+            Start 60-day free trial
           </a>
         </div>
       )}

@@ -1,29 +1,43 @@
-// Database lookup helper (simulate real-time database resolutions)
-export async function getTenantStoreData(tenant: string) {
-  const mockDb: Record<string, { id: string; name: string; customDomain?: string; description: string; logoUrl: string }> = {
-    "boutique": {
-      id: "boutique",
-      name: "Bespoke Boutique",
-      customDomain: "myboutique.in", // Mapped custom domain
-      description: "Premium handcrafted apparel and designer wear from Kerala.",
-      logoUrl: "https://r2.basecart.app/stores/boutique/logo.png",
-    },
-    "bakes": {
-      id: "bakes",
-      name: "Kochi Cake Studio",
-      // No custom domain mapped (uses default bakes.basecart.app)
-      description: "Artisanal custom cakes and pastries delivered fresh across Ernakulam.",
-      logoUrl: "https://r2.basecart.app/stores/bakes/logo.png",
-    }
-  };
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-  // If the tenant parameter contains a dot (representing a mapped custom domain rewrite)
-  if (tenant.includes(".")) {
-    const resolved = Object.values(mockDb).find(store => store.customDomain === tenant);
-    if (resolved) return resolved;
+export interface StorefrontProduct {
+  id: string;
+  tenantId?: string;
+  name: string;
+  desc: string;
+  description?: string;
+  price: number;
+  compareAtPrice?: number | null;
+  stockQuantity?: number;
+  inStock?: boolean;
+  category?: string;
+  categorySlug?: string;
+  imageUrl: string;
+  images?: string[];
+  rating?: number;
+  reviewCount?: number;
+  reviews?: Array<{ author: string; rating: number; date: string; title?: string; comment?: string; body?: string }>;
+}
+
+// Database lookup helper for storefront store information
+export async function getTenantStoreData(tenant: string) {
+  try {
+    const res = await fetch(`${API_URL}/store/${tenant}/info`, { next: { revalidate: 60 } });
+    if (res.ok) {
+      const data = await res.json();
+      return {
+        id: data.tenantId || data.id || tenant,
+        name: data.storeName || data.name || `${tenant.charAt(0).toUpperCase() + tenant.slice(1)} Store`,
+        customDomain: data.customDomain || "",
+        description: data.description || "Welcome to our Basecart automated checkout storefront.",
+        logoUrl: data.logoUrl || data.branding?.logoUrl || "https://basecart.app/icon.svg",
+      };
+    }
+  } catch (err) {
+    console.error(`Failed fetching store info for ${tenant}:`, err);
   }
 
-  return mockDb[tenant] || {
+  return {
     id: tenant,
     name: `${tenant.charAt(0).toUpperCase() + tenant.slice(1)} Store`,
     description: "Welcome to our Basecart automated checkout storefront.",
@@ -31,68 +45,99 @@ export async function getTenantStoreData(tenant: string) {
   };
 }
 
-// Mock products database
-export async function getTenantProducts(tenantId: string) {
-  const allProducts = [
-    {
-      id: "prod-1",
-      tenantId: "boutique",
-      name: "Handcrafted Silk Kasavu Saree",
-      desc: "Elegant traditional handwoven Kerala Kasavu saree with gold brocade borders, perfect for festivals.",
-      price: 4999,
-      imageUrl: "/basecart_storefront_mockup.png", // Stand-in image
-    },
-    {
-      id: "prod-2",
-      tenantId: "bakes",
-      name: "Chocolate Fudge Celebration Cake",
-      desc: "Decadent double-layered Belgian dark chocolate cake, perfect for birthdays and parties.",
-      price: 1200,
-      imageUrl: "/basecart_dashboard_mockup.png", // Stand-in image
-    }
-  ];
+// Real-time Database lookup helper for tenant products
+export async function getTenantProducts(tenantId: string): Promise<StorefrontProduct[]> {
+  try {
+    const res = await fetch(`${API_URL}/store/${tenantId}/products`, { next: { revalidate: 30 } });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data.map((prod: any) => {
+          let imgs: string[] = [];
+          if (Array.isArray(prod.images)) {
+            imgs = prod.images;
+          } else if (typeof prod.images === "string" && prod.images) {
+            try {
+              imgs = JSON.parse(prod.images);
+            } catch (e) {}
+          }
 
-  // Filter products by tenant; only return products for this tenant
-  return allProducts.filter(prod => prod.tenantId === tenantId);
+          const primaryImage = imgs && imgs.length > 0 ? imgs[0] : "/basecart_storefront_mockup.png";
+
+          return {
+            id: prod.productId || prod.id,
+            tenantId,
+            name: prod.name,
+            desc: prod.description || "",
+            description: prod.description || "",
+            price: Number(prod.price || 0),
+            compareAtPrice: prod.compareAtPrice ? Number(prod.compareAtPrice) : null,
+            stockQuantity: Number(prod.stockQuantity || 0),
+            inStock: (prod.stockQuantity || 0) > 0,
+            category: prod.category || "General",
+            categorySlug: (prod.category || "General").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+            imageUrl: primaryImage,
+            images: imgs,
+            rating: prod.rating || 4.8,
+            reviewCount: prod.reviewCount || 12,
+          };
+        });
+      }
+    }
+  } catch (err) {
+    console.error(`Failed fetching products from database for tenant ${tenantId}:`, err);
+  }
+
+  return [];
 }
 
-// Mock product details resolver
-export async function getProductData(productId: string) {
-  const mockProducts: Record<string, { id: string; name: string; description: string; price: number; inStock: boolean; category: string; categorySlug: string; imageUrl: string; rating?: number; reviewCount?: number; reviews?: Array<{ author: string; rating: number; date: string; title: string; comment: string }> }> = {
-    "prod-1": {
-      id: "prod-1",
-      name: "Handcrafted Silk Kasavu Saree",
-      description: "Elegant traditional handwoven Kerala Kasavu saree with gold brocade borders, perfect for weddings, festivals, and cultural events.",
-      price: 4999,
-      inStock: true,
-      category: "Ethnic Wear",
-      categorySlug: "ethnic-wear",
-      imageUrl: "https://r2.basecart.app/stores/boutique/products/kasavu-saree.jpg",
-      rating: 4.8,
-      reviewCount: 24,
-      reviews: [
-        { author: "Lakshmi Nair", rating: 5, date: "2026-07-10", title: "Absolutely beautiful!", comment: "The silk quality is outstanding and the gold borders are stunning. Wore it for Onam and received so many compliments." },
-        { author: "Anjali Menon", rating: 5, date: "2026-06-22", title: "Premium craftsmanship", comment: "Handwoven quality is evident. Worth every rupee. The packaging was also excellent." },
-        { author: "Deepa Rajan", rating: 4, date: "2026-05-15", title: "Great for festivals", comment: "Lovely saree, perfect for temple visits and festivals. Only suggestion would be more color options." },
-      ]
-    },
-    "prod-2": {
-      id: "prod-2",
-      name: "Chocolate Fudge Celebration Cake",
-      description: "Decadent double-layered Belgian dark chocolate cake with rich fudge frosting, baked fresh in Kochi.",
-      price: 1200,
-      inStock: true,
-      category: "Celebration Cakes",
-      categorySlug: "celebration-cakes",
-      imageUrl: "https://r2.basecart.app/stores/bakes/products/chocolate-fudge-cake.jpg",
-      rating: 4.6,
-      reviewCount: 18,
-      reviews: [
-        { author: "Vishnu Prasad", rating: 5, date: "2026-07-05", title: "Best cake in Kochi!", comment: "Ordered for my daughter's birthday. The chocolate fudge was rich and delicious. Everyone loved it!" },
-        { author: "Meera Sharma", rating: 4, date: "2026-06-18", title: "Fresh and tasty", comment: "Delivered on time and tasted amazing. The frosting was perfect." },
-        { author: "Arjun K.", rating: 5, date: "2026-05-30", title: "Will order again", comment: "Highly recommend for any celebration. Great quality at a reasonable price." },
-      ]
+// Real-time Database lookup helper for product details
+export async function getProductData(productId: string, tenantId: string = "store"): Promise<StorefrontProduct | null> {
+  try {
+    const res = await fetch(`${API_URL}/store/${tenantId}/products/${productId}`, { next: { revalidate: 30 } });
+    if (res.ok) {
+      const prod = await res.json();
+      if (prod) {
+        let imgs: string[] = [];
+        if (Array.isArray(prod.images)) {
+          imgs = prod.images;
+        } else if (typeof prod.images === "string" && prod.images) {
+          try {
+            imgs = JSON.parse(prod.images);
+          } catch (e) {}
+        }
+        const primaryImage = imgs && imgs.length > 0 ? imgs[0] : "/basecart_storefront_mockup.png";
+
+        return {
+          id: prod.productId || prod.id,
+          tenantId,
+          name: prod.name,
+          desc: prod.description || "",
+          description: prod.description || "",
+          price: Number(prod.price || 0),
+          compareAtPrice: prod.compareAtPrice ? Number(prod.compareAtPrice) : null,
+          inStock: (prod.stockQuantity || 0) > 0,
+          stockQuantity: Number(prod.stockQuantity || 0),
+          category: prod.category || "General",
+          categorySlug: (prod.category || "General").toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+          imageUrl: primaryImage,
+          images: imgs,
+          rating: prod.rating || 4.8,
+          reviewCount: prod.reviewCount || 12,
+          reviews: prod.reviews || [],
+        };
+      }
     }
-  };
-  return mockProducts[productId];
+  } catch (err) {
+    console.error(`Failed fetching product ${productId} from database:`, err);
+  }
+
+  // Fallback: search all products for tenantId
+  try {
+    const allProds = await getTenantProducts(tenantId);
+    const found = allProds.find((p) => p.id === productId || p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === productId);
+    if (found) return found;
+  } catch (e) {}
+
+  return null;
 }

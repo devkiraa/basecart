@@ -470,7 +470,21 @@ app.get("/auth/merchant/stores", authenticateMerchant, async (c) => {
  * Merchant Logout
  */
 app.post("/auth/merchant/logout", async (c) => {
-  const refreshToken = getCookie(c, "basecart_merchant_refresh_token");
+  let refreshToken = getCookie(c, "basecart_merchant_refresh_token");
+  if (!refreshToken) {
+    const authHeader = c.req.header("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      refreshToken = authHeader.split(" ")[1];
+    }
+  }
+  if (!refreshToken) {
+    refreshToken = c.req.header("x-refresh-token");
+  }
+  if (!refreshToken) {
+    const body = await c.req.json().catch(() => ({}));
+    if (body && body.refreshToken) refreshToken = body.refreshToken;
+  }
+
   if (refreshToken) {
     try {
       const controlDb = getControlDb(c.env);
@@ -1047,6 +1061,39 @@ app.get("/auth/customer/me", resolveStorefrontTenant, authenticateCustomer, asyn
  * Customer Logout
  */
 app.post("/auth/customer/logout", resolveStorefrontTenant, async (c) => {
+  const tenantId = c.get("tenantId");
+  let refreshToken = getCookie(c, "basecart_customer_refresh_token");
+  if (!refreshToken) {
+    const authHeader = c.req.header("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      refreshToken = authHeader.split(" ")[1];
+    }
+  }
+  if (!refreshToken) {
+    refreshToken = c.req.header("x-refresh-token");
+  }
+  if (!refreshToken) {
+    const body = await c.req.json().catch(() => ({}));
+    if (body && body.refreshToken) refreshToken = body.refreshToken;
+  }
+
+  if (refreshToken) {
+    try {
+      const controlDb = getControlDb(c.env);
+      if (tenantId) {
+        await controlDb
+          .prepare("DELETE FROM refresh_tokens WHERE token = ? AND tenantId = ?")
+          .bind(refreshToken, tenantId)
+          .run();
+      } else {
+        await controlDb
+          .prepare("DELETE FROM refresh_tokens WHERE token = ?")
+          .bind(refreshToken)
+          .run();
+      }
+    } catch (e) {}
+  }
+
   deleteCookie(c, "basecart_customer_token", getCustomerDeleteOptions(c));
   deleteCookie(c, "basecart_customer_refresh_token", getCustomerDeleteOptions(c));
   return c.json({ message: "Logged out successfully" });

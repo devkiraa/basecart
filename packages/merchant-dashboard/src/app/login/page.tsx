@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [backendReady, setBackendReady] = useState(false);
+  const [backendReady, setBackendReady] = useState(true);
   
   // Forgot password flow
   const [showForgotView, setShowForgotView] = useState(false);
@@ -125,17 +125,7 @@ export default function LoginPage() {
     }
   };
 
-  // Show connecting splash while waiting for backend
-  if (!backendReady) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center font-sans">
-        <div className="flex flex-col items-center gap-3 animate-pulse">
-          <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
-          <p className="text-sm text-slate-500 font-medium">Connecting to server...</p>
-        </div>
-      </div>
-    );
-  }
+
 
   if (showForgotView) {
     return (
