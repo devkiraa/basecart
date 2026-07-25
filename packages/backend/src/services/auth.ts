@@ -3,7 +3,7 @@ import bcrypt from "bcryptjs";
 import crypto from "crypto";
 import { D1Database } from "../lib/db";
 
-const ACCESS_TOKEN_EXPIRY = "15d";
+const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = 30 * 24 * 60 * 60; // 30 days in seconds
 
 export interface TokenPayload {

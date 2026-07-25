@@ -7,8 +7,18 @@ import { renderEmail, getEmailProvider, sendEmail, PLATFORM_EMAIL_ALIASES } from
 import { isReservedSubdomain } from "@basecart/shared";
 import { provisionTenantDatabase } from "../services/tenant";
 import { logReservedSubdomainAbuse } from "../lib/audit";
+import {
+  checkAccountLockout,
+  recordFailedAttempt,
+  recordSuccessfulLogin,
+  logAuthEvent,
+} from "../services/auth_lockout";
+import { authRateLimiterMiddleware } from "../middleware/rate_limiter";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
+
+// Enforce strict rate limiting on admin authentication endpoints (G2, G3 requirements)
+app.use("/admin/auth/*", authRateLimiterMiddleware);
 
 function isLocalHostRequest(c: any): boolean {
   const host = c.req.header("host") || "";
@@ -395,8 +405,18 @@ app.post("/admin/auth/login", async (c) => {
     return c.json({ error: "Email and password are required" }, 400);
   }
 
-  const lowerEmail = email.toLowerCase();
+  const lowerEmail = email.toLowerCase().trim();
   const controlDb = getControlDb(c.env);
+
+  // Check Account Lockout (5 failed attempts limit)
+  const lockout = await checkAccountLockout(controlDb, `admin:${lowerEmail}`);
+  if (lockout.locked) {
+    return c.json({
+      error: `Account is locked due to 5 failed login attempts. Please try again after ${lockout.remainingMinutes} minute(s).`,
+      locked: true,
+      remainingMinutes: lockout.remainingMinutes,
+    }, 429);
+  }
 
   const admin = await controlDb
     .prepare("SELECT * FROM admins WHERE email = ?")
@@ -404,13 +424,24 @@ app.post("/admin/auth/login", async (c) => {
     .first<any>();
 
   if (!admin) {
+    await recordFailedAttempt(controlDb, `admin:${lowerEmail}`, "admin", c);
     return c.json({ error: "Invalid email or password" }, 401);
   }
 
   const match = await authService.comparePassword(password, admin.hashedPassword);
   if (!match) {
-    return c.json({ error: "Invalid email or password" }, 401);
+    const failedStatus = await recordFailedAttempt(controlDb, `admin:${lowerEmail}`, "admin", c);
+    if (failedStatus.locked) {
+      return c.json({
+        error: "Account is locked due to 5 failed login attempts. Please try again after 15 minutes.",
+        locked: true,
+        remainingMinutes: 15,
+      }, 429);
+    }
+    return c.json({ error: "Invalid email or password", attemptsLeft: failedStatus.attemptsLeft }, 401);
   }
+
+  await recordSuccessfulLogin(controlDb, `admin:${lowerEmail}`, "admin", c);
 
   const tokens = await authService.generateTokens(
     {
@@ -724,10 +755,10 @@ app.get("/admin/metrics", authenticateAdmin, async (c) => {
   // 2. MRR estimate
   let estimatedMRR = 0;
   for (const m of tenants) {
-    const plan = m.plan || "starter";
+    const plan = (m.plan || "starter").toLowerCase();
     if (plan === "starter") estimatedMRR += 299;
-    else if (plan === "growth") estimatedMRR += 899;
-    else if (plan === "pro") estimatedMRR += 1999;
+    else if (plan === "growth") estimatedMRR += 699;
+    else if (plan === "pro") estimatedMRR += 1499;
   }
 
   // 3. Aggregate total GMV & orders today
@@ -1446,13 +1477,22 @@ app.post("/admin/api-keys", authenticateAdmin, async (c) => {
   const { name, scopes, rateLimit } = body;
 
   const id = `key_${Date.now()}`;
-  const token = `bc_live_${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}`;
+  const rawToken = `bc_live_${crypto.randomUUID().replace(/-/g, "")}`;
 
-  await controlDb.prepare("INSERT INTO developer_api_keys (id, name, token, scopes, rateLimit, status) VALUES (?, ?, ?, ?, ?, ?)")
-    .bind(id, name, token, JSON.stringify(scopes || ["read:merchants"]), rateLimit || "100 req/min", "active")
+  // G4 Requirement: Store SHA-256 hash of API key in DB
+  const encoder = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(rawToken));
+  const hashedToken = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  await controlDb
+    .prepare("INSERT INTO developer_api_keys (id, name, token, scopes, rateLimit, status) VALUES (?, ?, ?, ?, ?, ?)")
+    .bind(id, name, hashedToken, JSON.stringify(scopes || ["read:merchants"]), rateLimit || "100 req/min", "active")
     .run();
 
-  return c.json({ success: true, id });
+  // Return raw token once to caller upon creation
+  return c.json({ success: true, id, token: rawToken });
 });
 
 app.delete("/admin/api-keys/:id", authenticateAdmin, async (c) => {

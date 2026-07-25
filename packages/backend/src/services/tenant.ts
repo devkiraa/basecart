@@ -53,8 +53,6 @@ export async function getTenantBySubdomain(
   }
 }
 
-
-
 /**
  * Dynamically provisions a new tenant:
  * 1. Inserts registry row in control DB (called externally inside transaction)
@@ -132,4 +130,70 @@ export async function provisionTenantDatabase(
       defaultTheme.version
     )
     .run();
+}
+
+/**
+ * Cascade deletion for tenant D1 databases (L3 Requirement)
+ * Completely purges a tenant's registry, merchant users, refresh tokens, and isolated tables.
+ */
+export async function purgeTenantData(tenantId: string, env: any): Promise<void> {
+  const controlDb = getControlDb(env);
+
+  // 1. Purge tenant records from central control database
+  await controlDb.prepare("DELETE FROM merchant_users WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM refresh_tokens WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM verification_tokens WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM reset_tokens WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM support_tickets WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM merchant_notifications WHERE tenantId = ?").bind(tenantId).run();
+  await controlDb.prepare("DELETE FROM tenants WHERE tenantId = ?").bind(tenantId).run();
+
+  // 2. Purge isolated tenant database tables
+  try {
+    const tenantDb = await getTenantDb(tenantId, env);
+    await tenantDb.prepare("DROP TABLE IF EXISTS orders").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS order_items").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS products").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS customers").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS discount_codes").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS store_settings").run();
+    await tenantDb.prepare("DROP TABLE IF EXISTS themes").run();
+  } catch (err) {
+    console.error(`purgeTenantData error for tenant ${tenantId}:`, err);
+  }
+}
+
+/**
+ * Data retention cleanup task (L2 Requirement)
+ * Purges expired verification tokens, reset tokens, stale refresh tokens, and old logs.
+ */
+export async function cleanupExpiredRetentionData(env: any): Promise<{ cleaned: number }> {
+  const controlDb = getControlDb(env);
+  const nowIso = new Date().toISOString();
+  const nowSec = Math.floor(Date.now() / 1000);
+  const ninetyDaysAgoIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+
+  let cleaned = 0;
+
+  try {
+    // 1. Delete expired verification & reset tokens
+    await controlDb.prepare("DELETE FROM verification_tokens WHERE expiresAt < ?").bind(nowIso).run();
+    await controlDb.prepare("DELETE FROM reset_tokens WHERE expiresAt < ?").bind(nowIso).run();
+    
+    // 2. Delete expired refresh tokens
+    await controlDb.prepare("DELETE FROM refresh_tokens WHERE expiresAt < ?").bind(nowSec).run();
+
+    // 3. Delete auth logs older than 90 days
+    await controlDb.prepare("DELETE FROM auth_logs WHERE timestamp < ?").bind(ninetyDaysAgoIso).run();
+
+    // 4. Delete processed webhooks older than 30 days
+    const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    await controlDb.prepare("DELETE FROM processed_webhooks WHERE processedAt < ?").bind(thirtyDaysAgoIso).run();
+
+    cleaned += 1;
+  } catch (err) {
+    console.error("cleanupExpiredRetentionData error:", err);
+  }
+
+  return { cleaned };
 }

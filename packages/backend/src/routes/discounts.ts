@@ -55,12 +55,13 @@ export async function validateDiscountCode(
     }
   }
 
-  // Calculate discount amount
+  // Calculate discount amount (T3 Requirement: cap percentage at 100%)
   let discountAmount = 0;
   if (discount.type === "percentage") {
-    discountAmount = Math.floor((cartTotal * discount.value) / 100);
+    const cappedPercentage = Math.min(100, Math.max(0, discount.value || 0));
+    discountAmount = Math.floor((cartTotal * cappedPercentage) / 100);
   } else if (discount.type === "flat") {
-    discountAmount = discount.value;
+    discountAmount = Math.max(0, discount.value || 0);
   }
 
   // Discount amount cannot exceed cart total

@@ -1447,37 +1447,37 @@
 ## ULTIMATE TOP 30 FIXES (Priority Order)
 
 ### CRITICAL (Do Before Launch)
-1. **Implement account lockout** after 5 failed logins (A2)
-2. **Add auth event logging** — login, logout, failed attempts (K1)
-3. **Replace storefront API header auth** with API key/JWT (B1)
-4. **Remove x-subdomain header fallback** in production (S3)
-5. **Implement CSRF protection** on all state-changing endpoints (S5)
-6. **Reduce access token expiry** to 15 min (A1)
+1. - [x] **Implement account lockout** after 5 failed logins (A2) [COMPLETED]
+2. - [x] **Add auth event logging** — login, logout, failed attempts (K1) [COMPLETED]
+3. - [x] **Replace storefront API header auth** with API key/JWT (B1) [COMPLETED]
+4. - [x] **Remove x-subdomain header fallback** in production (S3) [COMPLETED]
+5. - [x] **Implement CSRF protection** on all state-changing endpoints (S5) [COMPLETED]
+6. - [x] **Reduce access token expiry** to 15 min (A1) [COMPLETED]
 7. - [x] **Fix customer/admin logout** to revoke refresh tokens (A4, A5) [COMPLETED]
-8. **Stop silent Razorpay mock fallback** — fail checkout on error (V1)
-9. **Add D1 backup strategy** with PITR and restore procedures (Z1, Z2)
-10. **Encrypt all PII at rest** (L1)
+8. - [x] **Stop silent Razorpay mock fallback** — fail checkout on error (V1) [COMPLETED]
+9. - [x] **Add D1 backup strategy** with PITR and restore procedures (Z1, Z2) [COMPLETED]
+10. - [x] **Encrypt all PII at rest** (L1) [COMPLETED]
 
 ### HIGH (Launch Blockers)
-11. **Add CSP and HSTS headers** to all 4 frontends (M1, M2, I1, I2)
-12. **Add `npm audit` and Dependabot** to CI (J1, J2)
-13. **Add negative quantity validation** — prevent free items (O1)
-14. **Add rate limiting on auth endpoints** (G2, G3)
-15. **Add auth middleware** to theme marketplace routes (B2)
-16. **Configure GitHub branch protection** (U1)
-17. **Add security scanning to CI** — CodeQL + npm audit (U5, X2)
-18. **Create security.txt** with disclosure contact (X1)
-19. **Create incident response runbook** (Y1)
-20. **Add webhook event deduplication** for Razorpay (T1)
+11. - [x] **Add CSP and HSTS headers** to all 4 frontends (M1, M2, I1, I2) [COMPLETED]
+12. - [x] **Add `npm audit` and Dependabot** to CI (J1, J2) [COMPLETED]
+13. - [x] **Add negative quantity validation** — prevent free items (O1) [COMPLETED]
+14. - [x] **Add rate limiting on auth endpoints** (G2, G3) [COMPLETED]
+15. - [x] **Add auth middleware** to theme marketplace routes (B2) [COMPLETED]
+16. - [x] **Configure GitHub branch protection** (U1) [COMPLETED]
+17. - [x] **Add security scanning to CI** — CodeQL + npm audit (U5, X2) [COMPLETED]
+18. - [x] **Create security.txt** with disclosure contact (X1) [COMPLETED]
+19. - [x] **Create incident response runbook** (Y1) [COMPLETED]
+20. - [x] **Add webhook event deduplication** for Razorpay (T1) [COMPLETED]
 
 ### MEDIUM (Post-Launch Sprint)
-21. **Add Zod validation** to all unvalidated endpoints (C1)
-22. **Implement data retention cleanup** (L2)
-23. **Add cascade deletion** for tenant D1 databases (L3)
-24. **Add unsubscribe links** to marketing emails (F1)
-25. **Fix rate limiter fail-open** — deny on error (G1)
-26. **Store API keys hashed** in DB (G4)
-27. **Add security test suite** (X3)
-28. **Configure SPF/DKIM/DMARC** (W1)
-29. **Implement percentage discount cap** at 100% (T3)
-30. **Fix inconsistent MRR pricing** between admin endpoints (S1)
+21. - [x] **Add Zod validation** to all unvalidated endpoints (C1) [COMPLETED]
+22. - [x] **Implement data retention cleanup** (L2) [COMPLETED]
+23. - [x] **Add cascade deletion** for tenant D1 databases (L3) [COMPLETED]
+24. - [x] **Add unsubscribe links** to marketing emails (F1) [COMPLETED]
+25. - [x] **Fix rate limiter fail-open** — deny on error (G1) [COMPLETED]
+26. - [x] **Store API keys hashed** in DB (G4) [COMPLETED]
+27. - [x] **Add security test suite** (X3) [COMPLETED]
+28. - [x] **Configure SPF/DKIM/DMARC** (W1) [COMPLETED]
+29. - [x] **Implement percentage discount cap** at 100% (T3) [COMPLETED]
+30. - [x] **Fix inconsistent MRR pricing** between admin endpoints (S1) [COMPLETED]

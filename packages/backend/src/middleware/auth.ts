@@ -110,8 +110,11 @@ export async function resolveStorefrontTenant(c: Context, next: Next) {
   }
 
   if (!subdomain) {
-    // Fallback check: Custom header for easy API/integration testing
-    subdomain = c.req.header("x-subdomain");
+    // S3 Requirement: Fallback check for x-subdomain header is ONLY allowed in non-production environments
+    const envName = c.env?.ENVIRONMENT || process.env.NODE_ENV || "development";
+    if (envName !== "production") {
+      subdomain = c.req.header("x-subdomain");
+    }
   }
 
   if (!subdomain) {

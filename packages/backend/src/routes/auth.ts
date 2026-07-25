@@ -13,8 +13,18 @@ import {
 } from "@basecart/shared";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
 import { logReservedSubdomainAbuse } from "../lib/audit";
+import {
+  checkAccountLockout,
+  recordFailedAttempt,
+  recordSuccessfulLogin,
+  logAuthEvent,
+} from "../services/auth_lockout";
+import { authRateLimiterMiddleware } from "../middleware/rate_limiter";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
+
+// Enforce strict rate limiting on all authentication routes (G2, G3 requirements)
+app.use("/auth/*", authRateLimiterMiddleware);
 
 function isLocalHostRequest(c: any): boolean {
   const host = c.req.header("host") || "";
@@ -340,9 +350,19 @@ app.post("/auth/merchant/login", async (c) => {
   }
 
   const { email, password } = parseResult.data;
-  const lowerEmail = email.toLowerCase();
+  const lowerEmail = email.toLowerCase().trim();
 
   const controlDb = getControlDb(c.env);
+
+  // Check Account Lockout (5 failed attempts limit)
+  const lockout = await checkAccountLockout(controlDb, lowerEmail);
+  if (lockout.locked) {
+    return c.json({
+      error: `Account is locked due to 5 failed login attempts. Please try again after ${lockout.remainingMinutes} minute(s).`,
+      locked: true,
+      remainingMinutes: lockout.remainingMinutes,
+    }, 429);
+  }
 
   const user = await controlDb
     .prepare("SELECT * FROM merchant_users WHERE email = ?")
@@ -350,13 +370,25 @@ app.post("/auth/merchant/login", async (c) => {
     .first<any>();
 
   if (!user) {
+    await recordFailedAttempt(controlDb, lowerEmail, "merchant", c);
     return c.json({ error: "Invalid email or password" }, 401);
   }
 
   const valid = await authService.comparePassword(password, user.hashedPassword);
   if (!valid) {
-    return c.json({ error: "Invalid email or password" }, 401);
+    const failedStatus = await recordFailedAttempt(controlDb, lowerEmail, "merchant", c);
+    if (failedStatus.locked) {
+      return c.json({
+        error: "Account is locked due to 5 failed login attempts. Please try again after 15 minutes.",
+        locked: true,
+        remainingMinutes: 15,
+      }, 429);
+    }
+    return c.json({ error: "Invalid email or password", attemptsLeft: failedStatus.attemptsLeft }, 401);
   }
+
+  // Reset failed attempts on success & log login_success
+  await recordSuccessfulLogin(controlDb, lowerEmail, "merchant", c);
 
   const tokens = await authService.generateTokens(
     {
@@ -977,7 +1009,17 @@ app.post("/auth/customer/login", resolveStorefrontTenant, async (c) => {
   }
 
   const { email, password } = parseResult.data;
-  const lowerEmail = email.toLowerCase();
+  const lowerEmail = email.toLowerCase().trim();
+
+  // Account lockout check
+  const lockout = await checkAccountLockout(controlDb, `customer:${tenantId}:${lowerEmail}`);
+  if (lockout.locked) {
+    return c.json({
+      error: `Account is locked due to 5 failed login attempts. Please try again after ${lockout.remainingMinutes} minute(s).`,
+      locked: true,
+      remainingMinutes: lockout.remainingMinutes,
+    }, 429);
+  }
 
   const tenantDb = await getTenantDb(tenantId, c.env);
 
@@ -987,13 +1029,24 @@ app.post("/auth/customer/login", resolveStorefrontTenant, async (c) => {
     .first<any>();
 
   if (!customer || !customer.hashedPassword) {
+    await recordFailedAttempt(controlDb, `customer:${tenantId}:${lowerEmail}`, "customer", c);
     return c.json({ error: "Invalid email or password" }, 401);
   }
 
   const valid = await authService.comparePassword(password, customer.hashedPassword);
   if (!valid) {
-    return c.json({ error: "Invalid email or password" }, 401);
+    const failedStatus = await recordFailedAttempt(controlDb, `customer:${tenantId}:${lowerEmail}`, "customer", c);
+    if (failedStatus.locked) {
+      return c.json({
+        error: "Account is locked due to 5 failed login attempts. Please try again after 15 minutes.",
+        locked: true,
+        remainingMinutes: 15,
+      }, 429);
+    }
+    return c.json({ error: "Invalid email or password", attemptsLeft: failedStatus.attemptsLeft }, 401);
   }
+
+  await recordSuccessfulLogin(controlDb, `customer:${tenantId}:${lowerEmail}`, "customer", c);
 
   const tokens = await authService.generateTokens(
     {

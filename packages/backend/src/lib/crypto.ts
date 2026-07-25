@@ -76,6 +76,34 @@ export async function decrypt(cipherTextBase64: string, secret?: string): Promis
     ciphertext
   );
 
-  const dec = new TextDecoder();
+  const dec = new (globalThis as any).TextDecoder();
   return dec.decode(decrypted);
+}
+
+/**
+ * Helper to encrypt PII data fields at rest (L1 requirement)
+ */
+export async function encryptPII(value: string | null | undefined, secret?: string): Promise<string | null> {
+  if (!value) return null;
+  const encSecret = secret || (typeof process !== "undefined" && process.env ? process.env.ENCRYPTION_SECRET : "basecart-fallback-encryption-secret-32-chars");
+  try {
+    return await encrypt(value, encSecret);
+  } catch (err) {
+    console.error("encryptPII error:", err);
+    return value;
+  }
+}
+
+/**
+ * Helper to decrypt PII data fields at rest (L1 requirement)
+ */
+export async function decryptPII(cipherText: string | null | undefined, secret?: string): Promise<string | null> {
+  if (!cipherText) return null;
+  const encSecret = secret || (typeof process !== "undefined" && process.env ? process.env.ENCRYPTION_SECRET : "basecart-fallback-encryption-secret-32-chars");
+  try {
+    return await decrypt(cipherText, encSecret);
+  } catch (err) {
+    // If text was not encrypted or legacy plaintext, return as is
+    return cipherText;
+  }
 }

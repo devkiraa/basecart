@@ -15,6 +15,7 @@ import storefrontDesignRouter from "./routes/storefront-design";
 import reviewsRouter from "./routes/reviews";
 import storefrontApiRouter from "./routes/storefront_api";
 import themeManagerRouter from "./routes/theme_manager";
+import { csrfProtectionMiddleware } from "./middleware/csrf";
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
@@ -66,6 +67,9 @@ export function buildApp() {
     await next();
   });
 
+  // CSRF Protection Middleware for state-changing requests (S5 requirement)
+  app.use("*", csrfProtectionMiddleware);
+
   // Global Rate Limiter Middleware
   app.use("*", async (c, next) => {
     if (c.env && (c.env as any).API_RATE_LIMITER) {
@@ -83,6 +87,17 @@ export function buildApp() {
         }
       } catch (err) {
         console.error("Rate limiter error:", err);
+        // G1 Requirement: Fail-closed in production if rate limiter fails
+        const isProd = c.env?.ENVIRONMENT === "production";
+        if (isProd) {
+          return c.json(
+            {
+              error: "Rate Limiter Error",
+              message: "Rate limit verification failed. Request denied for security.",
+            },
+            429
+          );
+        }
       }
     }
     await next();

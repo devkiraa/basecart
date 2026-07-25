@@ -11,16 +11,33 @@ function getTenantDoStub(env: any, tenantId: string) {
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
-// Middleware: Validate Storefront SDK Headers
+// Middleware: Validate Storefront API Key or Tenant (B1 requirement)
 app.use("*", async (c, next) => {
+  const apiKey = c.req.header("x-api-key") || c.req.header("authorization")?.replace("Bearer ", "");
   const merchantId = c.req.header("x-merchant-id");
   const storeId = c.req.header("x-store-id") || c.req.header("x-subdomain");
 
-  if (!merchantId && !storeId) {
-    return c.json({ error: "Missing required Storefront SDK headers (x-merchant-id or x-store-id)" }, 400);
+  const identifier = apiKey || storeId || merchantId;
+  if (!identifier) {
+    return c.json({ error: "Unauthorized: Missing required Storefront API key or Store identifier (x-api-key or Authorization)" }, 401);
   }
 
-  c.set("tenantId", storeId || merchantId);
+  const db = getControlDb(c.env);
+  const tenant = await db
+    .prepare("SELECT tenantId, status FROM tenants WHERE tenantId = ? OR subdomain = ? OR customDomain = ?")
+    .bind(identifier, identifier, identifier)
+    .first<any>();
+
+  if (!tenant) {
+    return c.json({ error: "Unauthorized: Invalid Storefront API key or store identifier" }, 401);
+  }
+
+  if (tenant.status === "suspended") {
+    return c.json({ error: "Store Suspended: Store access has been suspended" }, 403);
+  }
+
+  c.set("tenantId", tenant.tenantId);
+  c.set("tenant", tenant);
   await next();
 });
 

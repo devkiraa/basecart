@@ -1,0 +1,9 @@
+# Basecart Vulnerability Disclosure & Security Policy (X1 Requirement)
+Contact: mailto:security@basecart.app
+Contact: https://basecart.app/security
+Expires: 2027-12-31T23:59:59.000Z
+Encryption: https://basecart.app/pgp-key.txt
+Preferred-Languages: en
+Canonical: https://basecart.app/.well-known/security.txt
+Policy: https://basecart.app/security-policy
+Hiring: https://basecart.app/careers

@@ -66,6 +66,19 @@ export async function computeCartTotal(
       };
     }
 
+    // Item 13 (O1 Requirement): Negative or zero quantity validation
+    const qty = Math.floor(Number(item.quantity));
+    if (isNaN(qty) || qty <= 0) {
+      return {
+        valid: false,
+        reason: `Invalid quantity (${item.quantity}) specified for product "${product.name}". Quantity must be a positive integer.`,
+        itemsSnapshot: [],
+        subtotal: 0,
+        discountApplied: 0,
+        total: 0,
+      };
+    }
+
     let finalPrice = product.price;
     let availableStock = product.stockQuantity;
     let variantNameSuffix = "";
@@ -638,10 +651,19 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
           const data = (await razorpayRes.json()) as any;
           razorpayOrderId = data.id;
         } else {
-          console.error("Razorpay order creation failed, falling back to mock ID");
+          const errText = await razorpayRes.text().catch(() => "");
+          console.error(`Razorpay order creation failed: ${razorpayRes.status} ${errText}`);
+          return c.json({
+            error: "Payment Gateway Error: Failed to create Razorpay payment session. Please verify your credentials or try again later.",
+            code: "RAZORPAY_API_ERROR"
+          }, 502);
         }
-      } catch (err) {
-        console.error("Error communicating with Razorpay, falling back to mock ID", err);
+      } catch (err: any) {
+        console.error("Error communicating with Razorpay API:", err);
+        return c.json({
+          error: "Payment Gateway Communication Error: Unable to reach Razorpay servers. Please try again.",
+          code: "RAZORPAY_NETWORK_ERROR"
+        }, 502);
       }
     }
 
@@ -781,6 +803,22 @@ app.post("/store/:subdomain/webhooks/razorpay", async (c) => {
 
   const event = payload.event;
   const tenantId = store.tenantId;
+
+  // Item 20 (T1 Requirement): Webhook Event Deduplication
+  const eventId = c.req.header("x-razorpay-event-id") || payload.event_id || `${event}_${payload.payload?.payment?.entity?.id || payload.payload?.order?.entity?.id || ""}`;
+  if (eventId) {
+    try {
+      await controlDb.prepare("CREATE TABLE IF NOT EXISTS processed_webhooks (eventId TEXT PRIMARY KEY, processedAt TEXT NOT NULL)").run();
+      const existing = await controlDb.prepare("SELECT eventId FROM processed_webhooks WHERE eventId = ?").bind(eventId).first();
+      if (existing) {
+        console.log(`[Razorpay Deduplication] Event ${eventId} already processed, skipping.`);
+        return c.json({ message: "Event already processed", duplicate: true });
+      }
+      await controlDb.prepare("INSERT INTO processed_webhooks (eventId, processedAt) VALUES (?, ?) ON CONFLICT(eventId) DO NOTHING").bind(eventId, new Date().toISOString()).run();
+    } catch (e) {
+      console.error("Deduplication check error:", e);
+    }
+  }
 
   if (event === "order.paid" || event === "payment.captured") {
     const entity = payload.payload.payment?.entity || payload.payload.order?.entity;

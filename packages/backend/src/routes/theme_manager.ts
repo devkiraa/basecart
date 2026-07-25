@@ -1,9 +1,13 @@
 import { Hono } from "hono";
 import { getControlDb } from "../lib/db";
 import { authenticateAdmin } from "./admin";
+import { authenticateMerchant } from "../middleware/auth";
 import { ThemeLinter, ThemeUploadPipeline } from "@basecart/theme-engine";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
+
+// Enforce authentication on all merchant theme marketplace routes (B2 requirement)
+app.use("/merchant/themes/*", authenticateMerchant);
 
 // ─── ADMIN THEME MARKETPLACE MANAGEMENT ─────────────────────
 
