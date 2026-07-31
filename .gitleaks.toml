@@ -1,0 +1,7 @@
+[allowlist]
+description = "Ignore mock test keys in unit tests and development fallbacks"
+regexes = [
+  '''rzp_test_''',
+  '''rzp_live_''',
+  '''basecart-fallback-encryption-secret''',
+]

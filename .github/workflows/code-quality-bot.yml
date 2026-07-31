@@ -21,7 +21,7 @@ jobs:
           cache: 'npm'
 
       - name: Install Monorepo Dependencies
-        run: npm ci
+        run: npm install --legacy-peer-deps
 
       - name: Build Internal Monorepo Packages
         run: npm run build --workspace=packages/theme-engine
