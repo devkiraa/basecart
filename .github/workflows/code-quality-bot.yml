@@ -1,0 +1,42 @@
+name: Automated Bug & Code Quality Scanner Bot
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  typecheck-and-lint:
+    name: TypeScript & Linting Bug Finder
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Build Internal Monorepo Packages
+        run: npm run build --workspace=packages/theme-engine
+
+      - name: Typecheck Backend Package
+        run: npx tsc --noEmit --project packages/backend/tsconfig.json
+
+      - name: Typecheck Merchant Dashboard Package
+        run: npx tsc --noEmit --project packages/merchant-dashboard/tsconfig.json
+
+      - name: Typecheck Storefront Package
+        run: npx tsc --noEmit --project packages/storefront/tsconfig.json
+
+      - name: Typecheck Marketing Package
+        run: npx tsc --noEmit --project packages/marketing/tsconfig.json
+
+      - name: Run Vitest Security & Unit Tests
+        run: npx vitest run packages/backend/src/tests/security_suite.test.ts
