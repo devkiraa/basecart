@@ -33,7 +33,7 @@ jobs:
       - name: Build Merchant Dashboard
         run: npm run pages:build --workspace=packages/merchant-dashboard
       - name: Deploy Merchant Dashboard to Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -43,7 +43,7 @@ jobs:
       - name: Build Storefront
         run: npm run pages:build --workspace=packages/storefront
       - name: Deploy Storefront to Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -53,7 +53,7 @@ jobs:
       - name: Build Admin Panel
         run: npm run pages:build --workspace=packages/admin-panel
       - name: Deploy Admin Panel to Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
