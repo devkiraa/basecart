@@ -29,7 +29,7 @@
     "@basecart/theme-engine": "*",
     "@basecart/theme-sdk": "*",
     "bcryptjs": "^2.4.3",
-    "dotenv": "^16.4.5",
+    "dotenv": "^17.4.2",
     "hono": "^4.4.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^9.0.3",
