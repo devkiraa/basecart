@@ -28,5 +28,9 @@
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
+  },
+  "overrides": {
+    "next": "^14.2.25",
+    "shell-quote": "^1.8.2"
   }
 }
