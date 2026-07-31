@@ -1,0 +1,17 @@
+title = "Basecart Gitleaks Allowlist Config"
+
+[allowlist]
+description = "Ignore mock test keys, fallback development secrets, and test files"
+regexes = [
+  '''rzp_test_[a-zA-Z0-9_]+''',
+  '''rzp_live_[a-zA-Z0-9_]+''',
+  '''basecart-fallback-encryption-secret''',
+  '''basecart-salt-string-for-pbkdf2''',
+]
+paths = [
+  '''packages/backend/src/tests/''',
+  '''packages/merchant-dashboard/src/app/''',
+  '''packages/storefront/src/app/''',
+  '''packages/backend/src/routes/theme_manager.ts''',
+  '''package-lock.json''',
+]
