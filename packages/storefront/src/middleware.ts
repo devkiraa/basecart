@@ -23,13 +23,14 @@ export function middleware(request: NextRequest) {
   const baseHosts = [
     "basecart.app",
     "www.basecart.app",
+    "basecart-storefront.pages.dev",
     "localhost:3000",
     "localhost:3002",
     "marketing.internal",
   ];
 
-  // Bypass rewrite for base platforms hosts
-  if (baseHosts.includes(hostname)) {
+  // Bypass rewrite for base platforms hosts or dedicated demo routes
+  if (baseHosts.includes(hostname) || request.nextUrl.pathname.startsWith("/checkout-demo")) {
     return NextResponse.next();
   }
 
