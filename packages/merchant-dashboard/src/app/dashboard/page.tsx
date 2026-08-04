@@ -102,6 +102,53 @@ const isLocalDev = typeof window !== "undefined"
 
 const STOREFRONT_PORT = process.env.NEXT_PUBLIC_STOREFRONT_PORT || "3002";
 
+const SETTINGS_SUBTAB_TO_SLUG: Record<string, string> = {
+  general: "profile",
+  billing: "billing",
+  plan: "plan",
+  users: "team",
+  payments: "payments",
+  brand: "brand",
+  domains: "domains",
+  shipping: "shipping",
+  checkout: "checkout",
+  taxes: "taxes",
+  locations: "locations",
+  notifications: "notifications",
+  policies: "policies",
+  apps: "apps",
+  privacy: "privacy",
+  gst: "taxes",
+  bank: "payments",
+  invoices: "billing",
+};
+
+const SLUG_TO_SETTINGS_SUBTAB: Record<string, string> = {
+  "": "general",
+  general: "general",
+  profile: "general",
+  billing: "billing",
+  plan: "plan",
+  team: "users",
+  users: "users",
+  members: "users",
+  staff: "users",
+  payments: "payments",
+  brand: "brand",
+  domains: "domains",
+  shipping: "shipping",
+  checkout: "checkout",
+  taxes: "taxes",
+  locations: "locations",
+  notifications: "notifications",
+  policies: "policies",
+  apps: "apps",
+  privacy: "privacy",
+  gst: "gst",
+  bank: "bank",
+  invoices: "invoices",
+};
+
 const getStorefrontLink = (subdomain: string) => {
   if (process.env.NEXT_PUBLIC_STOREFRONT_URL) {
     const url = process.env.NEXT_PUBLIC_STOREFRONT_URL;
@@ -531,12 +578,20 @@ export default function MerchantDashboard() {
       const parts = path.split("/").filter(Boolean);
 
       let routeSlug = "";
-      if (parts[0] === "store" && parts.length >= 3) {
-        routeSlug = parts[2];
-      } else if (parts[0] === "store" && parts.length === 2) {
-        routeSlug = "";
+      let settingsSectionSlug = "";
+
+      if (parts[0] === "store" && parts.length >= 2) {
+        if (parts.length >= 3) {
+          routeSlug = parts[2];
+          if (parts.length >= 4) {
+            settingsSectionSlug = parts[3];
+          }
+        }
       } else if (parts[0] === "dashboard" && parts.length >= 2) {
         routeSlug = parts[1];
+        if (parts.length >= 3) {
+          settingsSectionSlug = parts[2];
+        }
       } else {
         routeSlug = window.location.hash.replace("#", "");
       }
@@ -555,6 +610,16 @@ export default function MerchantDashboard() {
           setAuthActive(false);
         }
         return;
+      }
+
+      if (routeSlug === "settings") {
+        setActiveTab("settings");
+        setIsSettingsPortalOpen(true);
+        const mappedSubTab = SLUG_TO_SETTINGS_SUBTAB[settingsSectionSlug.toLowerCase()] || (settingsSectionSlug ? settingsSectionSlug : "general");
+        setSettingsSubTab(mappedSubTab);
+        return;
+      } else {
+        setIsSettingsPortalOpen(false);
       }
 
       const TAB_SLUG_MAP: Record<string, { tab: string; subTab?: string }> = {
@@ -612,7 +677,34 @@ export default function MerchantDashboard() {
     };
   }, [token]);
 
+  const changeSettingsSubTab = (subTabId: string) => {
+    const storeSubdomain = settings.subdomain || "my-store";
+    const sectionSlug = SETTINGS_SUBTAB_TO_SLUG[subTabId] || subTabId;
+    const newPath = `/store/${storeSubdomain}/settings/${sectionSlug}`;
+
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", newPath);
+    }
+    setActiveTab("settings");
+    setSettingsSubTab(subTabId);
+    setIsSettingsPortalOpen(true);
+  };
+
+  const closeSettingsPortal = () => {
+    setIsSettingsPortalOpen(false);
+    setActiveTab("summary");
+    const storeSubdomain = settings.subdomain || "my-store";
+    if (typeof window !== "undefined") {
+      window.history.pushState(null, "", `/store/${storeSubdomain}`);
+    }
+  };
+
   const changeTab = (tabId: string, subTabId?: string) => {
+    if (tabId === "settings") {
+      changeSettingsSubTab(subTabId || settingsSubTab || "general");
+      return;
+    }
+
     const targetKey = subTabId || tabId;
     const storeSubdomain = settings.subdomain || "my-store";
 
@@ -3290,10 +3382,11 @@ export default function MerchantDashboard() {
 
         {/* Pinned Bottom Settings Link (Matching Screenshot 1 & 2) */}
         <div className="px-3 py-2 border-t border-slate-100">
-          <button
-            onClick={() => {
-              setIsSettingsPortalOpen(true);
-              setActiveTab("settings");
+          <a
+            href={`/store/${settings.subdomain || "my-store"}/settings/profile`}
+            onClick={(e) => {
+              e.preventDefault();
+              changeSettingsSubTab("general");
             }}
             title={sidebarCollapsed ? "Settings" : undefined}
             className={`w-full flex items-center gap-3 rounded-xl text-[13px] font-semibold transition-all ${
@@ -3306,7 +3399,7 @@ export default function MerchantDashboard() {
           >
             <SettingsIcon className={`h-[18px] w-[18px] shrink-0 ${activeTab === "settings" || isSettingsPortalOpen ? "text-indigo-600" : "text-slate-400"}`} />
             {!sidebarCollapsed && <span>Settings</span>}
-          </button>
+          </a>
         </div>
 
         {/* Collapse toggle */}
@@ -10875,16 +10968,14 @@ export default function MerchantDashboard() {
                 {/* Top Settings Studio Control Bar */}
                 <div className="h-16 bg-white border-b border-slate-200/90 px-4 md:px-8 flex items-center justify-between shrink-0 shadow-xs">
                   <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => {
-                        setIsSettingsPortalOpen(false);
-                        if (activeTab === "settings") setActiveTab("summary");
-                      }}
+                    <a
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); closeSettingsPortal(); }}
                       className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition-all cursor-pointer shadow-xs"
                     >
                       <ArrowRight className="h-4 w-4 rotate-180 text-slate-500" />
                       <span>Back to Dashboard</span>
-                    </button>
+                    </a>
 
                     <div className="h-5 w-px bg-slate-200" />
 
@@ -10917,16 +11008,14 @@ export default function MerchantDashboard() {
                       {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                       <span>Save Changes</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        setIsSettingsPortalOpen(false);
-                        if (activeTab === "settings") setActiveTab("summary");
-                      }}
+                    <a
+                      href="#"
+                      onClick={(e) => { e.preventDefault(); closeSettingsPortal(); }}
                       className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                       title="Close Settings Studio"
                     >
                       <X className="h-5 w-5" />
-                    </button>
+                    </a>
                   </div>
                 </div>
 
@@ -10947,10 +11036,13 @@ export default function MerchantDashboard() {
                   ].map((item) => {
                     const Icon = item.icon;
                     const isActive = settingsSubTab === item.id;
+                    const sectionSlug = item.id;
+                    const itemHref = `/store/${settings.subdomain || "my-store"}/settings/${sectionSlug}`;
                     return (
-                      <button
+                      <a
                         key={item.id}
-                        onClick={() => setSettingsSubTab(item.id as any)}
+                        href={itemHref}
+                        onClick={(e) => { e.preventDefault(); changeSettingsSubTab(item.id as any); }}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
                           isActive
                             ? "bg-indigo-600 text-white shadow-sm"
@@ -10959,7 +11051,7 @@ export default function MerchantDashboard() {
                       >
                         <Icon className="h-3.5 w-3.5" />
                         <span>{item.label}</span>
-                      </button>
+                      </a>
                     );
                   })}
                 </div>
@@ -11031,10 +11123,12 @@ export default function MerchantDashboard() {
                             {matchingItems.map((item) => {
                               const Icon = item.icon;
                               const isActive = settingsSubTab === item.id;
+                              const itemHref = `/store/${settings.subdomain || "my-store"}/settings/${item.id}`;
                               return (
-                                <button
+                                <a
                                   key={item.id}
-                                  onClick={() => setSettingsSubTab(item.id as any)}
+                                  href={itemHref}
+                                  onClick={(e) => { e.preventDefault(); changeSettingsSubTab(item.id as any); }}
                                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     isActive
                                       ? "bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100"
@@ -11048,7 +11142,7 @@ export default function MerchantDashboard() {
                                       {item.badge}
                                     </span>
                                   )}
-                                </button>
+                                </a>
                               );
                             })}
                           </div>
