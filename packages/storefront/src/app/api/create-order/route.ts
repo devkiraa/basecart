@@ -21,11 +21,11 @@ export async function POST(req: Request) {
     const keyId =
       process.env.RAZORPAY_KEY_ID ||
       process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
-      "rzp_test_TLhimF8Yzakxwd";
+      "rzp_test_TLiBxJXeX2DrUr";
 
     const keySecret =
       process.env.RAZORPAY_KEY_SECRET ||
-      "qW8gO2qPqfxbpWl3WbHKlFDL";
+      "QKnF9C6gX1aLi1b6xTlapHWr";
 
     if (!keyId || !keySecret) {
       return NextResponse.json(
@@ -33,6 +33,7 @@ export async function POST(req: Request) {
         { status: 401 }
       );
     }
+
 
     // Call Razorpay API: POST https://api.razorpay.com/v1/orders
     const authString = Buffer.from(`${keyId}:${keySecret}`).toString("base64");

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTenantStoreData, getProductData } from "../../../../lib/store";
+import { ProductInteractiveSection } from "../../../../components/ProductInteractiveSection";
 
 export const runtime = "edge";
 
@@ -196,16 +197,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
         {/* Right Column: Checkout info */}
         <div className="space-y-8 text-left">
           <div className="space-y-3">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold select-none ${
-              product.inStock 
-                ? "bg-emerald-50 text-emerald-700 border border-emerald-100" 
-                : "bg-rose-50 text-rose-700 border border-rose-100"
-            }`}>
-              {product.inStock ? "● In Stock" : "● Out of Stock"}
-            </span>
-
             <h1 className="text-3xl font-black text-slate-900 leading-tight">{product.name}</h1>
-            <div className="text-2xl font-black text-slate-950">₹{product.price}</div>
           </div>
 
           <div className="border-y border-slate-100 py-6">
@@ -213,20 +205,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
             <p className="text-sm text-slate-500 leading-relaxed font-semibold">{product.description}</p>
           </div>
 
-          {/* Localized checkout parameters */}
-          <div className="space-y-4">
-            <div className="space-y-1.5 text-xs text-slate-400 font-bold select-none">
-              <div className="flex items-center gap-1.5">⚡ Instant UPI Checkout via Razorpay</div>
-              <div className="flex items-center gap-1.5">📦 Local Kerala Courier Doorstep Logistics</div>
-              <div className="flex items-center gap-1.5">💵 Cash on Delivery (COD) Options Available</div>
-            </div>
+          <ProductInteractiveSection product={{ ...product, inStock: product.inStock ?? true }} />
 
-            <button 
-              onClick={() => alert(`Initiating Razorpay payment flow for ₹${product.price} to buy ${product.name}...`)}
-              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl shadow-md shadow-blue-500/10 transition-all text-sm active:scale-95 flex items-center justify-center gap-1.5"
-            >
-              Buy Now
-            </button>
+          <div className="space-y-1.5 text-xs text-slate-400 font-bold select-none pt-2 border-t border-slate-100">
+            <div className="flex items-center gap-1.5">⚡ Instant UPI Checkout via Razorpay</div>
+            <div className="flex items-center gap-1.5">📦 Local Kerala Courier Doorstep Logistics</div>
+            <div className="flex items-center gap-1.5">💵 Cash on Delivery (COD) Options Available</div>
           </div>
         </div>
 

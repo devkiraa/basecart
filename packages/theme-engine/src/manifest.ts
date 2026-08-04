@@ -1,35 +1,38 @@
-import { z } from "zod";
+import type { z } from "zod";
+import * as ZodModule from "zod";
 
-export const ThemeManifestSchema = z.object({
-  id: z.string().min(1, "Theme ID is required"),
-  slug: z.string().min(1, "Theme slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
-  name: z.string().min(1, "Theme name is required"),
-  version: z.string().regex(/^\d+\.\d+\.\d+$/, "Version must follow semantic versioning (x.y.z)"),
-  author: z.object({
-    name: z.string().min(1),
-    email: z.string().email().optional(),
-    url: z.string().url().optional(),
+const zVal: typeof z = (ZodModule as any).z || (ZodModule as any).default || ZodModule;
+
+export const ThemeManifestSchema = zVal.object({
+  id: zVal.string().min(1, "Theme ID is required"),
+  slug: zVal.string().min(1, "Theme slug is required").regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+  name: zVal.string().min(1, "Theme name is required"),
+  version: zVal.string().regex(/^\d+\.\d+\.\d+$/, "Version must follow semantic versioning (x.y.z)"),
+  author: zVal.object({
+    name: zVal.string().min(1),
+    email: zVal.string().email().optional(),
+    url: zVal.string().url().optional(),
   }),
-  authorWebsite: z.string().optional(),
-  category: z.string().min(1, "Category is required"),
-  subcategory: z.string().optional(),
-  description: z.string().min(10, "Description must be at least 10 characters"),
-  price: z.number().nonnegative().default(0),
-  currency: z.string().default("USD"),
-  featured: z.boolean().default(false),
-  published: z.boolean().default(true),
-  minimumBasecartVersion: z.string().default("1.0.0"),
-  maximumBasecartVersion: z.string().default("2.5.0"),
-  preview: z.string().optional(),
-  thumbnail: z.string().optional(),
-  screenshots: z.array(z.string()).default([]),
-  tags: z.array(z.string()).default([]),
-  license: z.string().default("Basecart Standard License"),
-  supportedFeatures: z.array(z.string()).default(["Responsive", "SEO Ready"]),
-  demoUrl: z.string().optional(),
-  colorPalette: z.record(z.string(), z.string()).optional(),
-  createdAt: z.string().optional(),
-  updatedAt: z.string().optional(),
+  authorWebsite: zVal.string().optional(),
+  category: zVal.string().min(1, "Category is required"),
+  subcategory: zVal.string().optional(),
+  description: zVal.string().min(10, "Description must be at least 10 characters"),
+  price: zVal.number().nonnegative().default(0),
+  currency: zVal.string().default("USD"),
+  featured: zVal.boolean().default(false),
+  published: zVal.boolean().default(true),
+  minimumBasecartVersion: zVal.string().default("1.0.0"),
+  maximumBasecartVersion: zVal.string().default("2.5.0"),
+  preview: zVal.string().optional(),
+  thumbnail: zVal.string().optional(),
+  screenshots: zVal.array(zVal.string()).default([]),
+  tags: zVal.array(zVal.string()).default([]),
+  license: zVal.string().default("Basecart Standard License"),
+  supportedFeatures: zVal.array(zVal.string()).default(["Responsive", "SEO Ready"]),
+  demoUrl: zVal.string().optional(),
+  colorPalette: zVal.record(zVal.string(), zVal.string()).optional(),
+  createdAt: zVal.string().optional(),
+  updatedAt: zVal.string().optional(),
 });
 
 export type ThemeManifest = z.infer<typeof ThemeManifestSchema>;

@@ -8,7 +8,8 @@ export type EmailType =
   | "payment-failed"
   | "subscription"
   | "team-invite"
-  | "newsletter";
+  | "newsletter"
+  | "abandoned-cart";
 
 export interface EmailAttachment {
   content: string; // Base64 encoded payload

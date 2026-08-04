@@ -449,6 +449,25 @@ export async function handleQueueBatch(batch: any, env: any, ctx: any): Promise<
         }
       }
 
+      if (type === "ABANDONED_CART_RECOVERY") {
+        const { email, customerName, items, checkoutUrl } = body;
+        console.log(`🛒 Retargeting abandoned cart for ${email} with ${items?.length || 0} items`);
+
+        await sendEmail(
+          {
+            type: "abandoned-cart",
+            to: email,
+            data: {
+              customerName: customerName || "Valued Customer",
+              items: items || [],
+              checkoutUrl: checkoutUrl || "https://basecart.app/checkout",
+              storeName: body.storeName || "Basecart Store",
+            },
+          },
+          env
+        );
+      }
+
       message.ack();
     } catch (err: any) {
       console.error("❌ Failed to process Cloudflare Queue message record:", err, message.body);

@@ -15,7 +15,9 @@ import storefrontDesignRouter from "./routes/storefront-design";
 import reviewsRouter from "./routes/reviews";
 import storefrontApiRouter from "./routes/storefront_api";
 import themeManagerRouter from "./routes/theme_manager";
+import razorpayRouter from "./routes/razorpay";
 import { csrfProtectionMiddleware } from "./middleware/csrf";
+import { sanitizeLogPII } from "./lib/audit";
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
@@ -105,7 +107,8 @@ export function buildApp() {
 
   // Global Error Handler
   app.onError((err, c) => {
-    console.error("Hono error handler caught error:", err);
+    const rawMsg = err.stack || err.message || String(err);
+    console.error("Hono error handler caught error:", sanitizeLogPII(rawMsg));
     
     const statusCode = (err as any).statusCode || (err as any).status || 500;
     const isProduction = c.env && c.env.NODE_ENV === "production";
@@ -210,6 +213,9 @@ export function buildApp() {
 
   // Mount Theme Manager Router
   app.route("/", themeManagerRouter);
+
+  // Mount Razorpay Standard Checkout Router (/api/create-order, /api/verify-payment)
+  app.route("/api", razorpayRouter);
 
   return app;
 }

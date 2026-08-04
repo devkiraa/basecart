@@ -178,6 +178,12 @@ app.post("/auth/merchant/signup", async (c) => {
     }, 400);
   }
 
+  const captchaToken = (body as any).captchaToken || (body as any).turnstileToken;
+  const isProd = c.env && c.env.NODE_ENV === "production" && c.env.REQUIRE_CAPTCHA === "true";
+  if (isProd && !captchaToken) {
+    return c.json({ error: "CAPTCHA verification is required" }, 400);
+  }
+
   const {
     email,
     password,

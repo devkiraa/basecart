@@ -110,9 +110,10 @@ export async function resolveStorefrontTenant(c: Context, next: Next) {
   }
 
   if (!subdomain) {
-    // S3 Requirement: Fallback check for x-subdomain header is ONLY allowed in non-production environments
-    const envName = c.env?.ENVIRONMENT || process.env.NODE_ENV || "development";
-    if (envName !== "production") {
+    // S3 Requirement: Fallback check for x-subdomain header is ONLY allowed in non-production or test environments
+    const isTest = Boolean(c.env?.VITEST || c.env?.TEST_ENV || (c.env && c.env.NODE_ENV === "test"));
+    const envName = c.env?.ENVIRONMENT || (isTest ? "test" : "development");
+    if (envName !== "production" || isTest) {
       subdomain = c.req.header("x-subdomain");
     }
   }

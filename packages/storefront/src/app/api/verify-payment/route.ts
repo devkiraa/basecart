@@ -23,7 +23,7 @@ export async function POST(req: Request) {
 
     const keySecret =
       process.env.RAZORPAY_KEY_SECRET ||
-      "qW8gO2qPqfxbpWl3WbHKlFDL";
+      "QKnF9C6gX1aLi1b6xTlapHWr";
 
     if (!keySecret) {
       return NextResponse.json(

@@ -11,12 +11,12 @@ export default defineConfig({
     cloudflareTest({
       wrangler: {
         configPath: "./wrangler.toml",
-        environment: "dev",
       },
     }),
   ],
   test: {
     include: ["src/**/*.test.ts"],
     setupFiles: ["src/tests/setup.ts"],
+    teardownTimeout: 1000,
   },
 });

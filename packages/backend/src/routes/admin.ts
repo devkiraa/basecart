@@ -296,7 +296,7 @@ export async function authenticateAdmin(c: any, next: () => Promise<void>) {
   try {
     let token = getCookie(c, "basecart_admin_token");
     if (!token) {
-      const authHeader = c.req.header("Authorization");
+      const authHeader = c.req.header("authorization") || c.req.header("Authorization");
       if (authHeader && authHeader.startsWith("Bearer ")) {
         token = authHeader.split(" ")[1];
       }
@@ -311,9 +311,6 @@ export async function authenticateAdmin(c: any, next: () => Promise<void>) {
     if (payload.role !== "admin") {
       return c.json({ error: "Forbidden: Admin access required" }, 403);
     }
-
-    const controlDb = getControlDb(c.env);
-    await ensureAdminTables(controlDb);
 
     c.set("user", payload);
     await next();

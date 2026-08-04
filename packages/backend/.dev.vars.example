@@ -1,6 +1,9 @@
 # Basecart local development secrets for Cloudflare Workers.
 # Copy this file to '.dev.vars' in packages/backend/ to configure local development credentials.
 
+RAZORPAY_KEY_ID="rzp_test_your_key_id_here"
+RAZORPAY_KEY_SECRET="your_razorpay_key_secret_here"
+
 ZEPTOMAIL_API_URL="https://api.zeptomail.in/v1.1/email"
 ZEPTOMAIL_TOKEN="your_zeptomail_token_here"
 MAIL_FROM_ADDRESS="noreply@basecart.app"

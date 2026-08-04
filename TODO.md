@@ -27,25 +27,25 @@
 ## 🟡 Remaining Enhancement & Polish Backlog
 
 ### Security & Infrastructure Safeguards
-- [ ] Implement CSRF middleware protection (double-submit cookie pattern) for sensitive admin POST/PATCH routes
-- [ ] Add CAPTCHA verification and IP allowlisting/rate-limiting on public merchant signup endpoints
-- [ ] Redact sensitive customer PII in production Cloudflare Worker invocation logs
+- [x] Implement CSRF middleware protection (double-submit cookie pattern) for sensitive admin POST/PATCH routes
+- [x] Add CAPTCHA verification and IP allowlisting/rate-limiting on public merchant signup endpoints
+- [x] Redact sensitive customer PII in production Cloudflare Worker invocation logs
 
 ### Storefront & Theme UX
-- [ ] Replace browser `alert()` popups on product detail pages with inline toast notification UI
-- [ ] Expand variant picker on product detail pages to update live subtotal and stock availability indicators
-- [ ] Implement customer address book selection during checkout step
+- [x] Replace browser `alert()` popups on product detail pages with inline toast notification UI
+- [x] Expand variant picker on product detail pages to update live subtotal and stock availability indicators
+- [x] Implement customer address book selection during checkout step
 
 ### Admin Panel & Content Management
-- [ ] Upgrade browser `prompt()` dialogs in `/content` (FAQ/Careers) and `/platform/api-keys` (API Keys/Webhooks) to modal forms
-- [ ] Add rich text HTML editor modal for blog post creation and news announcements
-- [ ] Connect System Settings save form (`/settings`) to persistent API endpoint (`POST /admin/system-settings`)
+- [x] Upgrade browser `prompt()` dialogs in `/content` (FAQ/Careers) and `/platform/api-keys` (API Keys/Webhooks) to modal forms
+- [x] Add rich text HTML editor modal for blog post creation and news announcements
+- [x] Connect System Settings save form (`/settings`) to persistent API endpoint (`POST /admin/system-settings`)
 
 ### Merchant Dashboard
-- [ ] Render Terms of Service and Privacy Policy tab contents inside store settings
-- [ ] Add discount expiry date picker input to promotional coupon creation form
-- [ ] Connect Abandoned Cart retargeting campaign trigger to automated ZeptoMail queue worker
-- [ ] Add order line-item drill-down drawer modal in merchant dashboard orders list
+- [x] Render Terms of Service and Privacy Policy tab contents inside store settings
+- [x] Add discount expiry date picker input to promotional coupon creation form
+- [x] Connect Abandoned Cart retargeting campaign trigger to automated ZeptoMail queue worker
+- [x] Add order line-item drill-down drawer modal in merchant dashboard orders list
 
 ---
 

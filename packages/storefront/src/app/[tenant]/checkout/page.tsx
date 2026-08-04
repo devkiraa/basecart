@@ -38,12 +38,56 @@ export default function CheckoutPage() {
     pincode: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const savedAddresses = [
+    {
+      id: "addr-1",
+      label: "Home (Kochi)",
+      name: "Kiran Kumar",
+      phone: "9876543210",
+      email: "kiran@example.com",
+      address1: "42 Beach Road, Fort Kochi",
+      address2: "Near Clock Tower",
+      city: "Kochi",
+      state: "Kerala",
+      pincode: "682001",
+    },
+    {
+      id: "addr-2",
+      label: "Office (Infopark)",
+      name: "Kiran Kumar",
+      phone: "9876543210",
+      email: "kiran@example.com",
+      address1: "Suite 402, Infopark Phase 1",
+      address2: "Kakkanad",
+      city: "Kochi",
+      state: "Kerala",
+      pincode: "682030",
+    },
+  ];
+
+  const applySavedAddress = (addr: (typeof savedAddresses)[0]) => {
+    setForm({
+      name: addr.name,
+      email: addr.email,
+      phone: addr.phone,
+      address1: addr.address1,
+      address2: addr.address2,
+      city: addr.city,
+      state: addr.state,
+      pincode: addr.pincode,
+    });
+    setErrors({});
+    setCheckoutError(null);
+  };
 
   const total = subtotal;
 
   const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setErrors((prev) => ({ ...prev, [field]: "" }));
+    setCheckoutError(null);
   };
 
   const validate = () => {
@@ -110,7 +154,7 @@ export default function CheckoutPage() {
         setSuccess(true);
         setTimeout(() => router.push("/order-confirmation"), 1500);
       } else {
-        alert(data.message || "Checkout failed. Please try again.");
+        setCheckoutError(data.message || "Checkout failed. Please check details and try again.");
         setSubmitting(false);
       }
     } catch {
@@ -177,13 +221,44 @@ export default function CheckoutPage() {
         </Link>
       </div>
 
+      {checkoutError && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm font-bold rounded-xl flex items-center justify-between">
+          <span>{checkoutError}</span>
+          <button onClick={() => setCheckoutError(null)} className="text-rose-600 font-extrabold text-base">×</button>
+        </div>
+      )}
+
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Shipping Form */}
         <div className="flex-1 space-y-6">
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-5">
-            <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <MapPin size={13} /> Shipping Details
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <MapPin size={13} /> Shipping Details
+              </h2>
+            </div>
+
+            {/* Saved Address Book Selector */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+              <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                📖 Saved Address Book
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {savedAddresses.map((addr) => (
+                  <button
+                    key={addr.id}
+                    type="button"
+                    onClick={() => applySavedAddress(addr)}
+                    className="p-3 text-left bg-white rounded-lg border border-slate-200 hover:border-blue-500 transition-all text-xs font-semibold space-y-0.5 group"
+                  >
+                    <div className="font-extrabold text-slate-900 group-hover:text-blue-600">
+                      {addr.label}
+                    </div>
+                    <div className="text-[10px] text-slate-500 truncate">{addr.address1}, {addr.city}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
