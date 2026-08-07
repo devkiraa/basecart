@@ -47,7 +47,7 @@
     "@types/nodemailer": "^8.0.1",
     "@types/pdfkit": "^0.17.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.2.2",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   }
 }
