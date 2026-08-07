@@ -17,7 +17,7 @@
     "db:sync": "wrangler d1 export basecart-control-prod --remote --output=d1-prod-export.sql && node ../../scripts/reset-local-db.js && wrangler d1 execute basecart-control-prod --local --file=d1-prod-export.sql"
   },
   "dependencies": {
-    "@aws-sdk/client-dynamodb": "^3.1086.0",
+    "@aws-sdk/client-dynamodb": "^3.1102.0",
     "@aws-sdk/client-kms": "^3.1086.0",
     "@aws-sdk/client-s3": "^3.1086.0",
     "@aws-sdk/client-ses": "^3.1086.0",
