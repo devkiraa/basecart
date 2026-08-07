@@ -28,7 +28,7 @@
     "db:sync": "npm run db:sync --workspace=packages/backend"
   },
   "devDependencies": {
-    "concurrently": "^10.0.3"
+    "concurrently": "^10.0.4"
   },
   "overrides": {
     "next": "^14.2.25",
