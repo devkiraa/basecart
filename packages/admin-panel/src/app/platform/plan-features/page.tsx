@@ -24,6 +24,7 @@ interface PlanConfig {
   orderCap: number;
   gmvCap: number;
   productCap: number;
+  aiCreditsCap: number;
   allowCustomDomain: boolean | number;
   allowAutomatedGateways: boolean | number;
   allowAutomatedShipping: boolean | number;
@@ -173,6 +174,7 @@ export default function PlanFeaturesConsole() {
     orderCap: 100,
     gmvCap: 25000,
     productCap: -1,
+    aiCreditsCap: 100,
     allowCustomDomain: true,
     allowAutomatedGateways: true,
     allowAutomatedShipping: true,
@@ -197,6 +199,7 @@ export default function PlanFeaturesConsole() {
     orderCap: -1,
     gmvCap: -1,
     productCap: 100,
+    aiCreditsCap: 0,
     allowCustomDomain: false,
     allowAutomatedGateways: true,
     allowAutomatedShipping: false,
@@ -228,6 +231,7 @@ export default function PlanFeaturesConsole() {
     orderCap: -1,
     gmvCap: -1,
     productCap: 500,
+    aiCreditsCap: 50,
     allowCustomDomain: true,
     allowAutomatedGateways: true,
     allowAutomatedShipping: false,
@@ -259,6 +263,7 @@ export default function PlanFeaturesConsole() {
     orderCap: -1,
     gmvCap: -1,
     productCap: -1,
+    aiCreditsCap: 500,
     allowCustomDomain: true,
     allowAutomatedGateways: true,
     allowAutomatedShipping: true,
@@ -292,6 +297,7 @@ export default function PlanFeaturesConsole() {
     orderCap: -1,
     gmvCap: -1,
     productCap: -1,
+    aiCreditsCap: -1,
     allowCustomDomain: true,
     allowAutomatedGateways: true,
     allowAutomatedShipping: true,
@@ -472,6 +478,63 @@ export default function PlanFeaturesConsole() {
                       value={plan.price}
                       onChange={(e) => updatePlanField(plan.planId, "price", Number(e.target.value))}
                       className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm font-bold text-slate-800 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Resource Quotas & Caps */}
+                <div className="space-y-2 border-t border-slate-100 pt-3 text-xs">
+                  <label className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block">
+                    Resource Quotas & Caps (-1 = Unlimited)
+                  </label>
+
+                  <div className="flex justify-between items-center py-1 border-b border-slate-100/60">
+                    <span className="text-slate-600 font-semibold">📦 Products Cap</span>
+                    <input
+                      type="number"
+                      value={plan.productCap ?? -1}
+                      onChange={(e) => updatePlanField(plan.planId, "productCap", Number(e.target.value))}
+                      className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right font-bold focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center py-1 border-b border-slate-100/60">
+                    <span className="text-slate-600 font-semibold">🤖 AI Credits / mo</span>
+                    <input
+                      type="number"
+                      value={plan.aiCreditsCap ?? 50}
+                      onChange={(e) => updatePlanField(plan.planId, "aiCreditsCap", Number(e.target.value))}
+                      className="w-20 bg-indigo-50/60 border border-indigo-200 rounded px-2 py-1 text-xs text-right font-black text-indigo-700 focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center py-1 border-b border-slate-100/60">
+                    <span className="text-slate-600 font-semibold">👥 Staff Seats</span>
+                    <input
+                      type="number"
+                      value={plan.maxStaffSeats ?? 1}
+                      onChange={(e) => updatePlanField(plan.planId, "maxStaffSeats", Number(e.target.value))}
+                      className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right font-bold focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center py-1 border-b border-slate-100/60">
+                    <span className="text-slate-600 font-semibold">🛒 Orders Cap</span>
+                    <input
+                      type="number"
+                      value={plan.orderCap ?? -1}
+                      onChange={(e) => updatePlanField(plan.planId, "orderCap", Number(e.target.value))}
+                      className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right font-bold focus:outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex justify-between items-center py-1">
+                    <span className="text-slate-600 font-semibold">💰 Revenue Limit (₹ GMV)</span>
+                    <input
+                      type="number"
+                      value={plan.gmvCap ?? -1}
+                      onChange={(e) => updatePlanField(plan.planId, "gmvCap", Number(e.target.value))}
+                      className="w-20 bg-slate-50 border border-slate-200 rounded px-2 py-1 text-xs text-right font-bold focus:outline-none focus:border-indigo-500"
                     />
                   </div>
                 </div>

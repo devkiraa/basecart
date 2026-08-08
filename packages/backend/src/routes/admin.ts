@@ -229,6 +229,7 @@ export async function ensureAdminTables(db: any) {
     orderCap INTEGER NOT NULL DEFAULT -1,
     gmvCap REAL NOT NULL DEFAULT -1,
     productCap INTEGER NOT NULL DEFAULT -1,
+    aiCreditsCap INTEGER NOT NULL DEFAULT 50,
     allowCustomDomain INTEGER NOT NULL DEFAULT 1,
     allowAutomatedGateways INTEGER NOT NULL DEFAULT 1,
     allowAutomatedShipping INTEGER NOT NULL DEFAULT 1,
@@ -247,6 +248,9 @@ export async function ensureAdminTables(db: any) {
 
   try {
     await db.prepare("ALTER TABLE plan_configs ADD COLUMN featuresJson TEXT DEFAULT '[]'").run();
+  } catch (e) {}
+  try {
+    await db.prepare("ALTER TABLE plan_configs ADD COLUMN aiCreditsCap INTEGER NOT NULL DEFAULT 50").run();
   } catch (e) {}
 
   const planCount: any = await db.prepare("SELECT COUNT(*) as total FROM plan_configs").first();
@@ -412,7 +416,7 @@ export async function ensureAdminTables(db: any) {
 
     for (const p of seedPlans) {
       await db.prepare(
-        "INSERT INTO plan_configs (planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart, allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs, allowGstInvoices, platformFeePercent, featuresJson, paywallMessage, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO plan_configs (planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, aiCreditsCap, allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart, allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs, allowGstInvoices, platformFeePercent, featuresJson, paywallMessage, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
         .bind(
           p.planId,
@@ -423,6 +427,7 @@ export async function ensureAdminTables(db: any) {
           p.orderCap,
           p.gmvCap,
           p.productCap,
+          (p as any).aiCreditsCap ?? 50,
           p.allowCustomDomain,
           p.allowAutomatedGateways,
           p.allowAutomatedShipping,
@@ -2185,11 +2190,11 @@ app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
     await controlDb
       .prepare(
         `INSERT OR REPLACE INTO plan_configs (
-          planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap,
+          planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, aiCreditsCap,
           allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart,
           allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs,
           allowGstInvoices, platformFeePercent, featuresJson, paywallMessage, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         p.planId,
@@ -2200,6 +2205,7 @@ app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
         Number(p.orderCap) ?? -1,
         Number(p.gmvCap) ?? -1,
         Number(p.productCap) ?? -1,
+        Number(p.aiCreditsCap) ?? 50,
         p.allowCustomDomain ? 1 : 0,
         p.allowAutomatedGateways ? 1 : 0,
         p.allowAutomatedShipping ? 1 : 0,
