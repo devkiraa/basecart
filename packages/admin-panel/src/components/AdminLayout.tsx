@@ -33,6 +33,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Palette,
+  Link2,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -175,6 +176,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       items: [
         { name: "Billing & Subs", href: "/billing", icon: CreditCard },
         { name: "Orders Feed", href: "/orders", icon: ShoppingCart },
+        { name: "URL Attribution", href: "/attribution", icon: Link2 },
         { name: "Platform Analytics", href: "/analytics", icon: BarChart3 },
       ],
     },
