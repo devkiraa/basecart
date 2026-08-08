@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Users,
   CreditCard,
@@ -18,36 +19,12 @@ import {
   Cpu,
   Loader2,
 } from "lucide-react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 
-const CF_BLUE = "#2563EB";
-const GRID_COLOR = "#f1f5f9";
-
-const revenueTrendData = [
-  { month: "May", mrr: 580000, orders: 1240 },
-  { month: "Jun", mrr: 710000, orders: 1580 },
-  { month: "Jul", mrr: 924000, orders: 2100 },
-  { month: "Aug (now)", mrr: 1249000, orders: 2840 },
-];
-
-const cfTooltipStyle = {
-  contentStyle: {
-    borderRadius: "8px",
-    border: "1px solid #e2e8f0",
-    fontSize: "11px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-    padding: "6px 10px",
-  },
-  labelStyle: { fontWeight: 700, color: "#475569", fontSize: "10px" },
-};
+// Recharts loaded client-side only — never included in the edge SSR bundle
+const RevenueTrendChart = dynamic(
+  () => import("@/components/AdminCharts").then((m) => ({ default: m.RevenueTrendChart })),
+  { ssr: false, loading: () => <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div> }
+);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -235,40 +212,7 @@ export default function DashboardHome() {
               </span>
             </div>
             <div className="h-44">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={revenueTrendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={CF_BLUE} stopOpacity={0.1} />
-                      <stop offset="95%" stopColor={CF_BLUE} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
-                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
-                  <YAxis
-                    tick={{ fontSize: 10, fill: "#94a3b8" }}
-                    axisLine={false}
-                    tickLine={false}
-                    tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`}
-                  />
-                  <Tooltip
-                    {...cfTooltipStyle}
-                    formatter={(v, name) => [
-                      name === "mrr" ? `₹${Number(v ?? 0).toLocaleString("en-IN")}` : `${Number(v ?? 0)} orders`,
-                      name === "mrr" ? "MRR" : "Orders",
-                    ]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="mrr"
-                    stroke={CF_BLUE}
-                    strokeWidth={1.5}
-                    fill="url(#revenueGrad)"
-                    dot={{ r: 3, fill: CF_BLUE, stroke: "#fff", strokeWidth: 2 }}
-                    activeDot={{ r: 5 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <RevenueTrendChart />
             </div>
           </div>
 
