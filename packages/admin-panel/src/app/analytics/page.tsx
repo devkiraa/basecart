@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { 
   BarChart3, 
   TrendingUp, 
@@ -10,8 +11,60 @@ import {
   Percent,
   Calendar
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+// Cloudflare Radar-style chart configuration
+const CF_BLUE   = "#2563EB";
+const CF_GREEN  = "#10B981";
+const CF_PURPLE = "#8B5CF6";
+const GRID_COLOR = "#f1f5f9"; // slate-100
+
+// Sample trend data — replaced with real API data when available
+const gmvData = [
+  { date: "Jun 20", gmv: 120000 },
+  { date: "Jun 25", gmv: 145000 },
+  { date: "Jul 01", gmv: 132000 },
+  { date: "Jul 07", gmv: 188000 },
+  { date: "Jul 12", gmv: 220000 },
+  { date: "Jul 17", gmv: 275000 },
+  { date: "Jul 22", gmv: 310000 },
+  { date: "Aug 01", gmv: 390000 },
+];
+
+const signupData = [
+  { date: "Jun 20", stores: 12 },
+  { date: "Jun 25", stores: 18 },
+  { date: "Jul 01", stores: 22 },
+  { date: "Jul 07", stores: 31 },
+  { date: "Jul 12", stores: 40 },
+  { date: "Jul 17", stores: 55 },
+  { date: "Jul 22", stores: 63 },
+  { date: "Aug 01", stores: 78 },
+];
+
+const cfTooltipStyle = {
+  contentStyle: {
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    fontSize: "11px",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+    padding: "6px 10px",
+  },
+  labelStyle: { fontWeight: 700, color: "#475569", fontSize: "10px" },
+};
+
 
 interface AnalyticsData {
   mrr: number;
@@ -117,57 +170,80 @@ export default function AnalyticsDashboard() {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           
-          {/* GMV Growth SVG Chart */}
+          {/* GMV Growth — Recharts AreaChart (Cloudflare Radar style) */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Gross Merchandise Value (GMV)</h3>
-            <div className="h-64 bg-slate-50 rounded-xl flex flex-col justify-end p-4 border border-slate-100 relative">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline
-                  fill="none"
-                  stroke="#4f46e5"
-                  strokeWidth="2.5"
-                  points="0,85 15,75 30,80 45,60 60,50 75,35 90,20 100,10"
-                />
-                <path
-                  fill="rgba(79, 70, 229, 0.05)"
-                  d="M0,85 L15,75 L30,80 L45,60 L60,50 L75,35 L90,20 L100,10 L100,100 L0,100 Z"
-                />
-              </svg>
-              <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-2 select-none">
-                <span>Jun 20</span>
-                <span>Jun 25</span>
-                <span>Jul 01</span>
-                <span>Jul 07</span>
-                <span>Jul 12</span>
-                <span>Jul 17 (Today)</span>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Gross Merchandise Value (GMV)</h3>
+              <span className="px-2 py-0.5 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-full">INR</span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={gmvData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gmvGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CF_BLUE} stopOpacity={0.12} />
+                      <stop offset="95%" stopColor={CF_BLUE} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`}
+                  />
+                  <Tooltip
+                    {...cfTooltipStyle}
+                    formatter={(v) => [`₹${Number(v ?? 0).toLocaleString("en-IN")}`, "GMV"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="gmv"
+                    stroke={CF_BLUE}
+                    strokeWidth={1.5}
+                    fill="url(#gmvGrad)"
+                    dot={{ r: 3, fill: CF_BLUE, stroke: "#fff", strokeWidth: 2 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
-          {/* User/Merchant Growth SVG Chart */}
+          {/* Merchant Signups — Recharts AreaChart (Cloudflare Radar style) */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
-            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Merchant Signups & Active Stores</h3>
-            <div className="h-64 bg-slate-50 rounded-xl flex flex-col justify-end p-4 border border-slate-100 relative">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="2.5"
-                  points="0,90 15,85 30,70 45,65 60,40 75,30 90,15 100,5"
-                />
-                <path
-                  fill="rgba(16, 185, 129, 0.05)"
-                  d="M0,90 L15,85 L30,70 L45,65 L60,40 L75,30 L90,15 L100,5 L100,100 L0,100 Z"
-                />
-              </svg>
-              <div className="flex justify-between text-[9px] text-slate-400 font-bold mt-2 select-none">
-                <span>Jun 20</span>
-                <span>Jun 25</span>
-                <span>Jul 01</span>
-                <span>Jul 07</span>
-                <span>Jul 12</span>
-                <span>Jul 17 (Today)</span>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Merchant Signups & Active Stores</h3>
+              <span className="px-2 py-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full">Stores</span>
+            </div>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={signupData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="signupGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CF_GREEN} stopOpacity={0.12} />
+                      <stop offset="95%" stopColor={CF_GREEN} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    {...cfTooltipStyle}
+                    formatter={(v) => [Number(v ?? 0), "Active Stores"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="stores"
+                    stroke={CF_GREEN}
+                    strokeWidth={1.5}
+                    fill="url(#signupGrad)"
+                    dot={{ r: 3, fill: CF_GREEN, stroke: "#fff", strokeWidth: 2 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 

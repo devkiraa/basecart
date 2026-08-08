@@ -18,6 +18,36 @@ import {
   Cpu,
   Loader2,
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+const CF_BLUE = "#2563EB";
+const GRID_COLOR = "#f1f5f9";
+
+const revenueTrendData = [
+  { month: "May", mrr: 580000, orders: 1240 },
+  { month: "Jun", mrr: 710000, orders: 1580 },
+  { month: "Jul", mrr: 924000, orders: 2100 },
+  { month: "Aug (now)", mrr: 1249000, orders: 2840 },
+];
+
+const cfTooltipStyle = {
+  contentStyle: {
+    borderRadius: "8px",
+    border: "1px solid #e2e8f0",
+    fontSize: "11px",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+    padding: "6px 10px",
+  },
+  labelStyle: { fontWeight: 700, color: "#475569", fontSize: "10px" },
+};
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -196,34 +226,49 @@ export default function DashboardHome() {
         {/* Middle row: Visual growth charts & Top merchants */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Revenue Chart Widget */}
+          {/* Revenue Chart Widget — Recharts AreaChart (Cloudflare Radar style) */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm lg:col-span-2 space-y-5">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Platform Revenue & Order growth</h3>
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Platform Revenue & Order Growth</h3>
               <span className="px-2 py-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full">
                 Real-time
               </span>
             </div>
-            
-            <div className="h-44 bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col justify-end">
-              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                <polyline
-                  fill="none"
-                  stroke="#4f46e5"
-                  strokeWidth="2.5"
-                  points="0,95 20,70 40,80 60,45 80,30 100,10"
-                />
-                <path
-                  fill="rgba(79, 70, 229, 0.05)"
-                  d="M0,95 L20,70 L40,80 L60,45 L80,30 L100,10 L100,100 L0,100 Z"
-                />
-              </svg>
-            </div>
-            
-            <div className="flex justify-between text-[9px] text-slate-400 font-bold select-none">
-              <span>May 2026</span>
-              <span>June 2026</span>
-              <span>July 2026 (Active)</span>
+            <div className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={revenueTrendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={CF_BLUE} stopOpacity={0.1} />
+                      <stop offset="95%" stopColor={CF_BLUE} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} vertical={false} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`}
+                  />
+                  <Tooltip
+                    {...cfTooltipStyle}
+                    formatter={(v, name) => [
+                      name === "mrr" ? `₹${Number(v ?? 0).toLocaleString("en-IN")}` : `${Number(v ?? 0)} orders`,
+                      name === "mrr" ? "MRR" : "Orders",
+                    ]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="mrr"
+                    stroke={CF_BLUE}
+                    strokeWidth={1.5}
+                    fill="url(#revenueGrad)"
+                    dot={{ r: 3, fill: CF_BLUE, stroke: "#fff", strokeWidth: 2 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
