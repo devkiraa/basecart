@@ -26,7 +26,6 @@ interface AnalyticsData {
   signupsHistory: string[];
 }
 
-export const runtime = "edge";
 
 export default function AnalyticsDashboard() {
   const [timeframe, setTimeframe] = useState("30d");
