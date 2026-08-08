@@ -566,42 +566,7 @@ export default function PlanFeaturesConsole() {
         </div>
       </div>
 
-      {/* Competitive Advantages in Indian Market Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-          <ShieldCheck className="w-4.5 h-4.5 text-emerald-600" />
-          <span>Competitive Advantages Enforced Platform-Wide</span>
-        </h3>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-          <div className="p-4 bg-emerald-50/50 border border-emerald-100 rounded-xl space-y-1.5">
-            <span className="font-bold text-emerald-900 flex items-center gap-1.5">
-              <Zap className="w-4 h-4 text-emerald-600" /> 0% Platform Fees Guarantee
-            </span>
-            <p className="text-emerald-800 leading-relaxed">
-              Shopify charges an extra 0.5%–2.0% transaction fee in India. Basecart guarantees 0% platform fee on all paid plans.
-            </p>
-          </div>
-
-          <div className="p-4 bg-blue-50/50 border border-blue-100 rounded-xl space-y-1.5">
-            <span className="font-bold text-blue-900 flex items-center gap-1.5">
-              <Globe className="w-4 h-4 text-blue-600" /> Hosted Website on ₹399 Starter
-            </span>
-            <p className="text-blue-800 leading-relaxed">
-              Offers custom domain mapping and full D2C website storefront, unlike Shopify Starter limiting to simple social buy links.
-            </p>
-          </div>
-
-          <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-xl space-y-1.5">
-            <span className="font-bold text-purple-900 flex items-center gap-1.5">
-              <Unlock className="w-4 h-4 text-purple-600" /> Zero Upfront Commitment
-            </span>
-            <p className="text-purple-800 leading-relaxed">
-              Bypasses mandatory upfront annual lock-ins, building trust with high-growth Indian merchants.
-            </p>
-          </div>
-        </div>
-      </div>
     </form>
   );
 }

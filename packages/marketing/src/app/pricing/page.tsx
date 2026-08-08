@@ -180,46 +180,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Competitive Advantages Guarantee */}
-      <section className="px-6 lg:px-16 py-12 max-w-5xl mx-auto">
-        <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-xl space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-wider">
-              Basecart Edge in the Indian D2C Market
-            </h2>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
-            <div className="space-y-2">
-              <span className="font-bold text-emerald-400 text-sm flex items-center gap-1">
-                <Zap className="w-4 h-4" /> 0% Platform Fees
-              </span>
-              <p className="text-slate-300 leading-relaxed">
-                Shopify charges 0.5%–2.0% transaction fees on third-party Indian gateways. Basecart guarantees 0% platform fees across all paid plans.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <span className="font-bold text-blue-400 text-sm flex items-center gap-1">
-                <Sparkles className="w-4 h-4" /> Full Website on ₹399 Starter
-              </span>
-              <p className="text-slate-300 leading-relaxed">
-                Offers hosted custom domain mapping (`brand.com`) at ₹399/mo, whereas Shopify Starter limits users to buy links without a website.
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <span className="font-bold text-purple-400 text-sm flex items-center gap-1">
-                <Layers className="w-4 h-4" /> Zero Upfront Commitment
-              </span>
-              <p className="text-slate-300 leading-relaxed">
-                Start for ₹0 and process your first 100 orders or ₹25,000 GMV before choosing a plan.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <Footer />
     </div>
