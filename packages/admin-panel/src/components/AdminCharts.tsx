@@ -6,7 +6,7 @@ import React, { useState } from "react";
 const CF_BLUE = "#2563EB";
 const CF_GREEN = "#10B981";
 
-interface DataPoint {
+export interface DataPoint {
   label: string;
   value: number;
   subValue?: string;
@@ -17,197 +17,189 @@ interface SVGChartProps {
   color: string;
   gradientId: string;
   valueFormatter: (val: number) => string;
-  height?: number;
 }
 
-function InteractiveAreaChart({
+export function InteractiveAreaChart({
   data,
   color,
   gradientId,
   valueFormatter,
-  height = 200,
 }: SVGChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
   if (!data || data.length === 0) return null;
 
   const values = data.map((d) => d.value);
-  const minVal = Math.min(...values) * 0.85;
-  const maxVal = Math.max(...values) * 1.1;
+  const rawMin = Math.min(...values);
+  const rawMax = Math.max(...values);
+  
+  // Provide comfortable bounds
+  const minVal = rawMin === rawMax ? (rawMin > 0 ? rawMin * 0.8 : 0) : Math.max(0, rawMin - (rawMax - rawMin) * 0.2);
+  const maxVal = rawMin === rawMax ? (rawMax > 0 ? rawMax * 1.2 : 100) : rawMax + (rawMax - rawMin) * 0.2;
   const range = maxVal - minVal || 1;
 
-  const svgWidth = 500;
-  const svgHeight = height;
-  const paddingX = 40;
-  const paddingY = 25;
-
-  const usableWidth = svgWidth - paddingX * 2;
-  const usableHeight = svgHeight - paddingY * 2;
-
-  const points = data.map((d, i) => {
-    const x = paddingX + (i / (data.length - 1)) * usableWidth;
-    const y = paddingY + usableHeight - ((d.value - minVal) / range) * usableHeight;
-    return { x, y, dataPoint: d, index: i };
+  // Grid tick values (4 horizontal ticks)
+  const tickCount = 4;
+  const ticks = Array.from({ length: tickCount }, (_, i) => {
+    const val = maxVal - ((maxVal - minVal) / (tickCount - 1)) * i;
+    return val;
   });
 
-  // Build SVG path strings
+  const svgWidth = 500;
+  const svgHeight = 160;
+  const paddingY = 12;
+
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * svgWidth;
+    const norm = (d.value - minVal) / range;
+    const y = paddingY + (1 - norm) * (svgHeight - paddingY * 2);
+    return { x, y, dataPoint: d, index: i, normY: (1 - norm) * 100 };
+  });
+
+  // SVG path for line and area fill
   const pathD = points.reduce((acc, pt, i) => {
     return i === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`;
   }, "");
 
-  const areaD = `${pathD} L ${points[points.length - 1].x} ${
-    svgHeight - paddingY
-  } L ${points[0].x} ${svgHeight - paddingY} Z`;
-
-  // Grid lines
-  const gridLineCount = 4;
-  const gridYValues = Array.from({ length: gridLineCount }, (_, i) => {
-    const val = minVal + (range / (gridLineCount - 1)) * i;
-    const y = paddingY + usableHeight - ((val - minVal) / range) * usableHeight;
-    return { val, y };
-  });
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${svgHeight} L ${points[0].x} ${svgHeight} Z`;
 
   return (
-    <div className="relative w-full h-full select-none">
-      <svg
-        viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-        className="w-full h-full overflow-visible"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={color} stopOpacity={0.18} />
-            <stop offset="100%" stopColor={color} stopOpacity={0.0} />
-          </linearGradient>
-        </defs>
-
-        {/* Grid Lines */}
-        {gridYValues.map((g, idx) => (
-          <g key={idx}>
-            <line
-              x1={paddingX}
-              y1={g.y}
-              x2={svgWidth - paddingX}
-              y2={g.y}
-              stroke="#f1f5f9"
-              strokeDasharray="3 3"
-              strokeWidth="1"
-            />
-            <text
-              x={paddingX - 6}
-              y={g.y + 3}
-              fill="#94a3b8"
-              fontSize="9"
-              fontWeight="600"
-              textAnchor="end"
+    <div className="w-full h-full flex flex-col justify-between select-none font-sans">
+      {/* Upper area: Y-axis labels + SVG Drawing Area */}
+      <div className="flex flex-1 min-h-[140px] relative gap-3">
+        {/* Y-Axis HTML Labels (Never stretched/distorted) */}
+        <div className="flex flex-col justify-between py-1 text-right shrink-0 min-w-[48px]">
+          {ticks.map((t, idx) => (
+            <span
+              key={idx}
+              className="text-[10px] font-bold text-slate-400 leading-none select-none"
             >
-              {valueFormatter(g.val)}
-            </text>
-          </g>
-        ))}
-
-        {/* Area Fill */}
-        <path d={areaD} fill={`url(#${gradientId})`} />
-
-        {/* Line Stroke */}
-        <path
-          d={pathD}
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* X Axis Labels */}
-        {points.map((pt) => (
-          <text
-            key={pt.index}
-            x={pt.x}
-            y={svgHeight - 6}
-            fill="#94a3b8"
-            fontSize="9"
-            fontWeight="600"
-            textAnchor="middle"
-          >
-            {pt.dataPoint.label}
-          </text>
-        ))}
-
-        {/* Interactive Hover Indicators & Dots */}
-        {points.map((pt) => {
-          const isHovered = hoveredIdx === pt.index;
-          return (
-            <g key={`dot-${pt.index}`}>
-              {/* Vertical Guide Line on Hover */}
-              {isHovered && (
-                <line
-                  x1={pt.x}
-                  y1={paddingY}
-                  x2={pt.x}
-                  y2={svgHeight - paddingY}
-                  stroke={color}
-                  strokeWidth="1"
-                  strokeDasharray="2 2"
-                  opacity="0.5"
-                />
-              )}
-
-              {/* Data Point Dot */}
-              <circle
-                cx={pt.x}
-                cy={pt.y}
-                r={isHovered ? 5 : 3}
-                fill={isHovered ? color : "#ffffff"}
-                stroke={color}
-                strokeWidth={2}
-                className="transition-all duration-150 cursor-pointer"
-              />
-
-              {/* Invisible Hit Area for Hover */}
-              <rect
-                x={pt.x - usableWidth / (data.length * 2)}
-                y={paddingY}
-                width={usableWidth / data.length}
-                height={usableHeight}
-                fill="transparent"
-                onMouseEnter={() => setHoveredIdx(pt.index)}
-                onMouseLeave={() => setHoveredIdx(null)}
-                className="cursor-pointer"
-              />
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* Tooltip Overlay */}
-      {hoveredIdx !== null && (
-        <div
-          className="absolute z-20 pointer-events-none bg-slate-900 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg shadow-lg border border-slate-700 flex flex-col gap-0.5 -translate-x-1/2 -translate-y-full mb-2 transition-all duration-100"
-          style={{
-            left: `${(points[hoveredIdx].x / svgWidth) * 100}%`,
-            top: `${(points[hoveredIdx].y / svgHeight) * 100}%`,
-          }}
-        >
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            {points[hoveredIdx].dataPoint.label}
-          </span>
-          <span className="font-bold text-white">
-            {valueFormatter(points[hoveredIdx].dataPoint.value)}
-          </span>
+              {valueFormatter(t)}
+            </span>
+          ))}
         </div>
-      )}
+
+        {/* SVG Canvas Area */}
+        <div className="relative flex-1 h-full overflow-visible">
+          {/* Horizontal Grid Lines */}
+          <div className="absolute inset-0 flex flex-col justify-between pointer-events-none py-1">
+            {ticks.map((_, idx) => (
+              <div
+                key={idx}
+                className="w-full border-b border-dashed border-slate-100 h-0"
+              />
+            ))}
+          </div>
+
+          <svg
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            className="w-full h-full overflow-visible relative z-10"
+            preserveAspectRatio="none"
+          >
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.0} />
+              </linearGradient>
+            </defs>
+
+            {/* Area Fill */}
+            <path d={areaD} fill={`url(#${gradientId})`} />
+
+            {/* Path Line */}
+            <path
+              d={pathD}
+              fill="none"
+              stroke={color}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+
+            {/* Interactive Data Point Markers */}
+            {points.map((pt) => {
+              const isHovered = hoveredIdx === pt.index;
+              return (
+                <g key={`point-${pt.index}`}>
+                  {isHovered && (
+                    <line
+                      x1={pt.x}
+                      y1={0}
+                      x2={pt.x}
+                      y2={svgHeight}
+                      stroke={color}
+                      strokeWidth="1.5"
+                      strokeDasharray="3 3"
+                      opacity="0.6"
+                    />
+                  )}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={isHovered ? 6 : 4}
+                    fill={isHovered ? color : "#ffffff"}
+                    stroke={color}
+                    strokeWidth={2.5}
+                    className="transition-all duration-150"
+                  />
+                  {/* Invisible Hit Slits */}
+                  <rect
+                    x={Math.max(0, pt.x - svgWidth / (data.length * 2))}
+                    y={0}
+                    width={svgWidth / data.length}
+                    height={svgHeight}
+                    fill="transparent"
+                    onMouseEnter={() => setHoveredIdx(pt.index)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                    className="cursor-pointer"
+                  />
+                </g>
+              );
+            })}
+          </svg>
+
+          {/* HTML Hover Tooltip */}
+          {hoveredIdx !== null && (
+            <div
+              className="absolute z-30 pointer-events-none bg-slate-900 text-white text-[11px] font-medium px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 flex flex-col gap-0.5 -translate-x-1/2 -translate-y-full mb-3 whitespace-nowrap transition-all duration-75"
+              style={{
+                left: `${(points[hoveredIdx].x / svgWidth) * 100}%`,
+                top: `${points[hoveredIdx].normY}%`,
+              }}
+            >
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                {points[hoveredIdx].dataPoint.label}
+              </span>
+              <span className="font-bold text-white text-xs">
+                {valueFormatter(points[hoveredIdx].dataPoint.value)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* X-Axis HTML Labels */}
+      <div className="flex justify-between pl-[60px] pr-1 pt-2.5 border-t border-slate-100">
+        {data.map((d, i) => (
+          <span
+            key={i}
+            className="text-[10px] font-bold text-slate-400 tracking-tight"
+          >
+            {d.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
-// ─── Exported Components for Pages ──────────────────────────────────────────
+// ─── Preset Exported Charts ──────────────────────────────────────────────────
 
 const revenueTrendData: DataPoint[] = [
-  { label: "May", value: 580000 },
-  { label: "Jun", value: 710000 },
-  { label: "Jul", value: 924000 },
-  { label: "Aug (now)", value: 1249000 },
+  { label: "May 2026", value: 490000 },
+  { label: "Jun 2026", value: 790000 },
+  { label: "Jul 2026", value: 1080000 },
+  { label: "Aug 2026 (Active)", value: 1370000 },
 ];
 
 export function RevenueTrendChart() {

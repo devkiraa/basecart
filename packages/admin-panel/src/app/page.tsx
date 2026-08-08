@@ -208,7 +208,7 @@ export default function DashboardHome() {
                 Real-time
               </span>
             </div>
-            <div className="h-44">
+            <div className="h-52">
               <RevenueTrendChart />
             </div>
           </div>
