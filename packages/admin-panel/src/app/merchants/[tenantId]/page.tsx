@@ -15,6 +15,7 @@ import {
   ExternalLink,
   KeyRound,
   Trash2,
+  Tag,
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -28,6 +29,7 @@ interface StoreDetails {
     subdomain: string;
     plan: "starter" | "growth" | "pro";
     status: "active" | "suspended";
+    accountType: "live" | "promotional" | "testing" | "internal";
     gstin?: string;
     registeredBusinessName?: string;
     registeredBusinessAddress?: string;
@@ -116,6 +118,21 @@ export default function MerchantDetailPage() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Plan update failed");
+      await loadDetails();
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleAccountTypeChange = async (newAccountType: "live" | "promotional" | "testing" | "internal") => {
+    try {
+      const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/account-type`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountType: newAccountType }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Account type update failed");
       await loadDetails();
     } catch (err: any) {
       alert(err.message);
@@ -291,7 +308,7 @@ export default function MerchantDetailPage() {
             </div>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-2.5 text-center flex flex-col justify-center min-w-[130px]">
               <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Plan Tier</label>
               <select
@@ -304,6 +321,46 @@ export default function MerchantDetailPage() {
                 <option value="pro">Pro</option>
               </select>
             </div>
+
+            {/* Account Type Selector — controls billing exemption */}
+            <div className={`border rounded-xl px-5 py-2.5 text-center flex flex-col justify-center min-w-[150px] ${
+              store.accountType === "live"
+                ? "bg-blue-50 border-blue-200"
+                : store.accountType === "promotional"
+                ? "bg-amber-50 border-amber-200"
+                : store.accountType === "testing"
+                ? "bg-purple-50 border-purple-200"
+                : "bg-slate-50 border-slate-200"
+            }`}>
+              <div className="flex items-center justify-center gap-1 mb-0.5">
+                <Tag className={`w-3 h-3 ${
+                  store.accountType === "live" ? "text-blue-500"
+                  : store.accountType === "promotional" ? "text-amber-500"
+                  : store.accountType === "testing" ? "text-purple-500"
+                  : "text-slate-400"
+                }`} />
+                <label className={`text-[10px] font-bold uppercase tracking-wider ${
+                  store.accountType === "live" ? "text-blue-500"
+                  : store.accountType === "promotional" ? "text-amber-500"
+                  : store.accountType === "testing" ? "text-purple-500"
+                  : "text-slate-400"
+                }`}>Account Type</label>
+              </div>
+              <select
+                value={store.accountType || "live"}
+                onChange={(e) => handleAccountTypeChange(e.target.value as any)}
+                className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer border-b border-dashed text-center capitalize border-slate-300 text-slate-800"
+              >
+                <option value="live">🟢 Live (Billed)</option>
+                <option value="promotional">🟡 Promotional</option>
+                <option value="testing">🟣 Testing</option>
+                <option value="internal">⚪ Internal</option>
+              </select>
+              {store.accountType && store.accountType !== "live" && (
+                <p className="text-[10px] text-amber-600 font-semibold mt-1">Billing exempt</p>
+              )}
+            </div>
+
             <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-3 text-center">
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sales</p>
               <p className="text-base font-bold text-slate-800 mt-0.5">{orders.length} orders</p>

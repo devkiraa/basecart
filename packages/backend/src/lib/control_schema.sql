@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   subdomain TEXT NOT NULL UNIQUE,
   plan TEXT NOT NULL DEFAULT 'starter',
   status TEXT NOT NULL DEFAULT 'active',
+  accountType TEXT NOT NULL DEFAULT 'live',
   createdAt TEXT NOT NULL,
   customDomain TEXT,
   addOns TEXT,

@@ -739,19 +739,76 @@ app.patch("/admin/merchants/:tenantId/plan", authenticateAdmin, async (c) => {
 });
 
 /**
+ * Update merchant account type (Admin-only)
+ * accountType controls whether billing applies:
+ *   'live'        — normal paying merchant (billing applies)
+ *   'promotional' — free promo / partner account (no billing)
+ *   'testing'     — QA / internal test store (no billing)
+ *   'internal'    — Basecart internal/demo store (no billing)
+ */
+const VALID_ACCOUNT_TYPES = ["live", "promotional", "testing", "internal"] as const;
+type AccountType = typeof VALID_ACCOUNT_TYPES[number];
+
+app.patch("/admin/merchants/:tenantId/account-type", authenticateAdmin, async (c) => {
+  const tenantId = c.req.param("tenantId");
+  const body = await c.req.json().catch(() => ({}));
+  const { accountType } = body;
+
+  if (!VALID_ACCOUNT_TYPES.includes(accountType)) {
+    return c.json({ error: "Invalid accountType. Must be one of: live, promotional, testing, internal." }, 400);
+  }
+
+  const controlDb = getControlDb(c.env);
+
+  // Verify tenant exists
+  const tenant = await controlDb
+    .prepare("SELECT tenantId, storeName FROM tenants WHERE tenantId = ?")
+    .bind(tenantId)
+    .first<{ tenantId: string; storeName: string }>();
+
+  if (!tenant) {
+    return c.json({ error: "Merchant not found." }, 404);
+  }
+
+  await controlDb
+    .prepare("UPDATE tenants SET accountType = ? WHERE tenantId = ?")
+    .bind(accountType, tenantId)
+    .run();
+
+  // Write Admin Audit Log
+  const logId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+  const user = c.get("user");
+  const adminEmail = user.email || "unknown-admin";
+
+  await controlDb
+    .prepare(
+      "INSERT INTO admin_audit_logs (logId, adminEmail, action, targetTenantId, plan, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(logId, adminEmail, `set_account_type:${accountType}`, tenantId, null, null, timestamp)
+    .run();
+
+  return c.json({
+    message: `Account type for ${tenant.storeName} set to '${accountType}'. Billing ${accountType === "live" ? "applies" : "is exempt"}.`,
+  });
+});
+
+/**
  * Platform KPIs & metrics
  */
 app.get("/admin/metrics", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
 
-  // 1. Fetch count of all merchants
-  const tenantsResult = await controlDb.prepare("SELECT tenantId, plan, createdAt, storeName FROM tenants").all<any>();
+  // 1. Fetch count of all merchants (include accountType for billing exemption logic)
+  const tenantsResult = await controlDb.prepare("SELECT tenantId, plan, accountType, createdAt, storeName FROM tenants").all<any>();
   const tenants = tenantsResult.results || [];
   const totalMerchants = tenants.length;
 
-  // 2. MRR estimate
+  // 2. MRR estimate — only count 'live' accounts towards revenue
   let estimatedMRR = 0;
   for (const m of tenants) {
+    // Non-live accounts (promotional, testing, internal) are billing-exempt
+    if (m.accountType && m.accountType !== "live") continue;
     const plan = (m.plan || "starter").toLowerCase();
     if (plan === "starter") estimatedMRR += 299;
     else if (plan === "growth") estimatedMRR += 699;
