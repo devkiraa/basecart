@@ -109,6 +109,32 @@ CREATE TABLE IF NOT EXISTS email_logs (
   errorMessage TEXT
 );
 
+CREATE TABLE IF NOT EXISTS plan_configs (
+  planId TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  price REAL NOT NULL,
+  billingPeriod TEXT NOT NULL DEFAULT 'monthly',
+  targetAudience TEXT NOT NULL,
+  orderCap INTEGER NOT NULL DEFAULT -1,
+  gmvCap REAL NOT NULL DEFAULT -1,
+  productCap INTEGER NOT NULL DEFAULT -1,
+  aiCreditsCap INTEGER NOT NULL DEFAULT 50,
+  allowCustomDomain INTEGER NOT NULL DEFAULT 1,
+  allowAutomatedGateways INTEGER NOT NULL DEFAULT 1,
+  allowAutomatedShipping INTEGER NOT NULL DEFAULT 1,
+  allowAbandonedCart INTEGER NOT NULL DEFAULT 1,
+  allowAiWriter INTEGER NOT NULL DEFAULT 1,
+  allowStaffSeats INTEGER NOT NULL DEFAULT 1,
+  maxStaffSeats INTEGER NOT NULL DEFAULT 1,
+  allowDeveloperApi INTEGER NOT NULL DEFAULT 1,
+  allowCustomCssJs INTEGER NOT NULL DEFAULT 1,
+  allowGstInvoices INTEGER NOT NULL DEFAULT 1,
+  platformFeePercent REAL NOT NULL DEFAULT 0.0,
+  featuresJson TEXT DEFAULT '[]',
+  paywallMessage TEXT,
+  updatedAt TEXT NOT NULL
+);
+
 -- B-Tree Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants (subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
