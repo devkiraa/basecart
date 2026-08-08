@@ -22,9 +22,9 @@ interface ConfigState {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<ConfigState>({
-    starterPrice: "999",
-    growthPrice: "4999",
-    proPrice: "9999",
+    starterPrice: "299",
+    growthPrice: "699",
+    proPrice: "1499",
     starterStorage: "1",
     growthStorage: "5",
     proStorage: "25",
