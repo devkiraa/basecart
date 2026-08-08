@@ -289,6 +289,20 @@ async function ensureAdminTables(db: any) {
         .run();
     }
   }
+
+  await db.prepare(`CREATE TABLE IF NOT EXISTS support_tickets (
+    ticketId TEXT PRIMARY KEY,
+    tenantId TEXT NOT NULL,
+    storeName TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    message TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'open',
+    priority TEXT NOT NULL DEFAULT 'medium',
+    category TEXT DEFAULT 'general',
+    response TEXT,
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT
+  )`).run();
 }
 
 // Pre-handler middleware to authenticate super admins in Hono
@@ -1153,42 +1167,51 @@ app.delete("/admin/merchants/:tenantId", authenticateAdmin, async (c) => {
  */
 app.get("/admin/support/tickets", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
   const result = await controlDb.prepare("SELECT * FROM support_tickets ORDER BY createdAt DESC").all();
   return c.json(result.results || []);
 });
 
 app.post("/admin/support/tickets", authenticateAdmin, async (c) => {
   const body = await c.req.json().catch(() => ({}));
-  const { tenantId, storeName, subject, message, priority } = body;
+  const { tenantId, storeName, subject, message, priority, category } = body;
 
   if (!tenantId || !storeName || !subject || !message) {
     return c.json({ error: "Missing required fields" }, 400);
   }
 
   const controlDb = getControlDb(c.env);
-  const ticketId = crypto.randomUUID();
+  await ensureAdminTables(controlDb);
+
+  const ticketId = `tkt_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
   const createdAt = new Date().toISOString();
 
   await controlDb
-    .prepare("INSERT INTO support_tickets (ticketId, tenantId, storeName, subject, message, status, priority, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-    .bind(ticketId, tenantId, storeName, subject, message, "open", priority || "medium", createdAt)
+    .prepare("INSERT INTO support_tickets (ticketId, tenantId, storeName, subject, message, status, priority, category, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(ticketId, tenantId, storeName, subject, message, "open", priority || "medium", category || "general", createdAt)
     .run();
 
-  return c.json({ success: true, ticketId, message: "Ticket created successfully" }, 201);
+  return c.json({ success: true, ticketId, message: "Support ticket logged successfully" }, 201);
 });
 
 app.patch("/admin/support/tickets/:ticketId", authenticateAdmin, async (c) => {
   const ticketId = c.req.param("ticketId");
   const body = await c.req.json().catch(() => ({}));
-  const { status, priority } = body;
+  const { status, priority, response } = body;
 
   const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+
+  const updatedAt = new Date().toISOString();
 
   if (status) {
-    await controlDb.prepare("UPDATE support_tickets SET status = ? WHERE ticketId = ?").bind(status, ticketId).run();
+    await controlDb.prepare("UPDATE support_tickets SET status = ?, updatedAt = ? WHERE ticketId = ?").bind(status, updatedAt, ticketId).run();
   }
   if (priority) {
-    await controlDb.prepare("UPDATE support_tickets SET priority = ? WHERE ticketId = ?").bind(priority, ticketId).run();
+    await controlDb.prepare("UPDATE support_tickets SET priority = ?, updatedAt = ? WHERE ticketId = ?").bind(priority, updatedAt, ticketId).run();
+  }
+  if (response !== undefined) {
+    await controlDb.prepare("UPDATE support_tickets SET response = ?, updatedAt = ? WHERE ticketId = ?").bind(response, updatedAt, ticketId).run();
   }
 
   return c.json({ success: true, message: "Ticket updated successfully" });
@@ -1907,22 +1930,7 @@ app.post("/admin/notifications/broadcast", authenticateAdmin, async (c) => {
   return c.json({ success: true, id });
 });
 
-app.get("/admin/support/tickets", authenticateAdmin, async (c) => {
-  const controlDb = getControlDb(c.env);
-  await ensureAdminTables(controlDb);
-  const result = await controlDb.prepare("SELECT * FROM support_tickets ORDER BY createdAt DESC").all();
-  return c.json(result.results || []);
-});
 
-app.patch("/admin/support/tickets/:id", authenticateAdmin, async (c) => {
-  const id = c.req.param("id");
-  const controlDb = getControlDb(c.env);
-  const body = await c.req.json().catch(() => ({}));
-  const { status } = body;
-
-  await controlDb.prepare("UPDATE support_tickets SET status = ? WHERE ticketId = ?").bind(status || "resolved", id).run();
-  return c.json({ success: true });
-});
 
 /**
  * Global platform system settings
