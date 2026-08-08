@@ -1457,26 +1457,49 @@ app.post("/admin/emails/test", authenticateAdmin, async (c) => {
 
 app.get("/admin/orders", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
-  const tenantsResult = await controlDb.prepare("SELECT tenantId, storeName FROM tenants").all<any>();
+
+  // Fetch only live merchants (promotional, testing, internal accounts are excluded)
+  const tenantsResult = await controlDb
+    .prepare("SELECT tenantId, storeName, subdomain, accountType, country, state, registeredState FROM tenants WHERE accountType IS NULL OR accountType = 'live'")
+    .all<any>();
   const tenants = tenantsResult.results || [];
-  
+
   const allOrders: any[] = [];
   for (const t of tenants) {
+    // Exclude non-live accounts
+    if (t.accountType && t.accountType !== "live") continue;
+
     try {
       const tenantDb = await getTenantDb(t.tenantId, c.env);
-      const ordersRes = await tenantDb.prepare("SELECT * FROM orders ORDER BY createdAt DESC LIMIT 20").all<any>();
+      const ordersRes = await tenantDb.prepare("SELECT * FROM orders ORDER BY createdAt DESC LIMIT 50").all<any>();
       const orders = ordersRes.results || [];
       for (const o of orders) {
+        let state = t.state || t.registeredState || "Kerala";
+        if (o.shippingAddress && typeof o.shippingAddress === "string") {
+          try {
+            const addrObj = JSON.parse(o.shippingAddress);
+            if (addrObj.state) state = addrObj.state;
+          } catch (e) {
+            if (o.shippingAddress.includes("Kerala")) state = "Kerala";
+            else if (o.shippingAddress.includes("Karnataka")) state = "Karnataka";
+            else if (o.shippingAddress.includes("Tamil")) state = "Tamil Nadu";
+            else if (o.shippingAddress.includes("Maharashtra")) state = "Maharashtra";
+          }
+        }
+
         allOrders.push({
           id: o.orderId,
-          merchant: t.storeName,
-          date: o.createdAt.split("T")[0],
-          customer: o.customerEmail,
-          amount: o.total,
-          status: o.status,
-          gateway: o.paymentId ? `Razorpay (${o.paymentStatus})` : "Cash on Delivery",
-          country: "India",
-          state: o.shippingAddress.includes("Kerala") ? "Kerala" : "Karnataka"
+          merchant: t.storeName || t.subdomain,
+          subdomain: t.subdomain,
+          date: o.createdAt ? o.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+          rawDate: o.createdAt,
+          customer: o.customerName || o.customerEmail || "Customer",
+          customerEmail: o.customerEmail || "",
+          amount: o.total || 0,
+          status: (o.status || "completed").toLowerCase(),
+          gateway: o.paymentId || o.razorpayPaymentId ? "Razorpay (Online)" : o.paymentStatus === "paid" ? "Razorpay" : "Cash on Delivery",
+          country: t.country || "India",
+          state,
         });
       }
     } catch (err) {
@@ -1484,7 +1507,7 @@ app.get("/admin/orders", authenticateAdmin, async (c) => {
     }
   }
 
-  allOrders.sort((a, b) => b.date.localeCompare(a.date));
+  allOrders.sort((a, b) => (b.rawDate || b.date).localeCompare(a.rawDate || a.date));
   return c.json(allOrders);
 });
 
@@ -1813,36 +1836,7 @@ app.delete("/admin/queue-jobs/:id", authenticateAdmin, async (c) => {
 
 
 
-app.get("/admin/orders", authenticateAdmin, async (c) => {
-  const controlDb = getControlDb(c.env);
-  const tenantsResult = await controlDb.prepare("SELECT tenantId, storeName, country, state FROM tenants").all<any>();
-  const tenants = tenantsResult.results || [];
 
-  const allOrders: any[] = [];
-  for (const t of tenants) {
-    try {
-      const tenantDb = await getTenantDb(t.tenantId, c.env);
-      const ordersRes = await tenantDb.prepare("SELECT * FROM orders ORDER BY id DESC LIMIT 20").all<any>();
-      if (ordersRes.results) {
-        for (const o of ordersRes.results) {
-          allOrders.push({
-            id: o.orderId || o.id,
-            merchant: t.storeName || t.tenantId,
-            date: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "Today",
-            customer: o.customerInfo ? (typeof o.customerInfo === "string" ? JSON.parse(o.customerInfo).name : o.customerInfo.name) : "Customer",
-            amount: o.total || 0,
-            status: o.status || "completed",
-            gateway: o.paymentMethod || "Razorpay",
-            country: t.country || "India",
-            state: t.state || t.registeredState || "Kerala",
-          });
-        }
-      }
-    } catch (e) {}
-  }
-
-  return c.json(allOrders);
-});
 
 app.get("/admin/notifications", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
