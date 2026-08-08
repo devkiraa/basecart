@@ -182,7 +182,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       group: "Marketplaces",
       items: [
         { name: "Themes & Apps", href: "/marketplace", icon: ShoppingBag },
-        { name: "Storefront Design", href: "/storefront-design", icon: Palette },
       ],
     },
     {
