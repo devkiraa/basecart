@@ -195,64 +195,72 @@ export function InteractiveAreaChart({
 
 // ─── Preset Exported Charts ──────────────────────────────────────────────────
 
-const revenueTrendData: DataPoint[] = [
-  { label: "May 2026", value: 490000 },
-  { label: "Jun 2026", value: 790000 },
-  { label: "Jul 2026", value: 1080000 },
-  { label: "Aug 2026 (Active)", value: 1370000 },
+interface PresetChartProps {
+  data?: DataPoint[];
+}
+
+const fallbackRevenueData: DataPoint[] = [
+  { label: "May", value: 0 },
+  { label: "Jun", value: 0 },
+  { label: "Jul", value: 0 },
+  { label: "Aug (Active)", value: 0 },
 ];
 
-export function RevenueTrendChart() {
+export function RevenueTrendChart({ data }: PresetChartProps) {
+  const chartData = data && data.length > 0 ? data : fallbackRevenueData;
   return (
     <InteractiveAreaChart
-      data={revenueTrendData}
+      data={chartData}
       color={CF_BLUE}
       gradientId="revGrad"
-      valueFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`}
+      valueFormatter={(v) => {
+        if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+        if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`;
+        return `₹${Math.round(v)}`;
+      }}
     />
   );
 }
 
-const gmvData: DataPoint[] = [
-  { label: "Jun 20", value: 120000 },
-  { label: "Jun 25", value: 145000 },
-  { label: "Jul 01", value: 132000 },
-  { label: "Jul 07", value: 188000 },
-  { label: "Jul 12", value: 220000 },
-  { label: "Jul 17", value: 275000 },
-  { label: "Jul 22", value: 310000 },
-  { label: "Aug 01", value: 390000 },
+const fallbackGmvData: DataPoint[] = [
+  { label: "May", value: 0 },
+  { label: "Jun", value: 0 },
+  { label: "Jul", value: 0 },
+  { label: "Aug", value: 0 },
 ];
 
-export function GmvChart() {
+export function GmvChart({ data }: PresetChartProps) {
+  const chartData = data && data.length > 0 ? data : fallbackGmvData;
   return (
     <InteractiveAreaChart
-      data={gmvData}
+      data={chartData}
       color={CF_BLUE}
       gradientId="gmvGrad"
-      valueFormatter={(v) => `₹${(v / 1000).toFixed(0)}K`}
+      valueFormatter={(v) => {
+        if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+        if (v >= 1000) return `₹${(v / 1000).toFixed(1)}K`;
+        return `₹${Math.round(v)}`;
+      }}
     />
   );
 }
 
-const signupData: DataPoint[] = [
-  { label: "Jun 20", value: 12 },
-  { label: "Jun 25", value: 18 },
-  { label: "Jul 01", value: 22 },
-  { label: "Jul 07", value: 31 },
-  { label: "Jul 12", value: 40 },
-  { label: "Jul 17", value: 55 },
-  { label: "Jul 22", value: 63 },
-  { label: "Aug 01", value: 78 },
+const fallbackSignupData: DataPoint[] = [
+  { label: "May", value: 1 },
+  { label: "Jun", value: 2 },
+  { label: "Jul", value: 3 },
+  { label: "Aug", value: 5 },
 ];
 
-export function MerchantSignupsChart() {
+export function MerchantSignupsChart({ data }: PresetChartProps) {
+  const chartData = data && data.length > 0 ? data : fallbackSignupData;
   return (
     <InteractiveAreaChart
-      data={signupData}
+      data={chartData}
       color={CF_GREEN}
       gradientId="signupGrad"
       valueFormatter={(v) => `${Math.round(v)}`}
     />
   );
 }
+

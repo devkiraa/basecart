@@ -24,6 +24,8 @@ interface AnalyticsData {
   conversionRate: string;
   activeUsers: number;
   signupsHistory: string[];
+  gmvTrend?: Array<{ label: string; value: number }>;
+  signupTrend?: Array<{ label: string; value: number }>;
 }
 
 
@@ -128,7 +130,7 @@ export default function AnalyticsDashboard() {
               <span className="px-2 py-0.5 text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-100 rounded-full">INR</span>
             </div>
             <div className="h-64">
-              <GmvChart />
+              <GmvChart data={data?.gmvTrend} />
             </div>
           </div>
 
@@ -139,7 +141,7 @@ export default function AnalyticsDashboard() {
               <span className="px-2 py-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full">Stores</span>
             </div>
             <div className="h-64">
-              <MerchantSignupsChart />
+              <MerchantSignupsChart data={data?.signupTrend} />
             </div>
           </div>
 

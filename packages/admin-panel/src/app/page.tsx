@@ -37,6 +37,7 @@ interface Metrics {
   cpuTime: string;
   errorRate: string;
   topMerchants: Array<{ name: string; sales: number }>;
+  revenueTrend?: Array<{ label: string; value: number; orders?: number }>;
 }
 
 interface AuditLog {
@@ -209,7 +210,7 @@ export default function DashboardHome() {
               </span>
             </div>
             <div className="h-52">
-              <RevenueTrendChart />
+              <RevenueTrendChart data={metrics?.revenueTrend} />
             </div>
           </div>
 
