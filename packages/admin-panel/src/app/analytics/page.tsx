@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
+
 import { 
   BarChart3, 
   TrendingUp, 
@@ -12,15 +12,8 @@ import {
   Calendar
 } from "lucide-react";
 
-// Recharts loaded client-side only — never included in the edge SSR bundle
-const GmvChart = dynamic(
-  () => import("@/components/AdminCharts").then((m) => ({ default: m.GmvChart })),
-  { ssr: false, loading: () => <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div> }
-);
-const MerchantSignupsChart = dynamic(
-  () => import("@/components/AdminCharts").then((m) => ({ default: m.MerchantSignupsChart })),
-  { ssr: false, loading: () => <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div> }
-);
+import { GmvChart, MerchantSignupsChart } from "@/components/AdminCharts";
+
 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";

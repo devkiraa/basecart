@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
+
 import {
   Users,
   CreditCard,
@@ -20,11 +20,8 @@ import {
   Loader2,
 } from "lucide-react";
 
-// Recharts loaded client-side only — never included in the edge SSR bundle
-const RevenueTrendChart = dynamic(
-  () => import("@/components/AdminCharts").then((m) => ({ default: m.RevenueTrendChart })),
-  { ssr: false, loading: () => <div className="h-full w-full flex items-center justify-center text-xs text-slate-400">Loading chart...</div> }
-);
+import { RevenueTrendChart } from "@/components/AdminCharts";
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
