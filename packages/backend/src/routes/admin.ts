@@ -63,246 +63,162 @@ function getAdminDeleteOptions(c: any) {
 }
 
 export async function ensureAdminTables(db: any) {
-  await db.prepare(`CREATE TABLE IF NOT EXISTS marketplace_themes (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    developer TEXT NOT NULL,
-    status TEXT NOT NULL,
-    rating REAL NOT NULL,
-    downloads INTEGER NOT NULL,
-    isFeatured INTEGER NOT NULL,
-    version TEXT NOT NULL
-  )`).run();
-
-  // Clean up any legacy dummy themes and ensure Satoshi is the sole seeded theme
-  await db.prepare("DELETE FROM marketplace_themes WHERE id != 'satoshi'").run();
-
-  const themeCount = await db.prepare("SELECT COUNT(*) as total FROM marketplace_themes").first();
-  if (!themeCount || themeCount.total === 0) {
-    const seedThemes = [
-      { id: "satoshi", name: "Satoshi", developer: "Basecart Team", status: "published", rating: 5.0, downloads: 2450, isFeatured: 1, version: "1.0.0" },
-    ];
-    for (const t of seedThemes) {
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS marketplace_themes (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      developer TEXT NOT NULL,
+      status TEXT NOT NULL,
+      rating REAL NOT NULL,
+      downloads INTEGER NOT NULL,
+      isFeatured INTEGER NOT NULL,
+      version TEXT NOT NULL
+    )`).run();
+    await db.prepare("DELETE FROM marketplace_themes WHERE id != 'satoshi'").run();
+    const themeCount = await db.prepare("SELECT COUNT(*) as total FROM marketplace_themes").first();
+    if (!themeCount || themeCount.total === 0) {
       await db.prepare("INSERT INTO marketplace_themes (id, name, developer, status, rating, downloads, isFeatured, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(t.id, t.name, t.developer, t.status, t.rating, t.downloads, t.isFeatured, t.version)
+        .bind("satoshi", "Satoshi", "Basecart Team", "published", 5.0, 2450, 1, "1.0.0")
         .run();
     }
-  }
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS marketplace_apps (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    developer TEXT NOT NULL,
-    status TEXT NOT NULL,
-    scopes TEXT NOT NULL,
-    version TEXT NOT NULL
-  )`).run();
-
-  const appCount = await db.prepare("SELECT COUNT(*) as total FROM marketplace_apps").first();
-  if (!appCount || appCount.total === 0) {
-    const seedApps = [
-      { id: "app_1", name: "Razorpay Pro Split", developer: "Fintech Kerala", status: "published", scopes: JSON.stringify(["read:billing", "write:payments"]), version: "2.0.1" },
-      { id: "app_2", name: "WhatsApp Auto-Ping", developer: "ChatSolutions", status: "pending", scopes: JSON.stringify(["read:orders", "write:notifications"]), version: "1.0.0" },
-      { id: "app_3", name: "DelivGo Courier Sync", developer: "Kerala Logistics", status: "published", scopes: JSON.stringify(["read:orders", "write:fulfillment"]), version: "1.4.0" },
-      { id: "app_4", name: "Abandoned Cart Retainer", developer: "AI Conversions", status: "pending", scopes: JSON.stringify(["read:orders", "write:notifications", "read:customers"]), version: "1.0.2" },
-    ];
-    for (const a of seedApps) {
-      await db.prepare("INSERT INTO marketplace_apps (id, name, developer, status, scopes, version) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(a.id, a.name, a.developer, a.status, a.scopes, a.version)
-        .run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS marketplace_apps (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      developer TEXT NOT NULL,
+      status TEXT NOT NULL,
+      scopes TEXT NOT NULL DEFAULT '[]',
+      version TEXT NOT NULL,
+      createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`).run();
+    const appCount = await db.prepare("SELECT COUNT(*) as total FROM marketplace_apps").first();
+    if (!appCount || appCount.total === 0) {
+      const now = new Date().toISOString();
+      const seedApps = [
+        { id: "app_1", name: "Razorpay Pro Split", developer: "Fintech Kerala", status: "published", scopes: JSON.stringify(["read:billing", "write:payments"]), version: "2.0.1", createdAt: now },
+        { id: "app_2", name: "WhatsApp Auto-Ping", developer: "ChatSolutions", status: "pending", scopes: JSON.stringify(["read:orders", "write:notifications"]), version: "1.0.0", createdAt: now },
+        { id: "app_3", name: "DelivGo Courier Sync", developer: "Kerala Logistics", status: "published", scopes: JSON.stringify(["read:orders", "write:fulfillment"]), version: "1.4.0", createdAt: now },
+        { id: "app_4", name: "Abandoned Cart Retainer", developer: "AI Conversions", status: "pending", scopes: JSON.stringify(["read:orders", "write:notifications", "read:customers"]), version: "1.0.2", createdAt: now },
+      ];
+      for (const a of seedApps) {
+        await db.prepare("INSERT INTO marketplace_apps (id, name, developer, status, scopes, version, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+          .bind(a.id, a.name, a.developer, a.status, a.scopes, a.version, a.createdAt)
+          .run();
+      }
     }
-  }
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS platform_alerts (
-    id TEXT PRIMARY KEY,
-    date TEXT NOT NULL,
-    type TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    target TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
-
-  const alertCount = await db.prepare("SELECT COUNT(*) as total FROM platform_alerts").first();
-  if (!alertCount || alertCount.total === 0) {
-    const seedAlerts = [
-      { id: "alt_1", date: "2026-07-17", type: "Banner", subject: "Scheduled database maintenance on Sunday 2AM IST", target: "Everyone", status: "active" },
-      { id: "alt_2", date: "2026-07-15", type: "Announcement", subject: "Free training webinar: Scale your Instagram sales catalog", target: "Free Tier", status: "expired" },
-      { id: "alt_3", date: "2026-07-12", type: "Alert", subject: "Razorpay payment processing delay warning", target: "Enterprise Pro", status: "expired" },
-    ];
-    for (const al of seedAlerts) {
-      await db.prepare("INSERT INTO platform_alerts (id, date, type, subject, target, status) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(al.id, al.date, al.type, al.subject, al.target, al.status)
-        .run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS platform_alerts (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      type TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      target TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+    const alertCount = await db.prepare("SELECT COUNT(*) as total FROM platform_alerts").first();
+    if (!alertCount || alertCount.total === 0) {
+      const seedAlerts = [
+        { id: "alt_1", date: "2026-07-17", type: "Banner", subject: "Scheduled database maintenance on Sunday 2AM IST", target: "Everyone", status: "active" },
+        { id: "alt_2", date: "2026-07-15", type: "Announcement", subject: "Free training webinar: Scale your Instagram sales catalog", target: "Free Tier", status: "expired" },
+        { id: "alt_3", date: "2026-07-12", type: "Alert", subject: "Razorpay payment processing delay warning", target: "Enterprise Pro", status: "expired" },
+      ];
+      for (const al of seedAlerts) {
+        await db.prepare("INSERT INTO platform_alerts (id, date, type, subject, target, status) VALUES (?, ?, ?, ?, ?, ?)")
+          .bind(al.id, al.date, al.type, al.subject, al.target, al.status)
+          .run();
+      }
     }
-  }
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS cms_faqs (
-    id TEXT PRIMARY KEY,
-    category TEXT NOT NULL,
-    q TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS cms_faqs (
+      id TEXT PRIMARY KEY,
+      category TEXT NOT NULL,
+      q TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  const faqCount = await db.prepare("SELECT COUNT(*) as total FROM cms_faqs").first();
-  if (!faqCount || faqCount.total === 0) {
-    const seedFaqs = [
-      { id: "faq_1", category: "General", q: "How do I connect my custom domain?", status: "published" },
-      { id: "faq_2", category: "Billing", q: "Do you charge transaction fees?", status: "published" },
-      { id: "faq_3", category: "Integrations", q: "Does Basecart sync with Razorpay?", status: "draft" },
-    ];
-    for (const f of seedFaqs) {
-      await db.prepare("INSERT INTO cms_faqs (id, category, q, status) VALUES (?, ?, ?, ?)")
-        .bind(f.id, f.category, f.q, f.status)
-        .run();
-    }
-  }
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS cms_blogs (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      title TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS cms_blogs (
-    id TEXT PRIMARY KEY,
-    date TEXT NOT NULL,
-    title TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS cms_jobs (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      location TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  const blogCount = await db.prepare("SELECT COUNT(*) as total FROM cms_blogs").first();
-  if (!blogCount || blogCount.total === 0) {
-    const seedBlogs = [
-      { id: "blg_1", date: "2026-07-16", title: "Automating Instagram Storefront Sales in Kerala", status: "published" },
-      { id: "blg_2", date: "2026-07-10", title: "10 Home Bakers Growing with Social Commerce", status: "published" },
-    ];
-    for (const b of seedBlogs) {
-      await db.prepare("INSERT INTO cms_blogs (id, date, title, status) VALUES (?, ?, ?, ?)")
-        .bind(b.id, b.date, b.title, b.status)
-        .run();
-    }
-  }
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS feature_flags (
+      key TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      desc TEXT NOT NULL,
+      active INTEGER NOT NULL,
+      target TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS cms_jobs (
-    id TEXT PRIMARY KEY,
-    title TEXT NOT NULL,
-    location TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS developer_api_keys (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      token TEXT NOT NULL,
+      scopes TEXT NOT NULL,
+      rateLimit TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  const jobCount = await db.prepare("SELECT COUNT(*) as total FROM cms_jobs").first();
-  if (!jobCount || jobCount.total === 0) {
-    const seedJobs = [
-      { id: "job_1", title: "Senior Next.js Developer", location: "Remote (Kochi)", status: "open" },
-      { id: "job_2", title: "Growth Marketing Specialist", location: "Kochi Hub", status: "closed" },
-    ];
-    for (const j of seedJobs) {
-      await db.prepare("INSERT INTO cms_jobs (id, title, location, status) VALUES (?, ?, ?, ?)")
-        .bind(j.id, j.title, j.location, j.status)
-        .run();
-    }
-  }
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS developer_webhooks (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      url TEXT NOT NULL,
+      event TEXT NOT NULL,
+      status TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  await db.prepare(`CREATE TABLE IF NOT EXISTS feature_flags (
-    key TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    desc TEXT NOT NULL,
-    active INTEGER NOT NULL,
-    target TEXT NOT NULL
-  )`).run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS queue_jobs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      merchant TEXT NOT NULL,
+      type TEXT NOT NULL,
+      retries INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      time TEXT NOT NULL
+    )`).run();
+  } catch (e) {}
 
-  const flagCount = await db.prepare("SELECT COUNT(*) as total FROM feature_flags").first();
-  if (!flagCount || flagCount.total === 0) {
-    const seedFlags = [
-      { key: "ai_product_description", name: "AI Product Description Builder", desc: "Allows merchants to generate detailed item lists using GPT descriptions automatically.", active: 1, target: "Pro & Enterprise" },
-      { key: "new_checkout_flow", name: "Lightning Checkout (V3)", desc: "Enables optimized checkout layout panels for WhatsApp and Instagram redirect links.", active: 0, target: "Everyone" },
-      { key: "analytics_v2", name: "Analytics Dashboard V2", desc: "Deeper chart analytics reports tracking regional shipping parameters.", active: 1, target: "Growth & Pro" },
-      { key: "beta_theme_marketplace", name: "Experimental Custom Themes", desc: "Allows selected home businesses to edit CSS layouts natively.", active: 0, target: "Beta Program" },
-      { key: "gst_invoicing_automation", name: "Automated GST Invoicing", desc: "Programmatically generate HSN codes and state tax configurations.", active: 1, target: "India Merchants" },
-    ];
-    for (const f of seedFlags) {
-      await db.prepare("INSERT INTO feature_flags (key, name, desc, active, target) VALUES (?, ?, ?, ?, ?)")
-        .bind(f.key, f.name, f.desc, f.active, f.target)
-        .run();
-    }
-  }
-
-  await db.prepare(`CREATE TABLE IF NOT EXISTS developer_api_keys (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    token TEXT NOT NULL,
-    scopes TEXT NOT NULL,
-    rateLimit TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
-
-  const devKeysCount = await db.prepare("SELECT COUNT(*) as total FROM developer_api_keys").first();
-  if (!devKeysCount || devKeysCount.total === 0) {
-    const seedKeys = [
-      { id: "key_1", name: "Internal Admin Sync", token: "bc_live_77e8a9f0a8e9981a2b3c4d5e", scopes: JSON.stringify(["read:merchants", "write:billing"]), rateLimit: "1,000 req/min", status: "active" },
-      { id: "key_2", name: "Razorpay Webhook Handler", token: "bc_live_99d10e11a22b33c44d55e66f", scopes: JSON.stringify(["write:payments"]), rateLimit: "500 req/min", status: "active" },
-    ];
-    for (const k of seedKeys) {
-      await db.prepare("INSERT INTO developer_api_keys (id, name, token, scopes, rateLimit, status) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(k.id, k.name, k.token, k.scopes, k.rateLimit, k.status)
-        .run();
-    }
-  }
-
-  await db.prepare(`CREATE TABLE IF NOT EXISTS developer_webhooks (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    url TEXT NOT NULL,
-    event TEXT NOT NULL,
-    status TEXT NOT NULL
-  )`).run();
-
-  const webhookCount = await db.prepare("SELECT COUNT(*) as total FROM developer_webhooks").first();
-  if (!webhookCount || webhookCount.total === 0) {
-    const seedWebhooks = [
-      { id: "wh_1", name: "Order Placed Trigger", url: "https://api.merchant-partner.in/webhooks/order", event: "order.created", status: "active" },
-      { id: "wh_2", name: "Inventory Alert Ping", url: "https://stockmanager.in/api/v1/update", event: "inventory.low", status: "inactive" },
-    ];
-    for (const w of seedWebhooks) {
-      await db.prepare("INSERT INTO developer_webhooks (id, name, url, event, status) VALUES (?, ?, ?, ?, ?)")
-        .bind(w.id, w.name, w.url, w.event, w.status)
-        .run();
-    }
-  }
-
-  await db.prepare(`CREATE TABLE IF NOT EXISTS queue_jobs (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    merchant TEXT NOT NULL,
-    type TEXT NOT NULL,
-    retries INTEGER NOT NULL,
-    status TEXT NOT NULL,
-    time TEXT NOT NULL
-  )`).run();
-
-  const queueCount = await db.prepare("SELECT COUNT(*) as total FROM queue_jobs").first();
-  if (!queueCount || queueCount.total === 0) {
-    const seedJobs = [
-      { id: "job_9981", name: "Sync Catalog to search index", merchant: "Acme Wear", type: "IndexUpdate", retries: 0, status: "running", time: "Just now" },
-      { id: "job_9982", name: "Generate invoice PDF for order ord_101", merchant: "Bespoke Boutique", type: "BillingInvoice", retries: 1, status: "failed", time: "10 mins ago" },
-      { id: "job_9983", name: "Email OTP verification blast", merchant: "Kochi Cake Studio", type: "EmailDispatch", retries: 0, status: "pending", time: "1 min ago" },
-      { id: "job_9984", name: "R2 backup media compression task", merchant: "Urban Threads", type: "MediaCompression", retries: 3, status: "dead", time: "1 hour ago" },
-      { id: "job_9985", name: "Calculate monthly GST ledger report", merchant: "Crafty Corner", type: "TaxCalculations", retries: 0, status: "completed", time: "2 hours ago" },
-    ];
-    for (const q of seedJobs) {
-      await db.prepare("INSERT INTO queue_jobs (id, name, merchant, type, retries, status, time) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(q.id, q.name, q.merchant, q.type, q.retries, q.status, q.time)
-        .run();
-    }
-  }
-
-  await db.prepare(`CREATE TABLE IF NOT EXISTS support_tickets (
-    ticketId TEXT PRIMARY KEY,
-    tenantId TEXT NOT NULL,
-    storeName TEXT NOT NULL,
-    subject TEXT NOT NULL,
-    message TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'open',
-    priority TEXT NOT NULL DEFAULT 'medium',
-    category TEXT DEFAULT 'general',
-    response TEXT,
-    createdAt TEXT NOT NULL,
-    updatedAt TEXT
-  )`).run();
+  try {
+    await db.prepare(`CREATE TABLE IF NOT EXISTS support_tickets (
+      ticketId TEXT PRIMARY KEY,
+      tenantId TEXT NOT NULL,
+      storeName TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      priority TEXT NOT NULL DEFAULT 'medium',
+      category TEXT DEFAULT 'general',
+      response TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT
+    )`).run();
+  } catch (e) {}
 
   await db.prepare(`CREATE TABLE IF NOT EXISTS plan_configs (
     planId TEXT PRIMARY KEY,
