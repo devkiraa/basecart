@@ -5,6 +5,16 @@ import { CreditCard, BadgeCent, ArrowUpRight, Loader2, Sparkles } from "lucide-r
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+interface InvoiceItem {
+  invoiceId: string;
+  storeName: string;
+  subdomain: string;
+  date: string;
+  amount: number;
+  plan: string;
+  status: string;
+}
+
 interface BillingOverview {
   mrr: number;
   arr: number;
@@ -14,6 +24,7 @@ interface BillingOverview {
     pro: number;
   };
   totalInvoices: number;
+  invoices?: InvoiceItem[];
 }
 
 export default function BillingPage() {
@@ -45,6 +56,8 @@ export default function BillingPage() {
       maximumFractionDigits: 0,
     }).format(val);
   };
+
+  const invoices = data?.invoices || [];
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -110,9 +123,22 @@ export default function BillingPage() {
 
       {/* Detailed Invoices list */}
       <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <h3 className="text-base font-bold text-slate-800">Platform Subscription Records</h3>
-          <p className="text-xs text-slate-500 mt-0.5">Aggregated recurring payments records.</p>
+        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Platform Subscription Records</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Aggregated recurring payments and subscription invoice history.</p>
+          </div>
+          <div className="flex gap-2">
+            <span className="px-2.5 py-1 text-xs font-bold bg-slate-100 border border-slate-200 rounded-lg text-slate-600">
+              Starter: {data?.planDistribution.starter || 0}
+            </span>
+            <span className="px-2.5 py-1 text-xs font-bold bg-slate-100 border border-slate-200 rounded-lg text-slate-600">
+              Growth: {data?.planDistribution.growth || 0}
+            </span>
+            <span className="px-2.5 py-1 text-xs font-bold bg-slate-100 border border-slate-200 rounded-lg text-slate-600">
+              Pro: {data?.planDistribution.pro || 0}
+            </span>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -121,6 +147,7 @@ export default function BillingPage() {
               <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 <th className="px-6 py-4">Transaction Code</th>
                 <th className="px-6 py-4">Store Reference</th>
+                <th className="px-6 py-4">Plan Tier</th>
                 <th className="px-6 py-4">Billing Date</th>
                 <th className="px-6 py-4">Amount</th>
                 <th className="px-6 py-4">Status</th>
@@ -133,46 +160,45 @@ export default function BillingPage() {
                     <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-24" /></td>
                     <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-32" /></td>
                     <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20" /></td>
+                    <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-20" /></td>
                     <td className="px-6 py-4"><div className="h-4 bg-slate-200 rounded w-16" /></td>
                     <td className="px-6 py-4"><div className="h-6 bg-slate-200 rounded w-16" /></td>
                   </tr>
                 ))
+              ) : invoices.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-xs text-slate-400 font-medium">
+                    No billing invoice records found in database partition.
+                  </td>
+                </tr>
               ) : (
-                <>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">inv_827f310a</td>
-                    <td className="px-6 py-4 font-semibold text-slate-800">Apex Storefront</td>
-                    <td className="px-6 py-4 text-slate-500">2026-07-14</td>
-                    <td className="px-6 py-4 font-bold text-slate-900">₹9,999</td>
+                invoices.map((inv) => (
+                  <tr key={inv.invoiceId} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-slate-500">{inv.invoiceId}</td>
+                    <td className="px-6 py-4 font-semibold text-slate-800">
+                      <div>{inv.storeName}</div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">{inv.subdomain}.basecart.app</div>
+                    </td>
                     <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Paid
+                      <span className="px-2 py-0.5 rounded text-[10px] font-extrabold uppercase bg-slate-100 text-slate-700 border border-slate-200">
+                        {inv.plan}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 text-xs font-mono">{inv.date}</td>
+                    <td className="px-6 py-4 font-bold text-slate-900">{formatCurrency(inv.amount)}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                        inv.status === "Paid"
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                          : inv.status === "Exempt"
+                          ? "bg-amber-50 text-amber-800 border border-amber-200"
+                          : "bg-rose-50 text-rose-700 border border-rose-100"
+                      }`}>
+                        {inv.status}
                       </span>
                     </td>
                   </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">inv_7d10b9ff</td>
-                    <td className="px-6 py-4 font-semibold text-slate-800">Pixel & Palette</td>
-                    <td className="px-6 py-4 text-slate-500">2026-07-13</td>
-                    <td className="px-6 py-4 font-bold text-slate-900">₹4,999</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Paid
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500">inv_44c11aa7</td>
-                    <td className="px-6 py-4 font-semibold text-slate-800">Nordic Living</td>
-                    <td className="px-6 py-4 text-slate-500">2026-07-12</td>
-                    <td className="px-6 py-4 font-bold text-slate-900">₹999</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        Paid
-                      </span>
-                    </td>
-                  </tr>
-                </>
+                ))
               )}
             </tbody>
           </table>
