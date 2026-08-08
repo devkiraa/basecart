@@ -27,7 +27,7 @@ export class ZeptoMailProvider implements EmailProvider {
     from?: { address?: string; name?: string }
   ): Promise<EmailResponse> {
     if (!this.apiUrl || !this.token) {
-      console.log(`[Mock Send] To: ${to} | Subject: ${subject}`);
+      console.log(`[Mock Send] To: ${to.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]")} | Subject: ${subject}`);
       return {
         success: true,
         messageId: "mock_message_id_" + Math.random().toString(36).substring(7),
@@ -76,7 +76,7 @@ export class ZeptoMailProvider implements EmailProvider {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        console.log(`✉️ Dispatched email to ${to} via ZeptoMail API. Attempt ${attempt}/${maxAttempts}`);
+        console.log(`✉️ Dispatched email to ${to.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]")} via ZeptoMail API. Attempt ${attempt}/${maxAttempts}`);
         
         const res = await fetch(this.apiUrl, {
           method: "POST",
@@ -99,7 +99,7 @@ export class ZeptoMailProvider implements EmailProvider {
         const errText = await res.text();
         console.error(`❌ ZeptoMail API error (${attempt}/${maxAttempts}): HTTP ${res.status} ${res.statusText}`);
         console.error(`❌ ZeptoMail response body: ${errText}`);
-        console.error(`❌ ZeptoMail request URL: ${this.apiUrl} | From: ${fromAddress} | To: ${to}`);
+        console.error(`❌ ZeptoMail request URL: ${this.apiUrl} | From: ${fromAddress} | To: ${to.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]")}`);
         
         // If it's a client error (e.g. 400 Bad Request, 401 Unauthorized), do not retry
         if (res.status >= 400 && res.status < 500 && res.status !== 429) {

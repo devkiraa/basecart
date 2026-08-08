@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { getTenantDb } from "../lib/db";
 import { authenticateMerchant } from "../middleware/auth";
 import { sendEmail } from "../services/email";
+import { sanitizeLogPII } from "../lib/audit";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -217,7 +218,7 @@ app.post("/customers/bulk", authenticateMerchant, async (c) => {
         .run();
       importedCount++;
     } catch (err) {
-      console.error(`Failed inserting customer ${email}:`, err);
+      console.error(`Failed inserting customer ${sanitizeLogPII(email)}:`, err);
     }
   }
 
@@ -410,7 +411,7 @@ app.post("/customers/broadcast", authenticateMerchant, async (c) => {
       );
       sentCount++;
     } catch (err) {
-      console.error(`Failed to send broadcast email to ${recipient}:`, err);
+      console.error(`Failed to send broadcast email to ${sanitizeLogPII(recipient)}:`, err);
     }
   }
 

@@ -21,6 +21,11 @@ const getAwsConfig = () => {
     process.env.LOCALSTACK_HOSTNAME ||
     process.env.AWS_ENDPOINT_URL
   ) {
+    // Block mock credentials in production
+    if (process.env.ENVIRONMENT === "production" || process.env.NODE_ENV === "production") {
+      throw new Error("FATAL: Mock AWS credentials cannot be used in production.");
+    }
+
     const endpoint =
       process.env.AWS_ENDPOINT_URL ||
       `http://${process.env.LOCALSTACK_HOSTNAME || "localhost"}:4566`;

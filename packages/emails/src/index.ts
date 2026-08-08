@@ -174,7 +174,7 @@ export async function sendEmail(
     name: payload.from?.name || defaultSender.name,
   };
 
-  console.log(`✉️ [Email Client] Scheduling email to: ${payload.to} | Template: ${payload.type} | From: ${payload.from.address} (${payload.from.name})`);
+  console.log(`✉️ [Email Client] Scheduling email to: ${payload.to.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, "[REDACTED_EMAIL]")} | Template: ${payload.type} | From: ${payload.from.address} (${payload.from.name})`);
 
   if (process.env.NODE_ENV === "test") {
     console.log(`✉️ [Email Client] [Test Mode] Bypassing email dispatch.`);

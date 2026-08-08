@@ -20,6 +20,12 @@ export function getStorageClient(env: any): S3Client {
     });
   }
 
+  // Block mock credentials in production
+  const envName = env?.ENVIRONMENT || env?.NODE_ENV;
+  if (envName === "production") {
+    throw new Error("FATAL: Mock S3 credentials cannot be used in production. Configure R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY via environment bindings.");
+  }
+
   // Local/Testing S3 simulation fallback (e.g. LocalStack)
   const endpoint = env?.AWS_ENDPOINT_URL || "http://localhost:4566";
   return new S3Client({

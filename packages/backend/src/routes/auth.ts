@@ -12,7 +12,7 @@ import {
   isReservedSubdomain,
 } from "@basecart/shared";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
-import { logReservedSubdomainAbuse } from "../lib/audit";
+import { logReservedSubdomainAbuse, sanitizeLogPII } from "../lib/audit";
 import {
   checkAccountLockout,
   recordFailedAttempt,
@@ -101,7 +101,7 @@ async function sendEmailSafely(payload: any, env: any) {
   try {
     await sendEmail(payload, env);
   } catch (error) {
-    console.error(`Failed to send email to ${payload.to}:`, error);
+    console.error(`Failed to send email to ${sanitizeLogPII(payload.to)}:`, error);
   }
 }
 
