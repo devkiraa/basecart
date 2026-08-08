@@ -588,21 +588,34 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
 
     const plan = store.plan || "starter";
 
-    // Enforce monthly order limits
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const countRow = await tenantDb
-      .prepare("SELECT COUNT(*) as total FROM orders WHERE createdAt >= ?")
-      .bind(startOfMonth)
-      .first<{ total: number }>();
-    
-    const monthlyOrdersCount = countRow?.total || 0;
+    // 1. Fetch Dynamic Plan Config from Control DB
+    const normalizedPlan = (plan || "trial").toLowerCase();
+    const planConfigRow = await controlDb
+      .prepare("SELECT * FROM plan_configs WHERE planId = ? OR planId LIKE ?")
+      .bind(normalizedPlan, `%${normalizedPlan}%`)
+      .first<any>();
 
-    if (plan === "starter" && monthlyOrdersCount >= 100) {
-      throw new Error("Plan limit reached: Starter tier allows a maximum of 100 orders per month. Please upgrade your plan.");
-    }
-    if (plan === "growth" && monthlyOrdersCount >= 1000) {
-      throw new Error("Plan limit reached: Growth tier allows a maximum of 1000 orders per month. Please upgrade your plan.");
+    // 2. Enforce Acquisition Hook & Trial Paywall Limits (100 orders OR ₹25,000 GMV)
+    if (normalizedPlan === "trial" || normalizedPlan === "free") {
+      const orderCountRow = await tenantDb.prepare("SELECT COUNT(*) as totalOrders, COALESCE(SUM(total), 0) as totalGmv FROM orders").first<{ totalOrders: number; totalGmv: number }>();
+      const totalOrders = orderCountRow?.totalOrders || 0;
+      const totalGmv = orderCountRow?.totalGmv || 0;
+
+      const orderCap = planConfigRow?.orderCap ?? 100;
+      const gmvCap = planConfigRow?.gmvCap ?? 25000;
+      const paywallMsg = planConfigRow?.paywallMessage || "You've earned ₹25,000 using Basecart! Select a plan to continue scaling.";
+
+      if ((orderCap > 0 && totalOrders >= orderCap) || (gmvCap > 0 && totalGmv >= gmvCap)) {
+        return c.json({
+          error: paywallMsg,
+          code: "TRIAL_LIMIT_REACHED",
+          paywallTriggered: true,
+          totalOrders,
+          totalGmv,
+          orderCap,
+          gmvCap,
+        }, 402);
+      }
     }
 
     if (!store.razorpayKeyId || !store.razorpaySecret) {
@@ -612,20 +625,14 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
     const rpKey = await decrypt(store.razorpayKeyId, c.env.ENCRYPTION_SECRET);
     const rpSecret = await decrypt(store.razorpaySecret, c.env.ENCRYPTION_SECRET);
 
-    // 2. Compute price server-side
+    // 3. Compute price server-side
     const computation = await computeCartTotal(tenantId, lineItems, discountCode, c.env);
     if (!computation.valid) {
       throw new Error(computation.reason || "Price validation failed");
     }
 
-    // platform fee %
-    let platformFeePercent = 0.02; // Starter 2%
-    if (plan === "growth") {
-      platformFeePercent = 0.01;
-    } else if (plan === "pro") {
-      platformFeePercent = 0.005;
-    }
-    const platformFee = Math.round(computation.total * platformFeePercent * 100) / 100;
+    // 0% Platform Fees on all paid Basecart plans as specified
+    const platformFee = 0.0;
 
     const orderId = crypto.randomUUID();
     let razorpayOrderId = "order_mock_" + Array.from(crypto.getRandomValues(new Uint8Array(8))).map(b => b.toString(16).padStart(2, "0")).join("");

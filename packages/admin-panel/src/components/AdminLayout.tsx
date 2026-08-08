@@ -197,6 +197,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     {
       group: "Platform Configuration",
       items: [
+        { name: "Plan Features & Tiers", href: "/platform/plan-features", icon: Layers },
         { name: "Feature Flags", href: "/platform/feature-flags", icon: ToggleLeft },
         { name: "API & Webhooks", href: "/platform/api-keys", icon: Key },
         { name: "Queue Monitor", href: "/platform/queue-monitor", icon: Layers },

@@ -303,6 +303,181 @@ async function ensureAdminTables(db: any) {
     createdAt TEXT NOT NULL,
     updatedAt TEXT
   )`).run();
+
+  await db.prepare(`CREATE TABLE IF NOT EXISTS plan_configs (
+    planId TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    billingPeriod TEXT NOT NULL DEFAULT 'monthly',
+    targetAudience TEXT NOT NULL,
+    orderCap INTEGER NOT NULL DEFAULT -1,
+    gmvCap REAL NOT NULL DEFAULT -1,
+    productCap INTEGER NOT NULL DEFAULT -1,
+    allowCustomDomain INTEGER NOT NULL DEFAULT 1,
+    allowAutomatedGateways INTEGER NOT NULL DEFAULT 1,
+    allowAutomatedShipping INTEGER NOT NULL DEFAULT 1,
+    allowAbandonedCart INTEGER NOT NULL DEFAULT 1,
+    allowAiWriter INTEGER NOT NULL DEFAULT 1,
+    allowStaffSeats INTEGER NOT NULL DEFAULT 1,
+    maxStaffSeats INTEGER NOT NULL DEFAULT 1,
+    allowDeveloperApi INTEGER NOT NULL DEFAULT 1,
+    allowCustomCssJs INTEGER NOT NULL DEFAULT 1,
+    allowGstInvoices INTEGER NOT NULL DEFAULT 1,
+    platformFeePercent REAL NOT NULL DEFAULT 0.0,
+    paywallMessage TEXT,
+    updatedAt TEXT NOT NULL
+  )`).run();
+
+  const planCount: any = await db.prepare("SELECT COUNT(*) as total FROM plan_configs").first();
+  if (!planCount || planCount.total === 0) {
+    const seedPlans = [
+      {
+        planId: "trial",
+        name: "Free Acquisition Trial",
+        price: 0,
+        billingPeriod: "trial",
+        targetAudience: "New Signup Merchants",
+        orderCap: 100,
+        gmvCap: 25000,
+        productCap: -1,
+        allowCustomDomain: 1,
+        allowAutomatedGateways: 1,
+        allowAutomatedShipping: 1,
+        allowAbandonedCart: 1,
+        allowAiWriter: 1,
+        allowStaffSeats: 1,
+        maxStaffSeats: 1,
+        allowDeveloperApi: 0,
+        allowCustomCssJs: 0,
+        allowGstInvoices: 0,
+        platformFeePercent: 0.0,
+        paywallMessage: "You've earned ₹25,000 using Basecart! Select a plan to continue scaling.",
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        planId: "tier1",
+        name: "Basic (Order Receiver)",
+        price: 99,
+        billingPeriod: "monthly",
+        targetAudience: "Instagram sellers, home bakers & micro-sellers",
+        orderCap: -1,
+        gmvCap: -1,
+        productCap: 100,
+        allowCustomDomain: 0,
+        allowAutomatedGateways: 0,
+        allowAutomatedShipping: 0,
+        allowAbandonedCart: 0,
+        allowAiWriter: 0,
+        allowStaffSeats: 0,
+        maxStaffSeats: 1,
+        allowDeveloperApi: 0,
+        allowCustomCssJs: 0,
+        allowGstInvoices: 0,
+        platformFeePercent: 0.0,
+        paywallMessage: "Upgrade to Starter (₹399) to connect custom domain & online payment gateways.",
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        planId: "tier2",
+        name: "Starter",
+        price: 399,
+        billingPeriod: "monthly",
+        targetAudience: "New D2C storefronts needing an official website",
+        orderCap: -1,
+        gmvCap: -1,
+        productCap: 250,
+        allowCustomDomain: 1,
+        allowAutomatedGateways: 1,
+        allowAutomatedShipping: 0,
+        allowAbandonedCart: 0,
+        allowAiWriter: 0,
+        allowStaffSeats: 0,
+        maxStaffSeats: 1,
+        allowDeveloperApi: 0,
+        allowCustomCssJs: 0,
+        allowGstInvoices: 0,
+        platformFeePercent: 0.0,
+        paywallMessage: "Upgrade to Growth (₹1,499) for unlimited products, Shiprocket shipping & AI writer.",
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        planId: "tier3",
+        name: "Growth (Recommended)",
+        price: 1499,
+        billingPeriod: "monthly",
+        targetAudience: "Active D2C brands running ad campaigns and scaling",
+        orderCap: -1,
+        gmvCap: -1,
+        productCap: -1,
+        allowCustomDomain: 1,
+        allowAutomatedGateways: 1,
+        allowAutomatedShipping: 1,
+        allowAbandonedCart: 1,
+        allowAiWriter: 1,
+        allowStaffSeats: 1,
+        maxStaffSeats: 3,
+        allowDeveloperApi: 0,
+        allowCustomCssJs: 0,
+        allowGstInvoices: 1,
+        platformFeePercent: 0.0,
+        paywallMessage: "Upgrade to Business (₹2,999) for team seats, developer API & custom scripts.",
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        planId: "tier4",
+        name: "Business (Pro)",
+        price: 2999,
+        billingPeriod: "monthly",
+        targetAudience: "High-volume D2C brands with team workflows",
+        orderCap: -1,
+        gmvCap: -1,
+        productCap: -1,
+        allowCustomDomain: 1,
+        allowAutomatedGateways: 1,
+        allowAutomatedShipping: 1,
+        allowAbandonedCart: 1,
+        allowAiWriter: 1,
+        allowStaffSeats: 1,
+        maxStaffSeats: 10,
+        allowDeveloperApi: 1,
+        allowCustomCssJs: 1,
+        allowGstInvoices: 1,
+        platformFeePercent: 0.0,
+        paywallMessage: "Unlimited high-volume enterprise operations.",
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+
+    for (const p of seedPlans) {
+      await db.prepare(
+        "INSERT INTO plan_configs (planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart, allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs, allowGstInvoices, platformFeePercent, paywallMessage, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      )
+        .bind(
+          p.planId,
+          p.name,
+          p.price,
+          p.billingPeriod,
+          p.targetAudience,
+          p.orderCap,
+          p.gmvCap,
+          p.productCap,
+          p.allowCustomDomain,
+          p.allowAutomatedGateways,
+          p.allowAutomatedShipping,
+          p.allowAbandonedCart,
+          p.allowAiWriter,
+          p.allowStaffSeats,
+          p.maxStaffSeats,
+          p.allowDeveloperApi,
+          p.allowCustomCssJs,
+          p.allowGstInvoices,
+          p.platformFeePercent,
+          p.paywallMessage,
+          p.updatedAt
+        )
+        .run();
+    }
+  }
 }
 
 // Pre-handler middleware to authenticate super admins in Hono
@@ -2009,6 +2184,71 @@ app.post("/admin/system-settings", authenticateAdmin, async (c) => {
   }
 
   return c.json({ success: true });
+});
+
+/**
+ * Plan Features & Tier Configuration Endpoints
+ */
+app.get("/admin/plan-configs", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+  const result = await controlDb.prepare("SELECT * FROM plan_configs").all<any>();
+  return c.json(result.results || []);
+});
+
+app.get("/public/plan-configs", async (c) => {
+  const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+  const result = await controlDb.prepare("SELECT * FROM plan_configs").all<any>();
+  return c.json(result.results || []);
+});
+
+app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  await ensureAdminTables(controlDb);
+  const body = await c.req.json().catch(() => ({}));
+  const plans = Array.isArray(body) ? body : [body];
+
+  const updatedAt = new Date().toISOString();
+
+  for (const p of plans) {
+    if (!p.planId) continue;
+    await controlDb
+      .prepare(
+        `INSERT OR REPLACE INTO plan_configs (
+          planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap,
+          allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart,
+          allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs,
+          allowGstInvoices, platformFeePercent, paywallMessage, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .bind(
+        p.planId,
+        p.name || p.planId,
+        Number(p.price) || 0,
+        p.billingPeriod || "monthly",
+        p.targetAudience || "",
+        Number(p.orderCap) ?? -1,
+        Number(p.gmvCap) ?? -1,
+        Number(p.productCap) ?? -1,
+        p.allowCustomDomain ? 1 : 0,
+        p.allowAutomatedGateways ? 1 : 0,
+        p.allowAutomatedShipping ? 1 : 0,
+        p.allowAbandonedCart ? 1 : 0,
+        p.allowAiWriter ? 1 : 0,
+        p.allowStaffSeats ? 1 : 0,
+        Number(p.maxStaffSeats) || 1,
+        p.allowDeveloperApi ? 1 : 0,
+        p.allowCustomCssJs ? 1 : 0,
+        p.allowGstInvoices ? 1 : 0,
+        Number(p.platformFeePercent) || 0.0,
+        p.paywallMessage || "",
+        updatedAt
+      )
+      .run();
+  }
+
+  return c.json({ success: true, message: "Plan features and pricing matrix updated successfully" });
 });
 
 export default app;

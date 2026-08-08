@@ -1,11 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
-import { CheckCircle, ArrowRight } from "lucide-react";
+import { CheckCircle, ArrowRight, Sparkles, Zap, ShieldCheck, Layers } from "lucide-react";
 
 export default function PricingPage() {
+  const [plans, setPlans] = useState<any[]>([]);
+
+  useEffect(() => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    fetch(`${apiUrl}/public/plan-configs`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPlans(data);
+        }
+      })
+      .catch((e) => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-white text-slate-650 font-sans selection:bg-blue-50 selection:text-blue-600">
       <Header />
@@ -13,96 +27,102 @@ export default function PricingPage() {
       {/* Hero Section */}
       <section className="px-6 lg:px-16 pt-16 pb-20 bg-gradient-to-b from-[#F8FAFC]/50 to-white text-center">
         <div className="max-w-4xl mx-auto space-y-6">
-          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase">PRICING & TRIALS</span>
+          <span className="text-[11px] font-black tracking-widest text-blue-600 uppercase">PRICING & FREE TRIAL</span>
           <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-            Start with a 60-Day Free Trial. Upgrade when you're ready.
+            Start Free. Scale to ₹25,000 Revenue Before Paying a Single Rupee.
           </h1>
           <p className="text-base text-slate-500 max-w-2xl mx-auto leading-relaxed">
-            No credit card required. Every new merchant receives full access to our Growth Plan features for 60 days to launch, sell, and experience Basecart with zero risk.
+            No credit card required upfront. Experience full Growth-tier features until you complete 100 orders or ₹25,000 GMV, then select the plan that fits your business.
           </p>
         </div>
       </section>
 
       {/* Pricing Cards */}
       <section className="px-6 lg:px-16 py-12 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           {[
             {
-              title: "60-Day Free Trial",
+              title: "Free Trial (Hook)",
               price: "₹0",
-              period: "for 60 days",
-              desc: "Full Growth Plan experience with zero risk.",
+              period: "first 100 orders / ₹25k GMV",
+              desc: "Full Growth-tier experience with zero risk.",
               features: [
-                "Growth Tier Full Access (60 Days)",
-                "No Credit Card Required",
-                "Up to 250 Product Listings",
-                "Free Subdomain (store.basecart.app)",
-                "Standard & Premium Themes",
+                "Growth Tier Full Access",
+                "First 100 Orders OR ₹25,000 GMV",
                 "Razorpay & Stripe Gateways",
-                "AI Description Writer (50 Credits)"
+                "Custom Domain Mapping",
+                "AI Description Writer",
+                "Celebratory Paywall Prompt"
               ],
               popular: false,
-              btn: "Start 60-Day Free Trial",
-              highlight: "Trial Period"
+              btn: "Start Free Trial",
+              highlight: "Zero Risk"
             },
             {
-              title: "Starter",
-              price: "₹299",
+              title: "Tier 1: Basic",
+              price: "₹99",
               period: "/ month",
-              desc: "Perfect for home businesses & new stores.",
+              desc: "Instagram sellers, home bakers & micro-sellers.",
               features: [
-                "1 Active Online Storefront",
+                "Catalog up to 100 Products",
+                "Direct WhatsApp Checkout Link",
+                "Manual UPI & COD Order Tracking",
+                "Low-cost Retention Tier",
+                "0% Platform Fees"
+              ],
+              popular: false,
+              btn: "Choose Basic (₹99)"
+            },
+            {
+              title: "Tier 2: Starter",
+              price: "₹399",
+              period: "/ month",
+              desc: "New D2C storefronts needing an official website.",
+              features: [
+                "Custom Domain (`yourbrand.com`)",
+                "Razorpay & Stripe Gateways",
                 "Up to 250 Active Products",
-                "Custom Domain Mapping (yourbrand.com)",
-                "Free Automatic SSL Certificate",
-                "Standard & Modern Templates",
-                "Discount Coupons & Promo Engine",
-                "Basic Sales & Order Analytics",
-                "Direct S3 Image Uploading"
+                "Standard Templates & Themes",
+                "0% Platform Fees"
               ],
               popular: false,
-              btn: "Choose Starter"
+              btn: "Choose Starter (₹399)"
             },
             {
-              title: "Growth ⭐",
-              price: "₹799",
-              period: "/ month",
-              desc: "Built for scaling D2C brands & social commerce.",
-              features: [
-                "Everything in Starter, plus:",
-                "Unlimited Products & Orders",
-                "AI Description Writer (Unlimited)",
-                "Abandoned Cart Recovery Emails",
-                "Shiprocket Automated Shipping & AWB",
-                "Product Options Matrix (Sizes & Colors)",
-                "Auto-Generate SKU & Barcode Helper",
-                "Priority 24/7 Merchant Support"
-              ],
-              popular: true,
-              btn: "Choose Growth"
-            },
-            {
-              title: "Business",
+              title: "Tier 3: Growth ⭐",
               price: "₹1,499",
               period: "/ month",
-              desc: "For high-volume operations & team workflows.",
+              desc: "Active D2C brands running ad campaigns.",
               features: [
-                "Everything in Growth, plus:",
-                "Multi-Staff Accounts (5 Team Seats)",
-                "Full Developer REST API & Webhooks",
+                "Unlimited Products & Orders",
+                "Shiprocket Automated Shipping & AWB",
+                "Abandoned Cart Recovery",
+                "AI Description Writer & Variants",
+                "0% Platform Fees"
+              ],
+              popular: true,
+              btn: "Choose Growth (₹1,499)"
+            },
+            {
+              title: "Tier 4: Business",
+              price: "₹2,999",
+              period: "/ month",
+              desc: "High-volume brands & team workflows.",
+              features: [
+                "Multi-Staff Accounts (5–10 Seats)",
+                "Developer REST API & Webhooks",
                 "Custom CSS / JS Code Injection",
                 "Automated GST Invoices & PDF Export",
-                "Custom Storefront Theme Engine",
-                "Dedicated Account Manager",
-                "0% Platform Transaction Fees"
+                "Priority 24/7 Support",
+                "0% Platform Fees"
               ],
               popular: false,
-              btn: "Choose Business"
+              btn: "Choose Business (₹2,999)"
             }
           ].map((plan, idx) => (
             <div 
               key={idx} 
-              className={`bg-white border rounded-2xl p-6 flex flex-col justify-between relative transition-all duration-300 ${
+              className={`bg-white border rounded-2xl p-5 flex flex-col justify-between relative transition-all duration-300 ${
                 plan.popular 
                   ? "border-blue-600 ring-4 ring-blue-50 scale-105 z-10 shadow-lg" 
                   : "border-slate-150 hover:border-slate-350 shadow-sm"
@@ -118,149 +138,84 @@ export default function PricingPage() {
                   {plan.highlight}
                 </span>
               )}
-              
-              <div className="space-y-6">
+
+              <div className="space-y-4">
                 <div>
-                  <h3 className="text-lg font-black text-slate-900 mb-1">{plan.title}</h3>
-                  <p className="text-[11px] text-slate-400 font-bold mb-4 leading-snug">{plan.desc}</p>
-                  <div className="flex items-baseline gap-1 select-none">
-                    <span className="text-3xl font-black text-slate-900 tracking-tight">{plan.price}</span>
-                    <span className="text-xs text-slate-400 font-bold">{plan.period}</span>
+                  <h3 className="text-base font-black text-slate-900">{plan.title}</h3>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">{plan.desc}</p>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-black text-slate-900">{plan.price}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">{plan.period}</span>
                   </div>
                 </div>
 
-                <div className="space-y-2.5 pt-4 border-t border-slate-100">
-                  {plan.features.map((feat, j) => (
-                    <div key={j} className="flex items-start gap-2 text-xs font-semibold text-slate-700">
-                      <CheckCircle className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span>{feat}</span>
+                <div className="space-y-2 pt-2 border-t border-slate-100">
+                  {plan.features.map((feature, fIdx) => (
+                    <div key={fIdx} className="flex items-start gap-2 text-xs text-slate-600">
+                      <CheckCircle className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+                      <span>{feature}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <a 
-                href="/signup"
-                className={`w-full mt-8 py-2.5 rounded-lg text-xs font-bold text-center block transition-all active:scale-95 ${
-                  plan.popular 
-                    ? "bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/10" 
-                    : plan.highlight
-                    ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-md shadow-emerald-500/10"
-                    : "border border-slate-200 text-slate-800 hover:bg-slate-50"
-                }`}
-              >
-                {plan.btn}
-              </a>
+              <div className="pt-6">
+                <a
+                  href="https://dashboard.basecart.app/signup"
+                  className={`w-full py-2.5 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-1.5 ${
+                    plan.popular
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                      : "bg-slate-100 hover:bg-slate-200 text-slate-800"
+                  }`}
+                >
+                  <span>{plan.btn}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </a>
+              </div>
             </div>
           ))}
         </div>
-
-        {/* Detailed Feature Comparison Table */}
-        <div className="mt-16 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm overflow-x-auto text-left">
-          <div className="mb-6 space-y-1">
-            <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">Full Plan Feature Matrix</h3>
-            <p className="text-xs text-slate-500 font-medium">Detailed side-by-side comparison of tools, limits, and capabilities across all plans.</p>
-          </div>
-
-          <table className="w-full min-w-[640px] text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/70 text-slate-900 uppercase text-[10px] font-black tracking-wider">
-                <th className="py-3 px-4 w-1/3">Feature Category</th>
-                <th className="py-3 px-4">Free Trial (₹0)</th>
-                <th className="py-3 px-4">Starter (₹299)</th>
-                <th className="py-3 px-4 text-blue-600">Growth (₹799)</th>
-                <th className="py-3 px-4">Business (₹1,499)</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Products & Orders</td>
-                <td className="py-3 px-4">Up to 250</td>
-                <td className="py-3 px-4">Up to 250</td>
-                <td className="py-3 px-4 font-bold text-blue-600">Unlimited</td>
-                <td className="py-3 px-4 font-bold text-slate-900">Unlimited</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Custom Domain & SSL</td>
-                <td className="py-3 px-4 text-slate-400">Subdomain Only</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included (Free SSL)</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">AI Description Writer</td>
-                <td className="py-3 px-4">50 Credits</td>
-                <td className="py-3 px-4 text-slate-400">Basic</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Unlimited AI Generation</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Unlimited AI Generation</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Abandoned Cart Recovery</td>
-                <td className="py-3 px-4 text-slate-400">Disabled</td>
-                <td className="py-3 px-4 text-slate-400">Disabled</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Automated Email Recovery</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Automated Email & WhatsApp</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Shiprocket Automated Shipping</td>
-                <td className="py-3 px-4 text-slate-400">Manual</td>
-                <td className="py-3 px-4 text-slate-400">Manual</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Automated AWB & Tracking</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Automated AWB & Tracking</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Auto SKU & Barcode Generator</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
-                <td className="py-3 px-4 text-emerald-600 font-bold">Included</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Multi-Staff Accounts</td>
-                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
-                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
-                <td className="py-3 px-4 text-slate-400">1 Owner Seat</td>
-                <td className="py-3 px-4 font-bold text-purple-700">5 Team Member Seats</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Developer API & Webhooks</td>
-                <td className="py-3 px-4 text-slate-400">Disabled</td>
-                <td className="py-3 px-4 text-slate-400">Disabled</td>
-                <td className="py-3 px-4 text-slate-400">Read-Only</td>
-                <td className="py-3 px-4 font-bold text-purple-700">Full REST API & Webhooks</td>
-              </tr>
-              <tr>
-                <td className="py-3 px-4 font-bold text-slate-900">Transaction Fees</td>
-                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
-                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
-                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
-                <td className="py-3 px-4 font-bold text-emerald-600">0% Basecart Fee</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </section>
 
-      {/* FAQ block */}
-      <section className="bg-slate-50/50 border-y border-slate-100 py-16 px-6">
-        <div className="max-w-4xl mx-auto space-y-8 text-left">
-          <h2 className="text-2xl font-extrabold text-slate-900 text-center mb-8">Pricing & Trial FAQ</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">How does the 60-Day Free Trial work?</h4>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">Every new signup automatically starts with a 60-day trial of our Growth Plan with no credit card required. You get 100% full access to build, test, and accept payments on your store.</p>
+      {/* Competitive Advantages Guarantee */}
+      <section className="px-6 lg:px-16 py-12 max-w-5xl mx-auto">
+        <div className="bg-slate-900 text-white rounded-3xl p-8 shadow-xl space-y-6">
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-4">
+            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+            <h2 className="text-lg font-bold text-slate-100 uppercase tracking-wider">
+              Basecart Edge in the Indian D2C Market
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs">
+            <div className="space-y-2">
+              <span className="font-bold text-emerald-400 text-sm flex items-center gap-1">
+                <Zap className="w-4 h-4" /> 0% Platform Fees
+              </span>
+              <p className="text-slate-300 leading-relaxed">
+                Shopify charges 0.5%–2.0% transaction fees on third-party Indian gateways. Basecart guarantees 0% platform fees across all paid plans.
+              </p>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">What happens after 60 days if I don't upgrade?</h4>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">If you don't choose a plan after 60 days, your public storefront is paused, but your merchant dashboard, products, and customer data remain intact. You can upgrade anytime to reactivate your store.</p>
+
+            <div className="space-y-2">
+              <span className="font-bold text-blue-400 text-sm flex items-center gap-1">
+                <Sparkles className="w-4 h-4" /> Full Website on ₹399 Starter
+              </span>
+              <p className="text-slate-300 leading-relaxed">
+                Offers hosted custom domain mapping (`brand.com`) at ₹399/mo, whereas Shopify Starter limits users to buy links without a website.
+              </p>
             </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">Are there transaction setup fees?</h4>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">No, Basecart does not charge setup fees or per-transaction platform commissions. You only pay standard payment processing fees to your payment gateway (Razorpay).</p>
-            </div>
-            <div>
-              <h4 className="text-sm font-bold text-slate-900 mb-2">Can I upgrade or downgrade anytime?</h4>
-              <p className="text-xs text-slate-500 leading-relaxed font-semibold">Yes, you can switch between Starter (₹299/mo), Growth (₹799/mo), or Business (₹1,499/mo) at any time directly in your account billing settings.</p>
+
+            <div className="space-y-2">
+              <span className="font-bold text-purple-400 text-sm flex items-center gap-1">
+                <Layers className="w-4 h-4" /> Zero Upfront Commitment
+              </span>
+              <p className="text-slate-300 leading-relaxed">
+                Start for ₹0 and process your first 100 orders or ₹25,000 GMV before choosing a plan.
+              </p>
             </div>
           </div>
         </div>

@@ -3655,9 +3655,9 @@ export default function MerchantDashboard() {
                     </div>
 
                     <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-slate-800">60-Day Trial Active ⚡</p>
+                      <p className="text-xs font-bold text-slate-800">Acquisition Trial Active ⚡</p>
                       <p className="text-[11px] text-slate-500 leading-snug">
-                        You have <strong className="text-indigo-600 font-bold">{daysRemaining} days remaining</strong> on your Growth Plan trial.
+                        Full Growth-tier features unlocked for first 100 orders or ₹25,000 GMV!
                       </p>
                     </div>
 
@@ -12459,10 +12459,10 @@ export default function MerchantDashboard() {
                                   onChange={(e) => setSelectedPaymentPlan(e.target.value)}
                                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
                                 >
-                                  <option value="starter">Starter Plan — ₹299 / month</option>
-                                  <option value="growth">Growth Plan — ₹699 / month</option>
-                                  <option value="pro">Pro Plan — ₹1,499 / month</option>
-                                  <option value="agency">Agency Plan — ₹4,999 / month</option>
+                                  <option value="tier1">Tier 1: Basic (Order Receiver) — ₹99 / month</option>
+                                  <option value="tier2">Tier 2: Starter Plan — ₹399 / month</option>
+                                  <option value="tier3">Tier 3: Growth Plan (Recommended) — ₹1,499 / month</option>
+                                  <option value="tier4">Tier 4: Business (Pro) Plan — ₹2,999 / month</option>
                                 </select>
                               </div>
                             </div>
@@ -12475,7 +12475,7 @@ export default function MerchantDashboard() {
                             >
                               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />}
                               <span>
-                                {selectedPaymentPlan === "starter" ? "⚡ Pay & Subscribe (₹299/mo)" : selectedPaymentPlan === "pro" ? "⚡ Pay & Subscribe (₹1,499/mo)" : selectedPaymentPlan === "agency" ? "⚡ Pay & Subscribe (₹4,999/mo)" : "⚡ Pay & Subscribe (₹699/mo)"}
+                                {selectedPaymentPlan === "tier1" ? "⚡ Pay & Subscribe (₹99/mo)" : selectedPaymentPlan === "tier2" ? "⚡ Pay & Subscribe (₹399/mo)" : selectedPaymentPlan === "tier4" ? "⚡ Pay & Subscribe (₹2,999/mo)" : "⚡ Pay & Subscribe (₹1,499/mo)"}
                               </span>
                             </button>
                           </div>
