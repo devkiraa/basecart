@@ -12459,10 +12459,9 @@ export default function MerchantDashboard() {
                                   onChange={(e) => setSelectedPaymentPlan(e.target.value)}
                                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
                                 >
-                                  <option value="tier1">Tier 1: Basic (Order Receiver) — ₹99 / month</option>
-                                  <option value="tier2">Tier 2: Starter Plan — ₹399 / month</option>
-                                  <option value="tier3">Tier 3: Growth Plan (Recommended) — ₹1,499 / month</option>
-                                  <option value="tier4">Tier 4: Business (Pro) Plan — ₹2,999 / month</option>
+                                  <option value="basic">BASIC — ₹99 / month (Instagram & WhatsApp Sellers)</option>
+                                  <option value="growth">GROWTH ⭐ — ₹1,499 / month (Recommended D2C Tech Stack)</option>
+                                  <option value="business">BUSINESS — ₹2,999 / month (High-Volume Teams & APIs)</option>
                                 </select>
                               </div>
                             </div>
@@ -12475,7 +12474,11 @@ export default function MerchantDashboard() {
                             >
                               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />}
                               <span>
-                                {selectedPaymentPlan === "tier1" ? "⚡ Pay & Subscribe (₹99/mo)" : selectedPaymentPlan === "tier2" ? "⚡ Pay & Subscribe (₹399/mo)" : selectedPaymentPlan === "tier4" ? "⚡ Pay & Subscribe (₹2,999/mo)" : "⚡ Pay & Subscribe (₹1,499/mo)"}
+                                {selectedPaymentPlan === "basic" || selectedPaymentPlan === "tier1"
+                                  ? "⚡ Pay & Subscribe (₹99/mo)"
+                                  : selectedPaymentPlan === "business" || selectedPaymentPlan === "tier4"
+                                  ? "⚡ Pay & Subscribe (₹2,999/mo)"
+                                  : "⚡ Pay & Subscribe (₹1,499/mo)"}
                               </span>
                             </button>
                           </div>

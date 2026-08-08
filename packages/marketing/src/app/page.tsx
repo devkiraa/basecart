@@ -122,12 +122,16 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white text-slate-600 font-sans antialiased overflow-x-hidden selection:bg-blue-50 selection:text-blue-600">
       
-      {/* Inject JSON-LD Schema Structured Data */}
+      {/* Inject JSON-LD Schema Structured Data (sanitized for XSS protection) */}
       <script
         id="json-ld"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLdSchema),
+          __html: JSON.stringify(jsonLdSchema)
+            .replace(/</g, "\\u003c")
+            .replace(/>/g, "\\u003e")
+            .replace(/&/g, "\\u0026")
+            .replace(/"/g, "\\\""),
         }}
       />
 
@@ -170,116 +174,102 @@ export default function LandingPage() {
           
           <AnimatedSection className="text-center max-w-2xl mx-auto space-y-5">
             <div className="text-xs font-mono font-bold text-slate-400 uppercase tracking-wider">
-              Pricing
+              Pricing & Free Trial
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
-              Simple, transparent pricing.{" "}
+              Start Free. Pay Only When You Scale.{" "}
               <span className="text-blue-600">
-                Zero transaction fees.
+                0% Transaction Fees.
               </span>
             </h2>
-            <p className="text-sm sm:text-base text-slate-500 font-medium max-w-xl mx-auto">
-              Choose the plan that fits your business scale. No hidden fees. Ever.
+            <p className="text-sm sm:text-base text-slate-500 font-medium max-w-2xl mx-auto">
+              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for your first 100 orders or ₹25,000 in sales (whichever comes first). No credit card required.
             </p>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6">
+          {/* Streamlined 3-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 items-stretch">
             
-            {/* Free Plan */}
+            {/* Basic Plan */}
             <AnimatedSection delay={0}>
-              <div className="h-full bg-white border border-slate-200 rounded-2xl p-7 space-y-6 flex flex-col justify-between group">
+              <div className="h-full bg-white border border-slate-200 rounded-2xl p-7 space-y-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-black text-slate-900">Free Plan</h3>
+                  <span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-[10px] font-extrabold uppercase tracking-wider">Basic</span>
+                  <h3 className="text-2xl font-black text-slate-900">BASIC</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-900">₹0</span>
+                    <span className="text-4xl font-black text-slate-900">₹99</span>
                     <span className="text-xs text-slate-400 font-semibold">/month</span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">Ideal for new sellers launching their first catalog.</p>
+                  <p className="text-xs text-slate-500 font-medium">Ideal for Instagram sellers & WhatsApp order intake.</p>
                   <div className="h-px bg-slate-100" />
                   <ul className="space-y-3 text-xs text-slate-600 font-semibold">
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Up to 25 catalog products</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Manual order management</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Basecart subdomain catalog</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Zero transaction fees</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Up to 100 Product Listings</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Direct WhatsApp Checkout</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Manual UPI & COD Tracking</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Standard Storefront Theme</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="/signup" className="w-full py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl text-xs text-center transition-all block">
-                  Get Started
-                </a>
-              </div>
-            </AnimatedSection>
-
-            {/* Starter Plan */}
-            <AnimatedSection delay={0.08}>
-              <div className="h-full bg-white border border-slate-200 rounded-2xl p-7 space-y-6 flex flex-col justify-between group">
-                <div className="space-y-4">
-                  <h3 className="text-lg font-black text-slate-900">Starter Plan</h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-900">₹299</span>
-                    <span className="text-xs text-slate-400 font-semibold">/month</span>
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium">Perfect for growing boutiques needing a custom domain.</p>
-                  <div className="h-px bg-slate-100" />
-                  <ul className="space-y-3 text-xs text-slate-600 font-semibold">
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Up to 500 catalog products</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Custom domain mapping (.com / .in)</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Razorpay, Cashfree & COD support</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Direct WhatsApp chat support</span></li>
-                  </ul>
-                </div>
-                <a href="/signup" className="w-full py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl text-xs text-center transition-all block">
-                  Get Started
+                <a href="https://dashboard.basecart.app/signup?plan=basic" className="w-full py-3 border border-slate-200 hover:border-slate-350 text-slate-800 font-bold rounded-xl text-xs text-center transition-all block">
+                  Choose Basic
                 </a>
               </div>
             </AnimatedSection>
 
             {/* Growth Plan (Popular) */}
-            <AnimatedSection delay={0.16}>
-              <div className="h-full bg-white border-2 border-blue-600 rounded-2xl p-7 space-y-6 relative flex flex-col justify-between group">
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black uppercase px-4 py-1 rounded-full">
-                  MOST POPULAR
+            <AnimatedSection delay={0.08}>
+              <div className="h-full bg-white border-2 border-blue-600 rounded-2xl p-7 space-y-6 relative flex flex-col justify-between group shadow-xl scale-105 z-10">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black uppercase px-4 py-1 rounded-full shadow-sm">
+                  RECOMMENDED ⭐
                 </div>
                 <div className="space-y-4">
-                  <h3 className="text-lg font-black text-slate-900">Growth Plan</h3>
+                  <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-[10px] font-extrabold uppercase tracking-wider">Growth ⭐</span>
+                  <h3 className="text-2xl font-black text-slate-900">GROWTH</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-blue-600">₹699</span>
+                    <span className="text-4xl font-black text-blue-600">₹1,499</span>
                     <span className="text-xs text-slate-400 font-semibold">/month</span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">For scaling brands requiring automated logistics.</p>
-                  <div className="h-px bg-slate-100" />
+                  <p className="text-xs text-slate-500 font-medium">Built for scaling D2C brands with automated shipping.</p>
+                  <div className="h-px bg-blue-50" />
                   <ul className="space-y-3 text-xs text-slate-600 font-semibold">
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Unlimited catalog products</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Shiprocket & local courier AWB sync</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Automated WhatsApp order alerts</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Custom coupon & discount engine</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span className="font-bold text-slate-900">Custom Domain Mapping (`yourbrand.com`)</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span className="font-bold text-slate-900">Razorpay & Stripe Payment Gateways</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Unlimited Products & Orders</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Shiprocket Automated Shipping & AWBs</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>Abandoned Cart Recovery</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>AI Description Writer & Marketing Tools</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="/signup" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs text-center transition-all block">
-                  Start Free Trial
+                <a href="https://dashboard.basecart.app/signup?plan=growth" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs text-center transition-all shadow-md block">
+                  Choose Growth
                 </a>
               </div>
             </AnimatedSection>
 
-            {/* Pro Plan */}
-            <AnimatedSection delay={0.24}>
-              <div className="h-full bg-white border border-slate-200 rounded-2xl p-7 space-y-6 flex flex-col justify-between group">
+            {/* Business Plan */}
+            <AnimatedSection delay={0.16}>
+              <div className="h-full bg-white border border-slate-200 rounded-2xl p-7 space-y-6 flex flex-col justify-between group shadow-sm hover:shadow-md transition-all">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-black text-slate-900">Pro Plan</h3>
+                  <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-[10px] font-extrabold uppercase tracking-wider">Business</span>
+                  <h3 className="text-2xl font-black text-slate-900">BUSINESS</h3>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-black text-slate-900">₹1,499</span>
+                    <span className="text-4xl font-black text-slate-900">₹2,999</span>
                     <span className="text-xs text-slate-400 font-semibold">/month</span>
                   </div>
-                  <p className="text-xs text-slate-500 font-medium">Advanced features & APIs for high-volume stores.</p>
+                  <p className="text-xs text-slate-500 font-medium">For high-volume brands and multi-member teams.</p>
                   <div className="h-px bg-slate-100" />
                   <ul className="space-y-3 text-xs text-slate-600 font-semibold">
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Headless Storefront APIs</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Priority 24/7 WhatsApp support</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Custom domain & SSL included</span></li>
-                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>Multi-staff account access</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>Multi-Staff Accounts (5 Team Seats)</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>Developer REST API & Custom Webhooks</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>Custom CSS / JS Code Injection</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>Automated GST Invoices & PDF Export</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>Dedicated Priority 24/7 Support</span></li>
+                    <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="/signup" className="w-full py-3 border border-slate-200 hover:border-slate-300 text-slate-700 font-bold rounded-xl text-xs text-center transition-all block">
-                  Get Started
+                <a href="https://dashboard.basecart.app/signup?plan=business" className="w-full py-3 border border-slate-200 hover:border-slate-350 text-slate-800 font-bold rounded-xl text-xs text-center transition-all block">
+                  Choose Business
                 </a>
               </div>
             </AnimatedSection>
