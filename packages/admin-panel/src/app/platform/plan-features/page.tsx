@@ -219,6 +219,37 @@ export default function PlanFeaturesConsole() {
     ],
   };
 
+  const plusPlan = plans.find((p) => p.planId === "tier2" || p.planId === "plus") || {
+    planId: "tier2",
+    name: "PLUS",
+    price: 499,
+    billingPeriod: "monthly",
+    targetAudience: "Full custom domain website for growing D2C stores.",
+    orderCap: -1,
+    gmvCap: -1,
+    productCap: 500,
+    allowCustomDomain: true,
+    allowAutomatedGateways: true,
+    allowAutomatedShipping: false,
+    allowAbandonedCart: false,
+    allowAiWriter: false,
+    allowStaffSeats: false,
+    maxStaffSeats: 1,
+    allowDeveloperApi: false,
+    allowCustomCssJs: false,
+    allowGstInvoices: false,
+    platformFeePercent: 0,
+    paywallMessage: "",
+    featuresList: [
+      "Custom Domain Mapping (yourbrand.com)",
+      "Razorpay & Stripe Payment Gateways",
+      "Up to 500 Product Listings",
+      "Custom Storefront Themes",
+      "Direct WhatsApp & Email Notifications",
+      "0% Platform Transaction Fees",
+    ],
+  };
+
   const growthPlan = plans.find((p) => p.planId === "tier3" || p.planId === "growth") || {
     planId: "tier3",
     name: "GROWTH ⭐",
@@ -283,7 +314,7 @@ export default function PlanFeaturesConsole() {
     ],
   };
 
-  const editablePlans = [basicPlan, growthPlan, businessPlan];
+  const editablePlans = [basicPlan, plusPlan, growthPlan, businessPlan];
 
   return (
     <form onSubmit={handleSaveAll} className="space-y-8 animate-fade-in">
@@ -398,7 +429,7 @@ export default function PlanFeaturesConsole() {
           <span>Editable Subscription Tiers & Feature Bullet Content</span>
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {editablePlans.map((plan) => (
             <div
               key={plan.planId}

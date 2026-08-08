@@ -12460,6 +12460,7 @@ export default function MerchantDashboard() {
                                   className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
                                 >
                                   <option value="basic">BASIC — ₹99 / month (Instagram & WhatsApp Sellers)</option>
+                                  <option value="plus">PLUS — ₹499 / month (Custom Domain Website)</option>
                                   <option value="growth">GROWTH ⭐ — ₹1,499 / month (Recommended D2C Tech Stack)</option>
                                   <option value="business">BUSINESS — ₹2,999 / month (High-Volume Teams & APIs)</option>
                                 </select>
@@ -12476,6 +12477,8 @@ export default function MerchantDashboard() {
                               <span>
                                 {selectedPaymentPlan === "basic" || selectedPaymentPlan === "tier1"
                                   ? "⚡ Pay & Subscribe (₹99/mo)"
+                                  : selectedPaymentPlan === "plus" || selectedPaymentPlan === "tier2"
+                                  ? "⚡ Pay & Subscribe (₹499/mo)"
                                   : selectedPaymentPlan === "business" || selectedPaymentPlan === "tier4"
                                   ? "⚡ Pay & Subscribe (₹2,999/mo)"
                                   : "⚡ Pay & Subscribe (₹1,499/mo)"}
