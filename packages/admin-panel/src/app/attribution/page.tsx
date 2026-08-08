@@ -56,7 +56,7 @@ export default function AttributionPage() {
   const [pageSize, setPageSize] = useState(10);
 
   // Link Generator State
-  const [baseUrl, setBaseUrl] = useState("https://corporate.bharatenglish.org/#/practice/adaptive/107489/lessons/738230");
+  const [baseUrl, setBaseUrl] = useState("https://store.basecart.app/products/item-101");
   const [genSectionId, setGenSectionId] = useState("1");
   const [genUnitId, setGenUnitId] = useState("20");
   const [genUtmSource, setGenUtmSource] = useState("partner_campaign");
@@ -211,7 +211,7 @@ export default function AttributionPage() {
               type="text"
               value={baseUrl}
               onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://corporate.bharatenglish.org/#/practice/adaptive/107489/lessons/738230"
+              placeholder="https://store.basecart.app/products/item-101"
               className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none focus:border-indigo-400 font-mono"
             />
           </div>
