@@ -6,6 +6,7 @@ import { CheckoutSchema, OrderStatusUpdateSchema } from "@basecart/shared";
 import { createShiprocketShipment, verifyShiprocketSignature } from "../services/shiprocket";
 import { generateInvoicePdf } from "../lib/pdf";
 import { authenticateMerchant, authenticateCustomer, resolveStorefrontTenant } from "../middleware/auth";
+import { ensureAdminTables } from "./admin";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
@@ -589,11 +590,13 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
     const plan = store.plan || "starter";
 
     // 1. Fetch Dynamic Plan Config from Control DB
+    await ensureAdminTables(controlDb);
     const normalizedPlan = (plan || "trial").toLowerCase();
     const planConfigRow = await controlDb
       .prepare("SELECT * FROM plan_configs WHERE planId = ? OR planId LIKE ?")
       .bind(normalizedPlan, `%${normalizedPlan}%`)
-      .first<any>();
+      .first<any>()
+      .catch(() => null);
 
     // 2. Enforce Acquisition Hook & Trial Paywall Limits (100 orders OR ₹25,000 GMV)
     if (normalizedPlan === "trial" || normalizedPlan === "free") {

@@ -62,7 +62,7 @@ function getAdminDeleteOptions(c: any) {
   };
 }
 
-async function ensureAdminTables(db: any) {
+export async function ensureAdminTables(db: any) {
   await db.prepare(`CREATE TABLE IF NOT EXISTS marketplace_themes (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
