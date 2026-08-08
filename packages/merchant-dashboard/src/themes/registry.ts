@@ -1,6 +1,6 @@
 export interface SettingField {
   id: string;
-  type: "color" | "text" | "checkbox" | "select";
+  type: "color" | "text" | "checkbox" | "select" | "image";
   label: string;
   default: any;
   options?: { value: string; label: string }[];
@@ -34,12 +34,26 @@ export const THEME_SETTINGS_SCHEMA: SettingGroup[] = [
     id: "branding",
     title: "Logo & Colors",
     fields: [
-      { id: "logoUrl", type: "text", label: "Logo URL", default: "" },
+      { id: "logoUrl", type: "image", label: "Store Logo Image", default: "" },
       { id: "colorPrimary", type: "color", label: "Primary Brand Color", default: "#4F46E5" },
       { id: "colorSecondary", type: "color", label: "Secondary Color", default: "#4338CA" },
       { id: "colorAccent", type: "color", label: "Accent Color", default: "#F59E0B" },
       { id: "colorBg", type: "color", label: "Page Background Color", default: "#FFFFFF" },
       { id: "colorText", type: "color", label: "Body Text Color", default: "#1F2937" }
+    ]
+  },
+  {
+    id: "backgrounds",
+    title: "Background Images & Custom Media",
+    fields: [
+      { id: "heroBackgroundImage", type: "image", label: "Hero Banner Background Image", default: "" },
+      { id: "pageBackgroundImage", type: "image", label: "Storefront Page Background Image", default: "" },
+      { id: "headerBackgroundImage", type: "image", label: "Header Navigation Background Image", default: "" },
+      { id: "announcementBgColor", type: "color", label: "Announcement Bar Background", default: "#090D16" },
+      { id: "announcementTextColor", type: "color", label: "Announcement Bar Text Color", default: "#FFFFFF" },
+      { id: "headerBgColor", type: "color", label: "Header Bar Background", default: "#FFFFFF" },
+      { id: "footerBgColor", type: "color", label: "Footer Background Color", default: "#090D16" },
+      { id: "newsletterBgColor", type: "color", label: "Special Offer / Newsletter Background", default: "#F5F2EB" }
     ]
   },
   {

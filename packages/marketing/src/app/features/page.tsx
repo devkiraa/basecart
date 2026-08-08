@@ -85,7 +85,7 @@ export default function FeaturesPage() {
       <section className="px-6 py-20 max-w-5xl mx-auto text-center">
         <div className="bg-blue-50 border border-blue-100 rounded-3xl p-10 lg:p-12 space-y-6">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-slate-900">Experience the performance of Basecart</h2>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">Start your 14-day free trial today. No credit card required, set up in under 2 minutes.</p>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">Start your 60-day free trial today. No credit card required, set up in under 2 minutes.</p>
           <a 
             href="/signup" 
             className="inline-flex items-center gap-1.5 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-all active:scale-95 shadow-md shadow-blue-500/10"

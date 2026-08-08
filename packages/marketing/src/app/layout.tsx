@@ -29,6 +29,14 @@ export const metadata: Metadata = {
     description: "Scale your online shop with lightning-fast headless storefronts and private isolated databases.",
     images: ["/basecart_dashboard_mockup.png"],
   },
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico" },
+    ],
+    shortcut: "/favicon.svg",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({

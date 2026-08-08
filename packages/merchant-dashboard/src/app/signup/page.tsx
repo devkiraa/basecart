@@ -108,6 +108,25 @@ export default function SignupPage() {
     }
   };
 
+  const handleStepNext = (nextStep: number) => {
+    setWizardStep(nextStep);
+    if (onboardingData.email) {
+      const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
+      fetch(`${backendUrl}/api/auth/merchant/save-progress`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: onboardingData.email,
+          step: nextStep - 1,
+          storeName: onboardingData.storeName,
+          subdomain: onboardingData.subdomain,
+          phone: onboardingData.phone,
+          payload: onboardingData,
+        }),
+      }).catch((err) => console.warn("Failed to save onboarding progress:", err));
+    }
+  };
+
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-white font-sans lg:overflow-hidden">
       {/* Left Column - Hero Marketing Block */}
@@ -171,21 +190,7 @@ export default function SignupPage() {
           
         </div>
 
-        <div className="flex items-center gap-3 bg-white/70 backdrop-blur-sm border border-slate-100 rounded-full px-4 py-2 w-max shadow-sm mt-4">
-          <div className="flex -space-x-2">
-            {[
-              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=80&h=80&q=80",
-              "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=80&h=80&q=80",
-              "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=80&h=80&q=80",
-              "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&h=80&q=80"
-            ].map((src, i) => (
-              <img key={i} src={src} className="h-8 w-8 rounded-full border-2 border-white object-cover" alt="avatar" />
-            ))}
-          </div>
-          <span className="text-[10px] text-slate-500 font-bold">
-            Join <strong className="text-blue-600 font-extrabold">10,000+</strong> entrepreneurs building on Basecart
-          </span>
-        </div>
+
       </div>
 
       {/* Right Column - Onboarding Wizard */}
@@ -209,11 +214,6 @@ export default function SignupPage() {
           </div>
 
           <div className="space-y-4">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Create your account</h2>
-              <p className="text-xs text-slate-500 font-medium">Start your 14-day free trial. No credit card required.</p>
-            </div>
-
             {/* Progress Indicators */}
             <div className="flex justify-between items-center relative select-none py-2">
               <div className="absolute top-[18px] left-[5%] right-[5%] h-0.5 bg-slate-100 -z-10"></div>
@@ -264,7 +264,7 @@ export default function SignupPage() {
               <StepAccount 
                 data={onboardingData} 
                 onChange={handleUpdateOnboarding} 
-                onNext={() => setWizardStep(2)} 
+                onNext={() => handleStepNext(2)} 
                 loading={loading}
               />
             )}
@@ -273,7 +273,7 @@ export default function SignupPage() {
                 data={onboardingData} 
                 onChange={handleUpdateOnboarding} 
                 onBack={() => setWizardStep(1)}
-                onNext={() => setWizardStep(3)} 
+                onNext={() => handleStepNext(3)} 
               />
             )}
             {wizardStep === 3 && (
@@ -281,7 +281,7 @@ export default function SignupPage() {
                 data={onboardingData} 
                 onChange={handleUpdateOnboarding} 
                 onBack={() => setWizardStep(2)}
-                onNext={() => setWizardStep(4)} 
+                onNext={() => handleStepNext(4)} 
               />
             )}
             {wizardStep === 4 && (

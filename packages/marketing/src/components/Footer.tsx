@@ -9,10 +9,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2 space-y-4">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black shadow-xs">
-              <ShoppingBag className="h-4 w-4 fill-white" />
-            </div>
-            <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
+            <img src="/logo.svg" alt="Basecart Logo" className="h-[56px] w-auto object-contain shrink-0" />
           </div>
           <p className="text-xs text-slate-500 font-semibold max-w-xs leading-relaxed">
             The all-in-one e-commerce platform to build, launch and grow your online business. Build in a weekend, scale to millions.

@@ -121,6 +121,18 @@ CREATE TABLE IF NOT EXISTS merchant_notifications (
   createdAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS onboarding_leads (
+  email TEXT PRIMARY KEY,
+  step INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'draft',
+  storeName TEXT,
+  subdomain TEXT,
+  phone TEXT,
+  payload TEXT,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL
+);
+
 -- B-Tree Performance Indexes
 CREATE INDEX IF NOT EXISTS idx_tenants_subdomain ON tenants (subdomain);
 CREATE INDEX IF NOT EXISTS idx_tenants_custom_domain ON tenants (customDomain);
@@ -136,4 +148,5 @@ CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens (expires
 CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs (recipient);
 CREATE INDEX IF NOT EXISTS idx_email_logs_template ON email_logs (template);
 CREATE INDEX IF NOT EXISTS idx_merchant_notifications_tenant ON merchant_notifications (tenantId, createdAt DESC);
+CREATE INDEX IF NOT EXISTS idx_onboarding_leads_status ON onboarding_leads (status, updatedAt DESC);
 `;

@@ -58,8 +58,27 @@ export function ProductInteractiveSection({ product }: ProductInteractiveProps) 
     );
   };
 
+  const schemaJsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    name: product.name,
+    description: `Buy ${product.name} online at Basecart Storefront with fast shipping and secure Razorpay payment.`,
+    offers: {
+      "@type": "Offer",
+      priceCurrency: "INR",
+      price: currentPrice,
+      availability: isVariantInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+      itemCondition: "https://schema.org/NewCondition",
+    },
+  };
+
   return (
-    <div className="space-y-6">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaJsonLd) }}
+      />
+      <div className="space-y-6">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Stock & Variant Header */}
@@ -154,5 +173,6 @@ export function ProductInteractiveSection({ product }: ProductInteractiveProps) 
         </button>
       </div>
     </div>
+    </>
   );
 }

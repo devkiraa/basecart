@@ -271,5 +271,20 @@ CREATE TABLE IF NOT EXISTS cms_pages (
   updatedAt TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS onboarding_leads (
+  email TEXT PRIMARY KEY,
+  step INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'draft',
+  storeName TEXT,
+  subdomain TEXT,
+  phone TEXT,
+  payload TEXT,
+  createdAt TEXT NOT NULL,
+  updatedAt TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_onboarding_leads_status ON onboarding_leads (status, updatedAt DESC);
+
+
 
 

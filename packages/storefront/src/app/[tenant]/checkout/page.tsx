@@ -18,7 +18,32 @@ import {
   User,
   Mail,
   Phone,
+  Banknote,
 } from "lucide-react";
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") {
+      resolve(false);
+      return;
+    }
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+}
 
 export default function CheckoutPage() {
   const { tenant } = useParams<{ tenant: string }>();
@@ -26,6 +51,7 @@ export default function CheckoutPage() {
   const { items, loaded, subtotal, clearCart } = useCart(tenant);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
 
   const [form, setForm] = useState({
     name: "",
@@ -94,7 +120,7 @@ export default function CheckoutPage() {
     const errs: Record<string, string> = {};
     if (!form.name.trim()) errs.name = "Name is required";
     if (!form.email.includes("@")) errs.email = "Valid email is required";
-    if (form.phone.length < 10) errs.phone = "Valid phone is required";
+    if (form.phone.length < 10) errs.phone = "Valid 10-digit phone number is required";
     if (!form.address1.trim()) errs.address1 = "Address is required";
     if (!form.city.trim()) errs.city = "City is required";
     if (!form.state.trim()) errs.state = "State is required";
@@ -106,66 +132,146 @@ export default function CheckoutPage() {
   const handleSubmit = async () => {
     if (!validate()) return;
     setSubmitting(true);
+    setCheckoutError(null);
 
     try {
+      const idempotencyKey = `checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
       const payload = {
-        customer: {
-          name: form.name,
-          email: form.email,
-          phone: form.phone,
-        },
+        customerName: form.name,
+        customerEmail: form.email,
+        customerPhone: form.phone,
         shippingAddress: {
-          line1: form.address1,
-          line2: form.address2,
+          addressLine1: form.address1,
+          addressLine2: form.address2 || "",
           city: form.city,
           state: form.state,
-          pincode: form.pincode,
+          postalCode: form.pincode,
+          country: "India",
         },
-        items: items.map((i) => ({
+        lineItems: items.map((i) => ({
           productId: i.productId,
-          name: i.name,
-          price: i.price,
           quantity: i.quantity,
-          variant: i.variant,
+          variantId: i.variant || null,
         })),
-        payment: {
-          method: "razorpay",
-          status: "paid",
-          amount: total,
-        },
+        idempotencyKey,
       };
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const res = await fetch(`${apiUrl}/store/${tenant}/checkout`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.basecart.app";
+      const checkoutRes = await fetch(`${apiUrl}/store/${tenant}/checkout`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
+      const checkoutData = await checkoutRes.json().catch(() => ({}));
 
-      if (res.ok) {
+      if (!checkoutRes.ok) {
+        throw new Error(
+          checkoutData.error || checkoutData.message || "Failed to initialize order checkout."
+        );
+      }
+
+      const { orderId, razorpayOrderId, key, amount, currency } = checkoutData;
+
+      if (paymentMethod === "cod") {
         clearCart();
-        const orderId = data.orderId || `ORD-${Date.now().toString(36).toUpperCase()}`;
         sessionStorage.setItem(
           `basecart_order_${tenant}`,
-          JSON.stringify({ orderId, amount: total, items })
+          JSON.stringify({ orderId, amount: total, items, paymentMethod: "cod" })
         );
         setSuccess(true);
-        setTimeout(() => router.push("/order-confirmation"), 1500);
-      } else {
-        setCheckoutError(data.message || "Checkout failed. Please check details and try again.");
-        setSubmitting(false);
+        setTimeout(() => router.push(`/order-confirmation?orderId=${orderId}`), 1200);
+        return;
       }
-    } catch {
-      clearCart();
-      const orderId = `ORD-${Date.now().toString(36).toUpperCase()}`;
-      sessionStorage.setItem(
-        `basecart_order_${tenant}`,
-        JSON.stringify({ orderId, amount: total, items })
-      );
-      setSuccess(true);
-      setTimeout(() => router.push("/order-confirmation"), 1500);
+
+      // Online Razorpay Payment Modal
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        throw new Error("Failed to load Razorpay SDK. Please check your internet connection.");
+      }
+
+      const keyId = key || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TLiBxJXeX2DrUr";
+
+      const options = {
+        key: keyId,
+        amount: Math.round((amount || total) * 100),
+        currency: currency || "INR",
+        name: tenant ? `${tenant.toUpperCase()} Store` : "Basecart Store",
+        description: `Order #${orderId ? orderId.slice(0, 8) : "Checkout"}`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: form.name,
+          email: form.email,
+          contact: form.phone,
+        },
+        theme: {
+          color: "#072654",
+        },
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          try {
+            // Verify HMAC signature via backend
+            const verifyRes = await fetch(`${apiUrl}/api/verify-payment`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+
+            const verifyData = await verifyRes.json().catch(() => ({}));
+
+            if (verifyRes.ok && verifyData.success) {
+              clearCart();
+              sessionStorage.setItem(
+                `basecart_order_${tenant}`,
+                JSON.stringify({
+                  orderId,
+                  paymentId: response.razorpay_payment_id,
+                  amount: total,
+                  items,
+                  paymentMethod: "razorpay",
+                })
+              );
+              setSuccess(true);
+              setTimeout(() => router.push(`/order-confirmation?orderId=${orderId}`), 1200);
+            } else {
+              setCheckoutError(verifyData.error || "Payment verification failed. Signature mismatch.");
+              setSubmitting(false);
+            }
+          } catch (err: any) {
+            setCheckoutError(err.message || "Error verifying payment signature.");
+            setSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setSubmitting(false);
+            setCheckoutError("Payment cancelled by user.");
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", function (resp: any) {
+        setSubmitting(false);
+        setCheckoutError(
+          resp.error?.description || "Payment failed. Please try another payment option."
+        );
+      });
+      rzp.open();
+    } catch (err: any) {
+      setSubmitting(false);
+      setCheckoutError(err.message || "An unexpected error occurred during checkout.");
     }
   };
 
@@ -184,11 +290,11 @@ export default function CheckoutPage() {
   if (success) {
     return (
       <div className="max-w-md mx-auto py-32 text-center space-y-6">
-        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-sm">
           <CheckCircle2 size={40} className="text-emerald-500" />
         </div>
-        <h1 className="text-2xl font-black text-slate-900">Order Placed!</h1>
-        <p className="text-sm text-slate-500 font-semibold">Redirecting to confirmation...</p>
+        <h1 className="text-2xl font-black text-slate-900">Order Placed Successfully!</h1>
+        <p className="text-sm text-slate-500 font-semibold">Redirecting to order confirmation...</p>
       </div>
     );
   }
@@ -222,14 +328,14 @@ export default function CheckoutPage() {
       </div>
 
       {checkoutError && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm font-bold rounded-xl flex items-center justify-between">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-sm font-bold rounded-xl flex items-center justify-between shadow-xs">
           <span>{checkoutError}</span>
-          <button onClick={() => setCheckoutError(null)} className="text-rose-600 font-extrabold text-base">×</button>
+          <button onClick={() => setCheckoutError(null)} className="text-rose-600 font-extrabold text-base cursor-pointer">×</button>
         </div>
       )}
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Shipping Form */}
+        {/* Shipping Form & Payment Selection */}
         <div className="flex-1 space-y-6">
           <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-5">
             <div className="flex items-center justify-between">
@@ -249,7 +355,7 @@ export default function CheckoutPage() {
                     key={addr.id}
                     type="button"
                     onClick={() => applySavedAddress(addr)}
-                    className="p-3 text-left bg-white rounded-lg border border-slate-200 hover:border-blue-500 transition-all text-xs font-semibold space-y-0.5 group"
+                    className="p-3 text-left bg-white rounded-lg border border-slate-200 hover:border-blue-500 transition-all text-xs font-semibold space-y-0.5 group cursor-pointer"
                   >
                     <div className="font-extrabold text-slate-900 group-hover:text-blue-600">
                       {addr.label}
@@ -365,6 +471,61 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
+
+          {/* Payment Method Selector Card */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
+            <h2 className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <CreditCard size={13} /> Select Payment Option
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("razorpay")}
+                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
+                  paymentMethod === "razorpay"
+                    ? "border-emerald-600 bg-emerald-50/40 text-emerald-950 ring-2 ring-emerald-600/30"
+                    : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5 text-emerald-600" />
+                    <span className="font-extrabold text-xs">Razorpay Online</span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Instant
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  UPI (GPay / PhonePe), Credit / Debit Cards, Netbanking & Wallets
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPaymentMethod("cod")}
+                className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between space-y-2 cursor-pointer ${
+                  paymentMethod === "cod"
+                    ? "border-emerald-600 bg-emerald-50/40 text-emerald-950 ring-2 ring-emerald-600/30"
+                    : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="h-5 w-5 text-amber-600" />
+                    <span className="font-extrabold text-xs">Cash on Delivery (COD)</span>
+                  </div>
+                  <span className="text-[9px] font-black uppercase bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                    Pay on Delivery
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium">
+                  Pay with cash when order is delivered to your address
+                </p>
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* Order Summary Sidebar */}
@@ -408,24 +569,29 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* Razorpay Button */}
+            {/* Payment Button */}
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="w-full py-4 bg-[#072654] hover:bg-[#0a1d42] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-4 bg-[#072654] hover:bg-[#0a1d42] text-white text-sm font-extrabold rounded-xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
               {submitting ? (
                 <Loader2 size={16} className="animate-spin" />
-              ) : (
+              ) : paymentMethod === "razorpay" ? (
                 <>
                   <CreditCard size={15} />
                   Pay ₹{total.toLocaleString("en-IN")} with Razorpay
+                </>
+              ) : (
+                <>
+                  <Banknote size={15} />
+                  Place Order (COD ₹{total.toLocaleString("en-IN")})
                 </>
               )}
             </button>
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] font-semibold text-slate-400">
-              <Shield size={11} /> Secured by Razorpay
+              <Shield size={11} /> 100% Encrypted & Secured Checkout
             </div>
           </div>
         </div>

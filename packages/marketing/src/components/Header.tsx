@@ -15,10 +15,7 @@ export default function Header() {
           href="/"
           className="flex items-center gap-2.5 group"
         >
-          <div className="h-8.5 w-8.5 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black shadow-md shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
-            <ShoppingBag className="h-4.5 w-4.5 fill-white" />
-          </div>
-          <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
+          <img src="/logo.svg" alt="Basecart Logo" className="h-[46px] w-auto object-contain shrink-0" />
         </a>
 
         {/* Light Theme Navigation Links */}

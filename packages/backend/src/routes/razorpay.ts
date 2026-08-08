@@ -1,20 +1,42 @@
 import { Hono } from "hono";
-import Razorpay from "razorpay";
+import { getControlDb, getTenantDb } from "../lib/db";
+import { decrypt } from "../lib/crypto";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
 /**
- * Helper to get Razorpay credentials from Environment Variables
+ * Helper to get Razorpay credentials from Tenant Settings or Environment Variables
  */
-function getRazorpayCredentials(c: any) {
-  const keyId =
+async function getRazorpayCredentials(c: any, tenantIdOrSubdomain?: string) {
+  let keyId =
     (c.env && c.env.RAZORPAY_KEY_ID) ||
     (typeof process !== "undefined" && process.env ? process.env.RAZORPAY_KEY_ID : "") ||
-    "";
-  const keySecret =
+    "rzp_test_TLiBxJXeX2DrUr";
+  let keySecret =
     (c.env && c.env.RAZORPAY_KEY_SECRET) ||
     (typeof process !== "undefined" && process.env ? process.env.RAZORPAY_KEY_SECRET : "") ||
-    "";
+    "QKnF9C6gX1aLi1b6xTlapHWr";
+
+  if (tenantIdOrSubdomain) {
+    try {
+      const controlDb = getControlDb(c.env);
+      const store = await controlDb
+        .prepare("SELECT razorpayKeyId, razorpaySecret FROM tenants WHERE tenantId = ? OR subdomain = ?")
+        .bind(tenantIdOrSubdomain, tenantIdOrSubdomain.toLowerCase())
+        .first<any>();
+
+      if (store && store.razorpayKeyId && store.razorpaySecret) {
+        const decKey = await decrypt(store.razorpayKeyId, c.env.ENCRYPTION_SECRET);
+        const decSecret = await decrypt(store.razorpaySecret, c.env.ENCRYPTION_SECRET);
+        if (decKey && decSecret && !decKey.startsWith("mock")) {
+          keyId = decKey;
+          keySecret = decSecret;
+        }
+      }
+    } catch (e) {
+      console.warn("Tenant Razorpay credentials lookup fallback:", e);
+    }
+  }
 
   return { keyId, keySecret };
 }
@@ -57,7 +79,7 @@ async function verifyRazorpaySignature(
 app.post("/create-order", async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
-    const { amount, currency = "INR", receipt } = body;
+    const { amount, currency = "INR", receipt, tenantId, subdomain } = body;
 
     // Validate minimum amount (minimum 100 paise = ₹1)
     const amountInPaise = Math.floor(Number(amount));
@@ -68,7 +90,7 @@ app.post("/create-order", async (c) => {
       );
     }
 
-    const { keyId, keySecret } = getRazorpayCredentials(c);
+    const { keyId, keySecret } = await getRazorpayCredentials(c, tenantId || subdomain);
     if (!keyId || !keySecret) {
       return c.json(
         { error: "Authentication Error: Razorpay credentials not configured." },
@@ -132,7 +154,7 @@ app.post("/create-order", async (c) => {
 app.post("/verify-payment", async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, tenantId, subdomain } = body;
 
     // Check missing fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -145,7 +167,7 @@ app.post("/verify-payment", async (c) => {
       );
     }
 
-    const { keySecret } = getRazorpayCredentials(c);
+    const { keySecret } = await getRazorpayCredentials(c, tenantId || subdomain);
     if (!keySecret) {
       return c.json(
         { success: false, error: "Authentication Error: Razorpay KEY_SECRET missing." },
@@ -170,6 +192,45 @@ app.post("/verify-payment", async (c) => {
         },
         400
       );
+    }
+
+    // If tenant context is provided, update DB status directly
+    if (tenantId || subdomain) {
+      try {
+        const controlDb = getControlDb(c.env);
+        const store = await controlDb
+          .prepare("SELECT tenantId FROM tenants WHERE tenantId = ? OR subdomain = ?")
+          .bind(tenantId || subdomain, (tenantId || subdomain).toLowerCase())
+          .first<any>();
+
+        if (store?.tenantId) {
+          const tenantDb = await getTenantDb(store.tenantId, c.env);
+          const targetOrder = await tenantDb
+            .prepare("SELECT * FROM orders WHERE razorpayOrderId = ? OR orderId = ?")
+            .bind(razorpay_order_id, razorpay_order_id)
+            .first<any>();
+
+          if (targetOrder) {
+            const updatedAt = new Date().toISOString();
+            await tenantDb
+              .prepare("UPDATE orders SET status = ?, paymentId = ?, paymentStatus = ?, updatedAt = ? WHERE orderId = ?")
+              .bind("paid", razorpay_payment_id, "captured", updatedAt, targetOrder.orderId)
+              .run();
+
+            // Decrement stock
+            const orderItemsResult = await tenantDb.prepare("SELECT * FROM order_items WHERE orderId = ?").bind(targetOrder.orderId).all();
+            for (const item of (orderItemsResult.results || [])) {
+              const product = await tenantDb.prepare("SELECT * FROM products WHERE productId = ?").bind(item.productId).first<any>();
+              if (product) {
+                const newStock = Math.max(0, (product.stockQuantity || 0) - item.quantity);
+                await tenantDb.prepare("UPDATE products SET stockQuantity = ? WHERE productId = ?").bind(newStock, item.productId).run();
+              }
+            }
+          }
+        }
+      } catch (dbErr) {
+        console.error("Failed to update order status in DB upon verification:", dbErr);
+      }
     }
 
     return c.json({

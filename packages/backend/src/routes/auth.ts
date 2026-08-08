@@ -164,6 +164,50 @@ app.get("/auth/merchant/check-subdomain", async (c) => {
 });
 
 /**
+ * Save Onboarding Progress (Draft Lead Capture)
+ */
+app.post("/auth/merchant/save-progress", async (c) => {
+  try {
+    const body = await c.req.json();
+    const email = body.email?.trim().toLowerCase();
+    const step = Number(body.step) || 1;
+    const storeName = body.storeName?.trim() || body.payload?.storeName?.trim() || null;
+    const subdomain = body.subdomain?.trim().toLowerCase() || body.payload?.subdomain?.trim().toLowerCase() || null;
+    const phone = body.phone?.trim() || body.payload?.phone?.trim() || null;
+    const payloadObj = body.payload || {};
+    // Strip sensitive raw password before storing partial payload in DB
+    const { password, ...safePayload } = payloadObj;
+    const payloadStr = JSON.stringify(safePayload);
+
+    if (!email || !email.includes("@")) {
+      return c.json({ error: "Valid email is required" }, 400);
+    }
+
+    const controlDb = getControlDb(c.env);
+    const now = new Date().toISOString();
+
+    const stmt = controlDb.prepare(`
+      INSERT INTO onboarding_leads (email, step, status, storeName, subdomain, phone, payload, createdAt, updatedAt)
+      VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(email) DO UPDATE SET
+        step = excluded.step,
+        storeName = COALESCE(excluded.storeName, onboarding_leads.storeName),
+        subdomain = COALESCE(excluded.subdomain, onboarding_leads.subdomain),
+        phone = COALESCE(excluded.phone, onboarding_leads.phone),
+        payload = COALESCE(excluded.payload, onboarding_leads.payload),
+        updatedAt = excluded.updatedAt
+    `).bind(email, step, storeName, subdomain, phone, payloadStr, now, now);
+
+    await stmt.run();
+
+    return c.json({ success: true, message: "Progress saved" });
+  } catch (err: any) {
+    console.error("Save progress error:", err);
+    return c.json({ error: "Failed to save progress" }, 500);
+  }
+});
+
+/**
  * Merchant Signup
  * Creates a store (tenant) and the owner account atomically.
  */
@@ -279,6 +323,16 @@ app.post("/auth/merchant/signup", async (c) => {
     .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 0, createdAt);
 
   await controlDb.batch([tStmt, uStmt]);
+
+  // Mark onboarding lead as completed
+  try {
+    await controlDb
+      .prepare("UPDATE onboarding_leads SET status = 'completed', step = 5, updatedAt = ? WHERE email = ?")
+      .bind(createdAt, lowerEmail)
+      .run();
+  } catch (leadErr) {
+    console.warn("Failed to mark onboarding lead completed:", leadErr);
+  }
 
   // 6. Run migrations & seed default configuration inside the tenant database
   await provisionTenantDatabase(tenantId, storeName, c.env);

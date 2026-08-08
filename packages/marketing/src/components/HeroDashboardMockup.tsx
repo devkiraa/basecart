@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingBag,
@@ -19,6 +19,25 @@ import {
   Settings as SettingsIcon,
   Globe,
 } from "lucide-react";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Filler,
+  Tooltip
+);
 
 type Timeframe = "7D" | "30D" | "12M";
 
@@ -28,9 +47,9 @@ interface DashboardData {
   orders: string;
   ordersChange: string;
   visitors: string;
-  pathD: string;
-  areaD: string;
   peakVal: string;
+  chartLabels: string[];
+  chartData: number[];
 }
 
 const TIMEFRAME_DATA: Record<Timeframe, DashboardData> = {
@@ -40,9 +59,9 @@ const TIMEFRAME_DATA: Record<Timeframe, DashboardData> = {
     orders: "184",
     ordersChange: "+8%",
     visitors: "42",
-    pathD: "M 0,105 C 50,90 90,100 140,70 C 200,40 240,55 300,28 C 360,8 420,18 480,6",
-    areaD: "M 0,105 C 50,90 90,100 140,70 C 200,40 240,55 300,28 C 360,8 420,18 480,6 L 480,130 L 0,130 Z",
     peakVal: "₹52,400 peak",
+    chartLabels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    chartData: [18200, 22400, 28900, 31200, 38600, 46800, 52400],
   },
   "30D": {
     sales: "₹9,82,100",
@@ -50,9 +69,9 @@ const TIMEFRAME_DATA: Record<Timeframe, DashboardData> = {
     orders: "742",
     ordersChange: "+16%",
     visitors: "68",
-    pathD: "M 0,115 C 60,100 120,75 180,60 C 250,45 310,65 380,30 C 430,10 460,18 480,8",
-    areaD: "M 0,115 C 60,100 120,75 180,60 C 250,45 310,65 380,30 C 430,10 460,18 480,8 L 480,130 L 0,130 Z",
     peakVal: "₹1,84,000 peak",
+    chartLabels: ["W1", "W2", "W3", "W4"],
+    chartData: [142000, 196000, 280000, 364100],
   },
   "12M": {
     sales: "₹1,14,50,000",
@@ -60,9 +79,9 @@ const TIMEFRAME_DATA: Record<Timeframe, DashboardData> = {
     orders: "8,920",
     ordersChange: "+29%",
     visitors: "105",
-    pathD: "M 0,120 C 70,110 130,85 200,55 C 270,25 340,40 400,16 C 440,4 470,12 480,3",
-    areaD: "M 0,120 C 70,110 130,85 200,55 C 270,25 340,40 400,16 C 440,4 470,12 480,3 L 480,130 L 0,130 Z",
     peakVal: "₹14.2L peak",
+    chartLabels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    chartData: [420000, 510000, 580000, 640000, 720000, 810000, 880000, 960000, 1020000, 1120000, 1280000, 1420000],
   },
 };
 
@@ -77,6 +96,96 @@ const LIVE_NOTIFS = [
   { id: "2085", amount: "2,890", customer: "Rahul M. (Bengaluru)", payment: "UPI Instant" },
   { id: "2086", amount: "999", customer: "Priya S. (Mumbai)", payment: "COD Verified" },
 ];
+
+function RevenueChart({ data, timeframe }: { data: DashboardData; timeframe: Timeframe }) {
+  const chartRef = useRef<ChartJS<"line">>(null);
+
+  const chartData = {
+    labels: data.chartLabels,
+    datasets: [
+      {
+        data: data.chartData,
+        fill: true,
+        borderColor: "#2563EB",
+        backgroundColor: (context: { chart: ChartJS }) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, context.chart.height);
+          gradient.addColorStop(0, "rgba(37, 99, 235, 0.22)");
+          gradient.addColorStop(1, "rgba(37, 99, 235, 0.0)");
+          return gradient;
+        },
+        borderWidth: 2.5,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: "#2563EB",
+        pointHoverBorderColor: "#fff",
+        pointHoverBorderWidth: 2,
+        tension: 0.4,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: "index" as const,
+    },
+    plugins: {
+      tooltip: {
+        backgroundColor: "#0f172a",
+        titleColor: "#e2e8f0",
+        bodyColor: "#fff",
+        titleFont: { size: 10, weight: "bold" as const },
+        bodyFont: { size: 11, weight: "bold" as const },
+        padding: 8,
+        cornerRadius: 8,
+        displayColors: false,
+        callbacks: {
+          label: (context: { parsed: { y: number | null } }) => {
+            const val = context.parsed.y ?? 0;
+            if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
+            if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
+            return `₹${val}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        display: true,
+        grid: { display: false },
+        ticks: {
+          font: { size: 8, weight: "bold" as const },
+          color: "#94a3b8",
+          maxRotation: 0,
+        },
+        border: { display: false },
+      },
+      y: {
+        display: false,
+        grid: { display: false },
+        beginAtZero: true,
+      },
+    },
+    animation: {
+      duration: 800,
+      easing: "easeInOutQuart" as const,
+    },
+  };
+
+  return (
+    <div className="h-[82px] w-full">
+      <Line
+        ref={chartRef}
+        key={timeframe}
+        data={chartData}
+        options={chartOptions}
+      />
+    </div>
+  );
+}
 
 export default function HeroDashboardMockup() {
   const [activeTab, setActiveTab] = useState("summary");
@@ -96,19 +205,16 @@ export default function HeroDashboardMockup() {
 
   return (
     <div className="w-full max-w-[640px] relative select-none font-sans">
-      {/* Royal Blue Glow Ambient Background */}
-      <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600/20 via-indigo-500/15 to-blue-400/20 rounded-3xl blur-2xl opacity-80 group-hover:opacity-100 transition duration-1000 -z-10"></div>
-
-      {/* Main Glassmorphic Light Dashboard Container */}
-      <div className="relative bg-white border border-slate-200/90 rounded-2xl shadow-2xl overflow-hidden backdrop-blur-sm">
+      {/* Main Light Dashboard Container */}
+      <div className="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
         
         {/* Top Window Navigation Bar (Browser Frame Style) */}
         <div className="h-10 bg-slate-100/90 border-b border-slate-200/80 px-3.5 flex items-center justify-between">
-          {/* macOS window controls */}
+          {/* Window controls */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-400 inline-block shadow-2xs"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block shadow-2xs"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block shadow-2xs"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
           </div>
 
           {/* Real Dashboard Address Bar */}
@@ -119,11 +225,8 @@ export default function HeroDashboardMockup() {
           </div>
 
           {/* Live Sync Status Tag */}
-          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60 shadow-2xs">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-            </span>
+          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
             <span>LIVE D1 SYNC</span>
           </div>
         </div>
@@ -135,14 +238,14 @@ export default function HeroDashboardMockup() {
           <aside className="w-44 sm:w-48 bg-white border-r border-slate-200/80 flex flex-col shrink-0">
             {/* Store Branding Logo */}
             <div className="h-12 flex items-center px-3.5 gap-2.5 border-b border-slate-100 shrink-0">
-              <div className="h-7 w-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs shadow-xs">
+              <div className="h-7 w-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">
                 <ShoppingBag className="h-4 w-4" />
               </div>
               <span className="text-sm font-black text-slate-900 tracking-tight">basecart</span>
             </div>
 
             {/* Navigation Menu */}
-            <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-2 space-y-1 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {[
                 { id: "summary", name: "Overview", icon: Home },
                 { id: "orders", name: "Orders & Sales", icon: ShoppingCart, badge: "3" },
@@ -209,14 +312,14 @@ export default function HeroDashboardMockup() {
                   <Bell className="h-4 w-4" />
                   <span className="absolute top-1 right-1 h-1.5 w-1.5 bg-rose-500 rounded-full"></span>
                 </div>
-                <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-[10px] shadow-2xs">
+                <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">
                   KM
                 </div>
               </div>
             </header>
 
             {/* Dashboard Scrollable Canvas */}
-            <main className="flex-1 p-3.5 space-y-3 overflow-y-auto">
+            <main className="flex-1 p-3.5 space-y-3 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               
               {/* Controls Bar: Timeframe Selector */}
               <div className="flex items-center justify-between">
@@ -324,62 +427,28 @@ export default function HeroDashboardMockup() {
                 </motion.div>
               </div>
 
-              {/* Dynamic Revenue SVG Chart */}
+              {/* Chart.js Revenue Growth Trend */}
               <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 space-y-1 shadow-2xs">
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="font-bold text-slate-800 flex items-center gap-1">
                     <Activity className="w-3 h-3 text-blue-600" /> Revenue Growth Trend
                   </span>
-                  <span className="text-[9px] font-semibold text-slate-400">Razorpay + COD</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-semibold text-slate-400">Razorpay + COD</span>
+                    <motion.div
+                      key={timeframe + "-badge"}
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="bg-slate-900 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 border border-slate-700"
+                    >
+                      <Sparkles className="w-2 h-2 text-amber-400" />
+                      {data.peakVal}
+                    </motion.div>
+                  </div>
                 </div>
 
-                {/* SVG Curve Line */}
-                <div className="relative h-20 w-full pt-1">
-                  <svg className="w-full h-full overflow-visible" viewBox="0 0 480 130" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="lightHeroGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#2563EB" stopOpacity="0.22" />
-                        <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Area fill */}
-                    <motion.path
-                      key={timeframe + "-area"}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1, d: data.areaD }}
-                      transition={{ duration: 0.5, ease: "easeInOut" }}
-                      fill="url(#lightHeroGradient)"
-                    />
-
-                    {/* Upward stroke line */}
-                    <motion.path
-                      key={timeframe + "-line"}
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1, d: data.pathD }}
-                      transition={{ duration: 0.8, ease: "easeInOut" }}
-                      fill="none"
-                      stroke="#2563EB"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    />
-
-                    {/* Peak dot */}
-                    <circle cx="480" cy="6" r="4" fill="#2563EB" />
-                    <circle cx="480" cy="6" r="8" fill="#2563EB" opacity="0.3" className="animate-ping" />
-                  </svg>
-
-                  {/* Peak Overlay */}
-                  <motion.div
-                    key={timeframe + "-badge"}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="absolute top-0 right-0 bg-slate-900 text-white text-[8px] font-black px-2 py-0.2 rounded-full shadow-md flex items-center gap-1 border border-slate-700"
-                  >
-                    <Sparkles className="w-2 h-2 text-amber-400" />
-                    {data.peakVal}
-                  </motion.div>
-                </div>
+                {/* Chart.js Line Chart */}
+                <RevenueChart data={data} timeframe={timeframe} />
               </div>
 
               {/* Recent Live Orders Table */}

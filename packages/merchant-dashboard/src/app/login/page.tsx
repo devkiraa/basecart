@@ -211,10 +211,7 @@ export default function LoginPage() {
           onClick={() => { window.location.href = process.env.NEXT_PUBLIC_MARKETING_URL || "http://localhost:3000"; }}
           className="flex items-center gap-2.5 cursor-pointer"
         >
-          <div className="h-9 w-9 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
-            <ShoppingBag className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-black text-slate-900 tracking-tight">basecart</span>
+          <img src="/logo.svg" alt="Basecart Logo" className="h-[48px] w-auto object-contain shrink-0" />
         </div>
 
         {/* Content Block */}

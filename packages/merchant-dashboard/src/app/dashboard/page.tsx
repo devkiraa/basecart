@@ -53,6 +53,7 @@ import {
   Menu,
   Send,
   Sparkles,
+  Zap,
   Save,
   Building,
   Landmark,
@@ -71,6 +72,11 @@ import {
   Code,
   Scale,
   MapPin,
+  Sun,
+  Crown,
+  Database,
+  History,
+  Clock,
 } from "lucide-react";
 import { getOptimizedImageUrl } from "../../lib/image";
 import StepAccount from "../../components/StepAccount";
@@ -81,6 +87,7 @@ import StepVerification from "../../components/StepVerification";
 import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "../../themes/registry";
 import EmailsTab from "../../components/EmailsTab";
 import BrandIdentityTab from "../../components/BrandIdentityTab";
+import { UsersTeamTab } from "../../components/UsersTeamTab";
 import {
   AreaChart,
   Area,
@@ -150,25 +157,27 @@ const SLUG_TO_SETTINGS_SUBTAB: Record<string, string> = {
 };
 
 const getStorefrontLink = (subdomain: string) => {
+  const targetSub = subdomain || "pixcelart";
   if (process.env.NEXT_PUBLIC_STOREFRONT_URL) {
     const url = process.env.NEXT_PUBLIC_STOREFRONT_URL;
-    return url.includes("?") ? `${url}&subdomain=${subdomain}` : `${url}?subdomain=${subdomain}`;
+    return url.includes("?") ? `${url}&subdomain=${targetSub}` : `${url}?subdomain=${targetSub}`;
   }
-  if (isLocalDev && (!process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN.includes("localhost"))) {
-    return `http://localhost:${STOREFRONT_PORT}?subdomain=${subdomain}`;
+  if (isLocalDev) {
+    return `http://localhost:${STOREFRONT_PORT}?subdomain=${targetSub}`;
   }
   const isPagesDev = STOREFRONT_DOMAIN.includes(".pages.dev");
   if (isPagesDev) {
-    return `${STOREFRONT_PROTOCOL}://${STOREFRONT_DOMAIN}?store=${subdomain}`;
+    return `${STOREFRONT_PROTOCOL}://${STOREFRONT_DOMAIN}?store=${targetSub}`;
   }
-  return `${STOREFRONT_PROTOCOL}://${subdomain}.${STOREFRONT_DOMAIN}`;
+  return `${STOREFRONT_PROTOCOL}://${targetSub}.${STOREFRONT_DOMAIN}`;
 };
 
 const getStorefrontDisplayUrl = (subdomain: string) => {
-  if (isLocalDev && (!process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN.includes("localhost"))) {
-    return `localhost:${STOREFRONT_PORT}?subdomain=${subdomain}`;
+  const targetSub = subdomain || "pixcelart";
+  if (isLocalDev) {
+    return `localhost:${STOREFRONT_PORT}?subdomain=${targetSub}`;
   }
-  return `${subdomain}.${STOREFRONT_DOMAIN}`;
+  return `${targetSub}.${STOREFRONT_DOMAIN}`;
 };
 
 interface ProductVariant {
@@ -520,7 +529,7 @@ export default function MerchantDashboard() {
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<
-    "summary" | "orders" | "products" | "customers" | "content" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "brand" | "store-design" | "payments" | "emails" | "terms-of-service" | "privacy-policy"
+    "summary" | "orders" | "products" | "customers" | "content" | "discounts" | "addons" | "finances" | "billing" | "settings" | "marketing" | "brand" | "agentic" | "store-design" | "payments" | "emails" | "headless" | "terms-of-service" | "privacy-policy"
   >("summary");
 
   // Marketing / Newsletter campaign states
@@ -643,10 +652,15 @@ export default function MerchantDashboard() {
         "blog-posts": { tab: "content", subTab: "blog-posts" },
         "blog_posts": { tab: "content", subTab: "blog-posts" },
         "marketing": { tab: "marketing" },
-        "brand": { tab: "brand" },
+        "agentic": { tab: "agentic" },
+        "agentic-store": { tab: "agentic" },
+        "ai": { tab: "agentic" },
+        "brand": { tab: "agentic" },
         "store-design": { tab: "store-design" },
         "themes": { tab: "store-design" },
         "emails": { tab: "emails" },
+        "email": { tab: "emails" },
+        "headless": { tab: "headless" },
         "addons": { tab: "addons" },
         "apps": { tab: "addons" },
         "payments": { tab: "payments" },
@@ -1261,12 +1275,22 @@ export default function MerchantDashboard() {
     transactions: [],
   });
   const [billingInfo, setBillingInfo] = useState<any>({
-    plan: "starter",
+    plan: "growth",
+    price: 699,
     productsUsed: 0,
-    productsLimit: 50,
+    productsLimit: 2000,
     ordersUsed: 0,
-    ordersLimit: 100,
+    ordersLimit: 5000,
+    storageUsed: 2.4,
+    storageLimit: 20,
+    staffUsed: 1,
+    staffLimit: 10,
+    nextBillingDate: "15 Aug 2026",
+    paymentGateway: "Razorpay",
+    status: "Active",
+    statements: [],
   });
+  const [selectedPaymentPlan, setSelectedPaymentPlan] = useState("growth");
 
   // Email template settings
   const [emailSettings, setEmailSettings] = useState<any>({
@@ -1417,9 +1441,186 @@ export default function MerchantDashboard() {
     return () => clearInterval(timer);
   }, []);
 
+  const fetchBillingData = async () => {
+    if (!token) return;
+    try {
+      const res = await fetch(`${API_URL}/store/billing`, {
+        headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setBillingInfo((prev: any) => ({ ...prev, ...data }));
+      }
+    } catch (err) {
+      console.error("Failed to fetch store billing data:", err);
+    }
+  };
+
+  const handleSelectPlanTier = async (targetPlan: string) => {
+    if (!token) return;
+    setLoading(true);
+    setActionError("");
+    setActionSuccess("");
+    try {
+      const res = await fetch(`${API_URL}/store/plan`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({ plan: targetPlan.toLowerCase() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update subscription plan");
+      setActionSuccess(`Plan successfully changed to ${targetPlan.toUpperCase()} tier!`);
+      await fetchBillingData();
+      setSettings((prev) => ({ ...prev, plan: targetPlan.toLowerCase() }));
+    } catch (err: any) {
+      setActionError(err.message || "Failed to update plan");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetupRazorpayPaymentMethod = async (planOverride?: string) => {
+    if (!token) return;
+    setLoading(true);
+    setActionError("");
+    setActionSuccess("");
+
+    const targetPlan = (planOverride || selectedPaymentPlan || billingInfo.plan || settings.plan || "growth").toLowerCase();
+
+    const PLAN_PRICE_MAP: Record<string, number> = {
+      starter: 299,
+      growth: 699,
+      pro: 1499,
+      agency: 4999,
+      free: 0,
+    };
+
+    const monthlyPriceINR = PLAN_PRICE_MAP[targetPlan] ?? 699;
+    const amountPaise = monthlyPriceINR * 100;
+
+    try {
+      // Step 1: Load Razorpay Checkout SDK if not already loaded
+      if (typeof window !== "undefined" && !(window as any).Razorpay) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = resolve;
+          script.onerror = () => reject(new Error("Failed to load Razorpay Checkout SDK"));
+          document.body.appendChild(script);
+        });
+      }
+
+      // Step 2: Create Razorpay Order on backend (required for Standard Checkout)
+      const orderRes = await fetch(`${API_URL}/api/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          amount: amountPaise > 0 ? amountPaise : 100,
+          currency: "INR",
+          receipt: `sub_${targetPlan}_${Date.now()}`,
+        }),
+      });
+
+      const orderData = await orderRes.json() as any;
+      if (!orderRes.ok || !orderData.order_id) {
+        throw new Error(orderData.error || "Failed to create Razorpay order. Check your Razorpay API keys in .dev.vars.");
+      }
+
+      const { order_id, key_id } = orderData;
+
+      // Step 3: Open Razorpay Checkout with the order_id
+      const options = {
+        key: key_id,
+        amount: amountPaise > 0 ? amountPaise : 100,
+        currency: "INR",
+        order_id,
+        name: settings.storeName || "Basecart Platform",
+        description: `Basecart ${targetPlan.toUpperCase()} Plan — ₹${monthlyPriceINR}/mo`,
+        image: "https://basecart.app/logo.png",
+        prefill: {
+          name: settings.storeName || merchantOwnerName || "Store Owner",
+          email: email || "merchant@basecart.app",
+          contact: settings.supportPhone || "",
+        },
+        theme: {
+          color: "#4F46E5",
+        },
+        handler: async function (response: any) {
+          try {
+            // Step 4: Verify signature on backend
+            const verifyRes = await fetch(`${API_URL}/api/verify-payment`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              }),
+            });
+            const verifyData = await verifyRes.json() as any;
+            if (!verifyRes.ok || !verifyData.success) {
+              throw new Error(verifyData.error || "Payment signature verification failed");
+            }
+
+            // Step 5: Update plan & record invoice on backend
+            const pmRes = await fetch(`${API_URL}/store/payment-method`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              credentials: "include",
+              body: JSON.stringify({
+                razorpayPaymentId: response.razorpay_payment_id,
+                plan: targetPlan,
+                amountPaid: monthlyPriceINR,
+                paymentMethodType: `Razorpay (${targetPlan.toUpperCase()} Plan — ₹${monthlyPriceINR}/mo)`,
+              }),
+            });
+            const pmData = await pmRes.json() as any;
+            if (pmRes.ok) {
+              setActionSuccess(`⚡ Payment of ${formatINR(monthlyPriceINR)} confirmed! ${targetPlan.toUpperCase()} plan is now active.`);
+              await fetchBillingData();
+              setSettings((prev) => ({ ...prev, plan: targetPlan }));
+            } else {
+              throw new Error(pmData.error || "Failed to activate plan");
+            }
+          } catch (e: any) {
+            setActionError(e.message || "Payment verification failed");
+          }
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", (resp: any) => {
+        setActionError(`Payment failed: ${resp.error?.description || "Unknown error"}`);
+      });
+      rzp.open();
+    } catch (err: any) {
+      setActionError(err.message || "Failed to launch Razorpay Checkout");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch settings on login
   useEffect(() => {
     if (token) {
+      fetchBillingData();
+
       fetch(`${API_URL}/store/settings`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -1453,6 +1654,12 @@ export default function MerchantDashboard() {
         .catch(console.error);
     }
   }, [token]);
+
+  useEffect(() => {
+    if (token && settingsSubTab === "plan") {
+      fetchBillingData();
+    }
+  }, [token, settingsSubTab]);
 
   const handleMarkAllNotificationsRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -3186,13 +3393,8 @@ export default function MerchantDashboard() {
       >
         <div className="flex flex-col flex-1 min-h-0">
           {/* Logo Branding */}
-          <div className="h-14 flex items-center px-4 gap-3 border-b border-slate-100 shrink-0">
-            <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white shrink-0">
-              <ShoppingBag className="h-[18px] w-[18px]" />
-            </div>
-            {!sidebarCollapsed && (
-              <span className="text-[15px] font-bold text-slate-800 tracking-tight whitespace-nowrap">basecart</span>
-            )}
+          <div className="h-14 flex items-center px-4 border-b border-slate-100 shrink-0">
+            <img src="/logo.svg" alt="Basecart Logo" className="h-[34px] w-auto object-contain shrink-0" />
           </div>
 
           {/* Navigation Links (Matching Screenshot 1) */}
@@ -3324,8 +3526,8 @@ export default function MerchantDashboard() {
               )}
               {[
                 { id: "store-design", name: "Storefront Studio", icon: Store },
-                { id: "brand", name: "Agentic Store & AI", icon: Bot },
-                { id: "emails", name: "Headless Store", icon: Code, badge: "Soon" },
+                { id: "agentic", name: "Agentic Store & AI", icon: Bot },
+                { id: "headless", name: "Headless Store", icon: Code, badge: "Soon" },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -3470,7 +3672,7 @@ export default function MerchantDashboard() {
                     </div>
 
                     <button
-                      onClick={() => setActiveTab("billing")}
+                      onClick={() => changeSettingsSubTab("plan")}
                       className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-98 text-white text-xs font-bold rounded-lg transition-all shadow-xs cursor-pointer flex items-center justify-center gap-1 mt-1"
                     >
                       <span>Upgrade Plan</span>
@@ -10445,18 +10647,37 @@ export default function MerchantDashboard() {
               if (!selectedTheme) return;
               const pageContent = selectedTheme.pageContent || {};
               const settings = pageContent.settings || {};
-              setSelectedTheme({
+              const newSettings = { ...settings, [fieldId]: value };
+              const newSelectedTheme = {
                 ...selectedTheme,
                 pageContent: {
                   ...pageContent,
-                  settings: { ...settings, [fieldId]: value }
+                  settings: newSettings
+                }
+              };
+              setSelectedTheme(newSelectedTheme);
+
+              // Broadcast live postMessage updates to preview iframes
+              const iframes = document.querySelectorAll<HTMLIFrameElement>("#storefront-preview-iframe");
+              iframes.forEach((iframe) => {
+                if (iframe && iframe.contentWindow) {
+                  iframe.contentWindow.postMessage({
+                    type: "BASECART_THEME_UPDATE",
+                    themeData: {
+                      name: newSelectedTheme.name,
+                      templateBase: newSelectedTheme.templateBase,
+                      colors: {
+                        primary: newSettings.colorPrimary || newSelectedTheme.colors?.primary || "#2563EB",
+                        secondary: newSettings.colorSecondary || newSelectedTheme.colors?.secondary || "#1D4ED8",
+                        accent: newSettings.colorAccent || "#F59E0B"
+                      },
+                      pageContent: newSelectedTheme.pageContent,
+                      settings: newSettings
+                    }
+                  }, "*");
+                  iframe.contentWindow.postMessage({ type: "theme-update", settings: newSettings }, "*");
                 }
               });
-              // Send live update to iframe
-              const iframe = document.getElementById("storefront-preview-iframe") as HTMLIFrameElement;
-              if (iframe && iframe.contentWindow) {
-                iframe.contentWindow.postMessage({ type: "theme-update", settings: { ...settings, [fieldId]: value } }, "*");
-              }
             };
 
             const handlePublishTheme = async (themeId: string) => {
@@ -10573,24 +10794,67 @@ export default function MerchantDashboard() {
                                 const val = themeSettings[field.id] !== undefined ? themeSettings[field.id] : field.default;
                                 return (
                                   <div key={field.id} className="space-y-1">
-                                    <label className="block text-[10px] font-bold text-slate-600">{field.label}</label>
-                                    {field.type === "text" && (
-                                      <input type="text" value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none" />
+                                    <label className="block text-[10px] font-bold text-slate-600" htmlFor={field.id}>{field.label}</label>
+                                    {field.type === "image" && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2">
+                                          <input
+                                            id={field.id}
+                                            type="text"
+                                            value={val || ""}
+                                            placeholder="https://... image URL"
+                                            onChange={(e) => updateThemeSetting(field.id, e.target.value)}
+                                            className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                          />
+                                          <label className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 cursor-pointer shrink-0 flex items-center gap-1">
+                                            <Upload className="h-3 w-3 text-slate-500" />
+                                            <span>Upload</span>
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              className="hidden"
+                                              onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                  const reader = new FileReader();
+                                                  reader.onload = (evt) => {
+                                                    const res = evt.target?.result as string;
+                                                    if (res) updateThemeSetting(field.id, res);
+                                                  };
+                                                  reader.readAsDataURL(file);
+                                                }
+                                              }}
+                                            />
+                                          </label>
+                                        </div>
+                                        {val ? (
+                                          <div className="relative h-16 w-full bg-slate-100 border border-slate-200 rounded-lg overflow-hidden flex items-center justify-center group">
+                                            <img src={val} alt="Preview" className="w-full h-full object-cover" />
+                                            <button
+                                              type="button"
+                                              onClick={() => updateThemeSetting(field.id, "")}
+                                              className="absolute top-1 right-1 px-1.5 py-0.5 bg-slate-950/80 text-white rounded text-[9px] font-bold opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                              Remove
+                                            </button>
+                                          </div>
+                                        ) : null}
+                                      </div>
                                     )}
                                     {field.type === "color" && (
                                       <div className="flex items-center gap-2">
-                                        <input type="color" value={val || "#000000"} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer shrink-0" />
-                                        <input type="text" value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono w-full text-slate-800 focus:outline-none" />
+                                        <input id={`${field.id}-color`} type="color" value={val || "#000000"} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="h-8 w-8 rounded border border-slate-200 cursor-pointer shrink-0" />
+                                        <input id={field.id} type="text" value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-mono w-full text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                                       </div>
                                     )}
                                     {field.type === "select" && (
-                                      <select value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:outline-none">
+                                      <select id={field.id} value={val || ""} onChange={(e) => updateThemeSetting(field.id, e.target.value)} className="w-full px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
                                         {field.options?.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                                       </select>
                                     )}
                                     {field.type === "checkbox" && (
                                       <label className="flex items-center gap-2 cursor-pointer pt-0.5 select-none">
-                                        <input type="checkbox" checked={!!val} onChange={(e) => updateThemeSetting(field.id, e.target.checked)} className="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5] h-3.5 w-3.5" />
+                                        <input id={field.id} type="checkbox" checked={!!val} onChange={(e) => updateThemeSetting(field.id, e.target.checked)} className="rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5] h-3.5 w-3.5" />
                                         <span className="text-[11px] font-semibold text-slate-500">Enable</span>
                                       </label>
                                     )}
@@ -10640,57 +10904,16 @@ export default function MerchantDashboard() {
                   </div>
                 </div>
 
-                {/* 2. Main Active Theme Preview Card (Shopify Standard Layout) */}
+                {/* 2. Main Active Theme Preview Card */}
                 <div className="bg-white border border-slate-200/90 rounded-2xl shadow-sm overflow-hidden select-none">
-                  {/* Hero Canvas Showcase Area */}
-                  <div className="bg-slate-100/70 p-6 md:p-10 flex items-center justify-center relative min-h-[400px] overflow-hidden border-b border-slate-200/80">
-                    <div className="relative w-full max-w-4xl flex items-center justify-center">
-                      
-                      {/* Desktop Mockup Display Frame */}
-                      <div className="w-full max-w-2xl h-[340px] bg-white rounded-xl shadow-2xl border border-slate-300/80 flex flex-col overflow-hidden relative group">
-                        {/* Browser Header Bar */}
-                        <div className="flex items-center justify-between border-b border-slate-200/80 px-3 py-1.5 bg-slate-100/90 text-[10px] text-slate-500 font-medium shrink-0">
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <span className="w-2.5 h-2.5 rounded-full bg-red-400"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-yellow-400"></span>
-                            <span className="w-2.5 h-2.5 rounded-full bg-green-400"></span>
-                          </div>
-                          <span className="truncate max-w-xs font-mono text-center mx-auto text-slate-600 font-semibold bg-white/80 px-4 py-0.5 rounded-md border border-slate-200">
-                            {getStorefrontDisplayUrl(settings.subdomain || "demo")}
-                          </span>
-                          <div className="w-10"></div>
-                        </div>
-
-                        {/* Scaling Iframe Container */}
-                        <div className="relative flex-1 w-full h-full overflow-hidden bg-slate-50">
-                          <iframe
-                            src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
-                            className="w-[1280px] h-[850px] border-none bg-white origin-top-left scale-[0.48] pointer-events-none"
-                            title="Desktop Storefront Preview"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Mobile Phone Mockup Overlay Frame (iPhone 14 Dynamic Island Frame) */}
-                      <div className="hidden sm:block absolute right-4 -bottom-6 w-44 h-[300px] bg-slate-950 rounded-[38px] shadow-2xl border-[5px] border-slate-800 flex flex-col overflow-hidden transform rotate-1 hover:rotate-0 transition-transform duration-300 ring-1 ring-slate-900/50">
-                        {/* Dynamic Island Notch */}
-                        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black w-14 h-3.5 rounded-full z-20 flex items-center justify-end px-1.5 shadow-sm">
-                          <span className="w-1.5 h-1.5 rounded-full bg-blue-600/80"></span>
-                        </div>
-                        {/* Speaker Earpiece Line */}
-                        <div className="absolute top-1 left-1/2 -translate-x-1/2 bg-slate-800 w-8 h-0.5 rounded-full z-20"></div>
-
-                        {/* Live Mobile Storefront Container */}
-                        <div className="relative w-full h-full pt-6 bg-white overflow-hidden rounded-[32px]">
-                          <iframe
-                            src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=Satoshi&previewPrimaryColor=%23010101`}
-                            className="w-[375px] h-[667px] border-none bg-white origin-top-left scale-[0.40] pointer-events-none"
-                            title="Mobile Storefront Preview"
-                          />
-                        </div>
-                      </div>
-
-                    </div>
+                  {/* Clean Direct Live Storefront View Container */}
+                  <div className="relative w-full h-[480px] bg-slate-50 overflow-hidden border-b border-slate-200/80">
+                    <iframe
+                      id="storefront-preview-iframe"
+                      src={`${getStorefrontLink(settings.subdomain || "demo")}?previewThemeBase=${activeTheme?.templateBase || "Satoshi"}&previewPrimaryColor=${encodeURIComponent(activeTheme?.colors?.primary || "#2563EB")}`}
+                      className="w-full h-full border-none bg-white"
+                      title="Storefront Live View"
+                    />
                   </div>
 
                   {/* Active Theme Info & Actions Bar (Shopify Style Footer) */}
@@ -10737,71 +10960,6 @@ export default function MerchantDashboard() {
                     </div>
                   </div>
                 </div>
-
-                {/* 2. Theme Categories */}
-                <div className="bg-white border border-slate-200/80 shadow-sm rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 select-none">
-                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 pr-2">
-                    {["All Themes", "Fashion", "Electronics", "Home & Living", "Beauty", "Food", "Minimal", "Sports", "Books"].map((cat) => (
-                      <button key={cat} onClick={() => { setSelectedCategory(cat); setVisibleThemeCount(6); }} className={`px-3.5 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap ${selectedCategory === cat ? "bg-indigo-50 text-[#4F46E5]" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"}`}>{cat}</button>
-                    ))}
-                  </div>
-                  <button onClick={() => alert("Advanced filtering tools are preconfigured in Basecart Pro.")} className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 text-xs font-bold rounded-lg shadow-sm shrink-0">
-                    <SlidersHorizontal className="h-3.5 w-3.5 text-slate-400" /><span>Filter</span>
-                  </button>
-                </div>
-
-                {/* 3. Theme Marketplace */}
-                <div className="space-y-1 text-left">
-                  <h3 className="text-base font-black text-slate-800 tracking-tight">Theme Marketplace</h3>
-                  <p className="text-xs text-slate-500">Choose from professionally-crafted layouts optimized for sales conversion.</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {THEME_LIBRARY.filter((t: any) => selectedCategory === "All Themes" || t.category === selectedCategory)
-                    .slice(0, visibleThemeCount)
-                    .map((theme: any) => {
-                      const isCurrentActive = activeTheme?.name?.toLowerCase() === theme.name.toLowerCase();
-                      return (
-                        <div key={theme.name} className={`bg-white border rounded-2xl overflow-hidden flex flex-col justify-between group transition-all duration-300 shadow-sm hover:shadow-md ${isCurrentActive ? "border-[#4F46E5] ring-1 ring-[#4F46E5]/40" : "border-slate-200 hover:border-slate-300"}`}>
-                          <div className="h-44 bg-slate-100 relative overflow-hidden select-none border-b border-slate-100">
-                            <img src={theme.previewImage} alt={theme.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300 filter brightness-95" loading="lazy" />
-                            <div className="absolute top-3 right-3 bg-slate-900/60 backdrop-blur-sm text-white font-extrabold text-[9px] px-2 py-0.5 rounded shadow-xs uppercase">{theme.price}</div>
-                            {theme.isNew && (<div className="absolute top-3 left-3 bg-[#4F46E5] text-white font-black text-[9px] px-2 py-0.5 rounded shadow-xs uppercase tracking-wider">New</div>)}
-                            <div className="absolute inset-0 bg-slate-950/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                              <button onClick={() => { setThemeToPreview(theme); setPreviewThemeModalOpen(true); }} className="px-3.5 py-2 bg-white text-slate-800 text-xs font-bold rounded-lg shadow-lg hover:bg-slate-50 flex items-center gap-1.5 transform translate-y-1.5 group-hover:translate-y-0 transition-all duration-200">
-                                <Eye className="h-3.5 w-3.5 text-slate-500" /><span>Preview</span>
-                              </button>
-                            </div>
-                          </div>
-                          <div className="p-4 space-y-3">
-                            <div className="text-left">
-                              <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-bold text-slate-800">{theme.name}</h4>
-                                <span className="text-[9px] text-[#4F46E5] bg-indigo-50 border border-indigo-100/30 px-1.5 py-0.5 rounded font-extrabold uppercase">{theme.category}</span>
-                              </div>
-                              <p className="text-[11px] text-slate-500 mt-1 leading-normal line-clamp-2 min-h-[32px] font-medium">{theme.description}</p>
-                            </div>
-                            <div className="flex gap-2">
-                              {isCurrentActive ? (
-                                <div className="w-full text-center bg-indigo-50 border border-indigo-100 text-[#4F46E5] font-extrabold py-1.5 rounded-lg text-xs flex items-center justify-center gap-1"><span>✓</span><span>Active theme in use</span></div>
-                              ) : (
-                                <>
-                                  <button onClick={() => handleSelectThemeFromLibrary(theme)} className="flex-1 py-1.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold rounded-lg text-xs shadow-sm transition-colors">Apply Theme</button>
-                                  <button onClick={() => { setThemeToPreview(theme); setPreviewThemeModalOpen(true); }} className="p-1.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-400 hover:text-slate-600 shadow-sm shrink-0" title="Quick Preview"><Eye className="h-4 w-4" /></button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-
-                {/* Load More */}
-                {THEME_LIBRARY.filter((t: any) => selectedCategory === "All Themes" || t.category === selectedCategory).length > visibleThemeCount && (
-                  <div className="text-center pt-2 select-none">
-                    <button onClick={() => setVisibleThemeCount((prev: number) => prev + 3)} className="px-5 py-2 border border-slate-300 text-slate-700 font-bold rounded-lg text-xs shadow-xs hover:bg-slate-50 transition-colors">Load More Themes</button>
-                  </div>
-                )}
 
                 {/* 4. Fullscreen Theme Preview Modal */}
                 {previewThemeModalOpen && themeToPreview && (
@@ -10860,8 +11018,15 @@ export default function MerchantDashboard() {
             );
           })()}
 
-          {/* Headless Architecture Tab */}
+          {/* Emails & Notifications Tab */}
           {activeTab === "emails" && (
+            <div className="space-y-6 animate-fade-in">
+              <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
+            </div>
+          )}
+
+          {/* Headless Architecture Tab */}
+          {activeTab === "headless" && (
             <div className="space-y-6 animate-fade-in max-w-2xl">
               <div className="bg-white border border-slate-200/90 p-8 md:p-12 rounded-2xl shadow-xs text-center space-y-4">
                 <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto font-bold border border-indigo-100/80 shadow-xs">
@@ -10877,6 +11042,19 @@ export default function MerchantDashboard() {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Agentic Store & AI / Brand Identity Tab */}
+          {(activeTab === "agentic" || activeTab === "brand") && (
+            <div className="space-y-6 animate-fade-in">
+              <BrandIdentityTab
+                token={token}
+                API_URL={API_URL}
+                settings={settings}
+                products={products}
+                onUpdateSettings={(newSettings) => setSettings((prev: any) => ({ ...prev, ...newSettings }))}
+              />
             </div>
           )}
 
@@ -10980,21 +11158,27 @@ export default function MerchantDashboard() {
                     <div className="h-5 w-px bg-slate-200" />
 
                     <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 bg-gradient-to-tr from-indigo-600 to-indigo-700 rounded-xl flex items-center justify-center text-white font-black text-xs uppercase shadow-sm">
-                        {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "BC"}
+                      <div className="h-8 w-8 bg-[#4F46E5] rounded-full flex items-center justify-center text-white font-bold text-xs uppercase shadow-xs">
+                        {settings.storeName ? settings.storeName.slice(0, 2).toUpperCase() : "PI"}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h2 className="text-sm font-extrabold text-slate-900 leading-tight">
-                            {settings.storeName || "Store Settings"}
+                            {settings.storeName || "Pixelcart"}
                           </h2>
-                          <span className="text-[9px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200/60 uppercase tracking-wider">
-                            Basecart Studio
+                          <span className="text-[9px] font-extrabold bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full border border-slate-200 uppercase tracking-wider">
+                            BASECART STUDIO
                           </span>
                         </div>
-                        <span className="text-[11px] font-mono text-slate-500 block">
-                          {getStorefrontDisplayUrl(settings.subdomain || "store")}
-                        </span>
+                        <a
+                          href={getStorefrontDisplayUrl(settings.subdomain || "pixelcart")}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] font-medium text-slate-500 hover:text-indigo-600 flex items-center gap-1"
+                        >
+                          <span>{settings.subdomain ? `${settings.subdomain}.basecart.app` : "pixelcart.basecart.app"}</span>
+                          <ExternalLink className="h-3 w-3 text-slate-400" />
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -11003,15 +11187,23 @@ export default function MerchantDashboard() {
                     <button
                       disabled={loading}
                       onClick={() => handleSaveSettings()}
-                      className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 active:scale-98"
+                      className="px-5 py-2 bg-[#4F46E5] hover:bg-indigo-700 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-98"
                     >
                       {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                       <span>Save Changes</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => alert("Theme preferences toggled.")}
+                      className="p-2 border border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-xl transition-colors cursor-pointer"
+                      title="Toggle Light/Dark Theme"
+                    >
+                      <Sun className="h-4 w-4" />
+                    </button>
                     <a
                       href="#"
                       onClick={(e) => { e.preventDefault(); closeSettingsPortal(); }}
-                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                      className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer md:hidden"
                       title="Close Settings Studio"
                     >
                       <X className="h-5 w-5" />
@@ -11026,7 +11218,6 @@ export default function MerchantDashboard() {
                     { id: "plan", label: "Plan", icon: Layers },
                     { id: "billing", label: "Billing", icon: DollarSign },
                     { id: "payments", label: "Payments", icon: CreditCard },
-                    { id: "brand", label: "Brand", icon: Sparkles },
                     { id: "shipping", label: "Shipping", icon: Truck },
                     { id: "checkout", label: "Checkout", icon: ShoppingCart },
                     { id: "taxes", label: "Taxes", icon: Scale },
@@ -11045,7 +11236,7 @@ export default function MerchantDashboard() {
                         onClick={(e) => { e.preventDefault(); changeSettingsSubTab(item.id as any); }}
                         className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all ${
                           isActive
-                            ? "bg-indigo-600 text-white shadow-sm"
+                            ? "bg-[#4F46E5] text-white shadow-xs"
                             : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                         }`}
                       >
@@ -11056,10 +11247,10 @@ export default function MerchantDashboard() {
                   })}
                 </div>
 
-                {/* Main Settings Canvas */}
-                <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-4 md:p-6 gap-6">
+                {/* Main Settings Canvas - 320px Sidebar + 1fr Full Viewport Content (Shopify / Stripe / Vercel layout) */}
+                <div className="grid h-[calc(100vh-64px)] grid-cols-1 md:grid-cols-[320px_1fr] w-full max-w-none m-0 overflow-hidden">
                   {/* Left Categorized Navigation Panel */}
-                  <aside className="hidden md:flex w-72 bg-white border border-slate-200/90 rounded-2xl p-4 flex-col shrink-0 overflow-y-auto shadow-xs">
+                  <aside className="hidden md:flex w-[320px] bg-white border-r border-slate-200/90 p-5 flex-col shrink-0 overflow-y-auto h-full rounded-none shadow-none">
                     {/* Search Bar */}
                     <div className="relative mb-4">
                       <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
@@ -11068,8 +11259,11 @@ export default function MerchantDashboard() {
                         placeholder="Search settings..."
                         value={settingsSearchQuery}
                         onChange={(e) => setSettingsSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30 focus:border-indigo-600"
+                        className="w-full pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30 focus:border-indigo-600 font-medium"
                       />
+                      <span className="absolute right-2.5 top-2.5 text-[9px] font-mono font-bold bg-slate-200/70 text-slate-500 px-1.5 py-0.5 rounded">
+                        ⌘K
+                      </span>
                     </div>
 
                     {/* Grouped Categorized Navigation */}
@@ -11078,8 +11272,7 @@ export default function MerchantDashboard() {
                         {
                           category: "STORE IDENTITY",
                           items: [
-                            { id: "general", label: "Store Profile & Entity", icon: Home, badge: "D1 Active" },
-                            { id: "brand", label: "Brand & Visual Assets", icon: Sparkles },
+                            { id: "general", label: "Store Profile & Entity", icon: Home, badge: "Active" },
                             { id: "domains", label: "Custom Domains", icon: Globe },
                             { id: "policies", label: "Store Legal Policies", icon: FileText },
                           ],
@@ -11131,14 +11324,20 @@ export default function MerchantDashboard() {
                                   onClick={(e) => { e.preventDefault(); changeSettingsSubTab(item.id as any); }}
                                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     isActive
-                                      ? "bg-indigo-50 text-indigo-700 shadow-xs border border-indigo-100"
-                                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                                      ? "bg-[#EEF2FF] text-[#4F46E5] font-bold shadow-2xs border border-indigo-100/80"
+                                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium"
                                   }`}
                                 >
-                                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-indigo-600" : "text-slate-400"}`} />
+                                  <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-[#4F46E5]" : "text-slate-400"}`} />
                                   <span className="truncate">{item.label}</span>
                                   {item.badge && (
-                                    <span className="ml-auto bg-slate-100 text-slate-500 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-slate-200/60 shrink-0">
+                                    <span
+                                      className={`ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full border shrink-0 ${
+                                        item.badge === "Active"
+                                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                          : "bg-slate-100 text-slate-500 border-slate-200/60"
+                                      }`}
+                                    >
                                       {item.badge}
                                     </span>
                                   )}
@@ -11151,31 +11350,34 @@ export default function MerchantDashboard() {
                     </div>
 
                     {/* Profile Footer */}
-                    <div className="pt-4 border-t border-slate-100 flex items-center gap-3">
-                      <div className="h-8 w-8 bg-indigo-50 border border-indigo-100 rounded-full flex items-center justify-center font-bold text-xs text-indigo-700 uppercase shrink-0">
-                        {(merchantOwnerName || email || "Kiran S")
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .toUpperCase()
-                          .slice(0, 2) || "KS"}
-                      </div>
-                      <div className="overflow-hidden">
-                        <div className="text-xs font-bold text-slate-900 truncate">
-                          {merchantOwnerName || (email ? email.split("@")[0] : "Kiran S")}
+                    <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3 bg-slate-50/50 p-2.5 rounded-2xl border border-slate-100/80">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-8 w-8 bg-indigo-100 border border-indigo-200/80 rounded-full flex items-center justify-center font-bold text-xs text-indigo-700 uppercase shrink-0">
+                          {(merchantOwnerName || email || "Kiran S")
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2) || "KS"}
                         </div>
-                        <div className="text-[10px] text-slate-500 truncate">
-                          {email || "kirankichu6151@gmail.com"}
+                        <div className="overflow-hidden min-w-0">
+                          <div className="text-xs font-extrabold text-slate-900 truncate">
+                            {merchantOwnerName || "Kiran S"}
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            {email || "devkiraa@gmail.com"}
+                          </div>
                         </div>
                       </div>
+                      <ChevronRight className="h-4 w-4 text-slate-400 shrink-0" />
                     </div>
                   </aside>
 
-                  {/* Right Settings Workspace Canvas */}
-                  <main className="flex-1 bg-white border border-slate-200/90 rounded-2xl p-4 md:p-8 overflow-y-auto shadow-xs space-y-6">
-                  {/* 1. GENERAL SETTINGS (MATCHING SCREENSHOT 2 & CONNECTED TO D1 DATABASE) */}
+                  {/* Right Settings Workspace Canvas - Fills 100% Remaining Viewport Width */}
+                  <main className="flex-1 bg-[#F8FAFC] w-full max-w-none m-0 p-6 md:p-8 overflow-y-auto space-y-6">
+                  {/* 1. GENERAL SETTINGS */}
                   {settingsSubTab === "general" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                         <div className="flex items-center gap-2">
                           <Home className="h-5 w-5 text-slate-700" />
@@ -11443,20 +11645,6 @@ export default function MerchantDashboard() {
                             </div>
                             <ChevronRight className="h-4 w-4 text-slate-400" />
                           </div>
-
-                          <div
-                            onClick={() => setSettingsSubTab("brand")}
-                            className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-slate-100/60 transition-colors"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Sparkles className="h-4 w-4 text-slate-500" />
-                              <div>
-                                <div className="text-xs font-bold text-slate-900">Brand</div>
-                                <div className="text-[11px] text-slate-500 font-medium">Integrate brand assets across sales channels, themes and apps</div>
-                              </div>
-                            </div>
-                            <ChevronRight className="h-4 w-4 text-slate-400" />
-                          </div>
                         </div>
                       </div>
 
@@ -11522,7 +11710,7 @@ export default function MerchantDashboard() {
 
                   {/* 2. PAYMENTS SETTINGS */}
                   {settingsSubTab === "payments" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
                         <CreditCard className="h-5 w-5 text-slate-700" />
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Payment Providers & Gateways</h2>
@@ -11609,7 +11797,7 @@ export default function MerchantDashboard() {
 
                   {/* 3. SHIPPING & DELIVERY SETTINGS */}
                   {settingsSubTab === "shipping" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
                         <Truck className="h-5 w-5 text-slate-700" />
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Shipping and Delivery</h2>
@@ -11655,7 +11843,7 @@ export default function MerchantDashboard() {
 
                   {/* 4. CHECKOUT SETTINGS */}
                   {settingsSubTab === "checkout" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
                         <ShoppingCart className="h-5 w-5 text-slate-700" />
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Checkout Preferences</h2>
@@ -11712,7 +11900,7 @@ export default function MerchantDashboard() {
 
                   {/* 5. TAXES AND DUTIES SETTINGS */}
                   {settingsSubTab === "taxes" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
                         <Scale className="h-5 w-5 text-slate-700" />
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Taxes and Duties</h2>
@@ -11761,7 +11949,7 @@ export default function MerchantDashboard() {
 
                   {/* 6. DOMAINS SETTINGS */}
                   {settingsSubTab === "domains" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center gap-2 border-b border-slate-100 pb-4">
                         <Globe className="h-5 w-5 text-slate-700" />
                         <h2 className="text-xl font-bold tracking-tight text-slate-900">Domains & URL Setup</h2>
@@ -11798,7 +11986,7 @@ export default function MerchantDashboard() {
 
                   {/* 7. POLICIES SETTINGS */}
                   {settingsSubTab === "policies" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                         <div className="flex items-center gap-2">
                           <FileText className="h-5 w-5 text-slate-700" />
@@ -11870,22 +12058,610 @@ export default function MerchantDashboard() {
                     </div>
                   )}
 
-                  {/* 8. BRAND & IDENTITY SETTINGS */}
-                  {settingsSubTab === "brand" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
-                      <BrandIdentityTab token={token} API_URL={API_URL} settings={settings} onUpdateSettings={(newSettings) => setSettings(newSettings)} />
-                    </div>
-                  )}
-
-                  {/* 9. NOTIFICATION & EMAIL SETTINGS */}
+                  {/* 8. NOTIFICATION & EMAIL SETTINGS */}
                   {settingsSubTab === "notifications" && (
-                    <div className="space-y-6 animate-fade-in max-w-4xl">
+                    <div className="w-full max-w-none space-y-6 animate-fade-in">
                       <EmailsTab token={token} API_URL={API_URL} storeName={settings.storeName} />
                     </div>
                   )}
 
-                  {/* 10. OTHER SUB-TABS FALLBACK */}
-                  {!["general", "payments", "shipping", "checkout", "taxes", "domains", "policies", "brand", "notifications"].includes(settingsSubTab) && (
+                  {/* 10. SUBSCRIPTION PLAN SETTINGS */}
+                  {settingsSubTab === "plan" && (
+                    <div className="w-full space-y-6 animate-fade-in">
+                      {/* Sticky Page Header */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
+                        <div>
+                          <div className="flex items-center gap-2.5">
+                            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Plan & Subscription</h2>
+                            <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                              {billingInfo.isTrial ? "60-Day Free Trial (Growth Tier)" : `Active ${(billingInfo.plan || settings.plan || "growth").toUpperCase()} Tier`}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 font-medium mt-1">
+                            Manage store usage limits, feature entitlements, billing cycles, and subscription preferences.
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => fetchBillingData()}
+                            className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl shadow-2xs flex items-center gap-2 cursor-pointer transition-all active:scale-98"
+                          >
+                            <History className="h-3.5 w-3.5 text-slate-400" />
+                            <span>Refresh Live Metrics</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveSettings()}
+                            disabled={loading}
+                            className="px-4 py-2 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-98"
+                          >
+                            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                            <span>Save Changes</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* 60-Day Free Trial Callout Banner with Razorpay Payment Method Action */}
+                      {(billingInfo.isTrial || calculateTrialDaysRemaining(settings.createdAt) > 0) && (
+                        <div className="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 text-white rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fade-in">
+                          <div className="flex items-center gap-3.5">
+                            <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center font-bold text-white shrink-0">
+                              <Clock className="h-5 w-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-extrabold flex items-center gap-2">
+                                <span>60-Day Free Trial Active</span>
+                                <span className="bg-white/20 text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">
+                                  {billingInfo.trialDaysRemaining ?? calculateTrialDaysRemaining(settings.createdAt)} Days Remaining
+                                </span>
+                              </h4>
+                              <p className="text-xs text-indigo-100 font-medium mt-0.5">
+                                Full Growth Plan features unlocked for ₹0. Plan changes are locked during trial, but you can set up your Razorpay payment method below!
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleSetupRazorpayPaymentMethod()}
+                            disabled={loading}
+                            className="px-4 py-2 bg-white hover:bg-slate-100 text-[#4F46E5] font-extrabold text-xs rounded-xl shadow-xs shrink-0 cursor-pointer transition-all active:scale-98 flex items-center gap-1.5"
+                          >
+                            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin text-indigo-600" /> : <Zap className="h-3.5 w-3.5 text-indigo-600 fill-indigo-600" />}
+                            <span>{billingInfo.hasPaymentMethod ? "Razorpay Method Attached" : "Set Up Payment Method"}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* 1. Full-Width Current Plan Overview Card */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                          <div className="flex items-center gap-4">
+                            <div className="h-14 w-14 bg-gradient-to-br from-[#4F46E5] to-indigo-700 text-white rounded-2xl flex items-center justify-center font-bold shadow-xs shrink-0">
+                              <Crown className="h-7 w-7" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Current Active Plan</span>
+                                <span className="bg-indigo-50 text-[#4F46E5] text-[10px] font-bold px-2 py-0.5 rounded border border-indigo-100 font-mono">
+                                  {billingInfo.isTrial ? "Free Trial (₹0 / mo)" : `${formatINR(billingInfo.price ?? 699)} / mo`}
+                                </span>
+                              </div>
+                              <h3 className="text-2xl font-black text-slate-900 leading-tight">
+                                {(billingInfo.plan || settings.plan || "growth").charAt(0).toUpperCase() + (billingInfo.plan || settings.plan || "growth").slice(1)} Plan
+                              </h3>
+                              <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                                <span className="flex items-center gap-1.5">
+                                  <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>Next Renewal: <strong className="text-slate-800">{billingInfo.nextBillingDate || "15 Aug 2026"}</strong></span>
+                                </span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                                  <ShieldCheck className="h-3.5 w-3.5" />
+                                  <span>Unlimited API Access</span>
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleSetupRazorpayPaymentMethod()}
+                              disabled={loading}
+                              className="px-5 py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-2 active:scale-98"
+                            >
+                              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4 text-amber-300 fill-amber-300" />}
+                              <span>{billingInfo.hasPaymentMethod ? "Razorpay AutoPay Active" : "Set Up Payment Method"}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Individual Usage Metric Analytics Grid (4 Independent Cards) */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        {/* Orders Metric */}
+                        {(() => {
+                          const used = billingInfo.ordersUsed ?? 0;
+                          const limit = billingInfo.ordersLimit ?? 5000;
+                          const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+                          const remaining = Math.max(0, limit - used);
+                          return (
+                            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Monthly Orders</span>
+                                <span className="text-[11px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-100">
+                                  {percent}% Used
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-black text-slate-900">{used.toLocaleString()}</div>
+                                <div className="text-xs text-slate-500 font-medium">of {limit >= 99999 ? "Unlimited" : limit.toLocaleString()} orders limit</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div className="bg-[#4F46E5] h-full rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-slate-400 font-semibold pt-0.5">
+                                  <span>{limit >= 99999 ? "Unlimited" : `${remaining.toLocaleString()} remaining`}</span>
+                                  <span>Monthly Cycle</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Products Metric */}
+                        {(() => {
+                          const used = billingInfo.productsUsed ?? 0;
+                          const limit = billingInfo.productsLimit ?? 2000;
+                          const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+                          const remaining = Math.max(0, limit - used);
+                          return (
+                            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Catalog Products</span>
+                                <span className="text-[11px] font-extrabold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full border border-blue-100">
+                                  {percent}% Used
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-black text-slate-900">{used.toLocaleString()}</div>
+                                <div className="text-xs text-slate-500 font-medium">of {limit >= 99999 ? "Unlimited" : limit.toLocaleString()} items limit</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-slate-400 font-semibold pt-0.5">
+                                  <span>{limit >= 99999 ? "Unlimited" : `${remaining.toLocaleString()} remaining`}</span>
+                                  <span>Active Catalog</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Storage Metric */}
+                        {(() => {
+                          const used = billingInfo.storageUsed ?? 0.05;
+                          const limit = billingInfo.storageLimit ?? 20;
+                          const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+                          const avail = Number(Math.max(0, limit - used).toFixed(1));
+                          return (
+                            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Cloud Storage</span>
+                                <span className="text-[11px] font-extrabold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full border border-emerald-100">
+                                  {percent}% Used
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-black text-slate-900">{used} GB</div>
+                                <div className="text-xs text-slate-500 font-medium">of {limit} GB media storage</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div className="bg-emerald-600 h-full rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-slate-400 font-semibold pt-0.5">
+                                  <span>{avail} GB available</span>
+                                  <span>Global Edge CDN</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+
+                        {/* Staff Metric */}
+                        {(() => {
+                          const used = billingInfo.staffUsed ?? 1;
+                          const limit = billingInfo.staffLimit ?? 10;
+                          const percent = Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+                          const avail = Math.max(0, limit - used);
+                          return (
+                            <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-2xs space-y-3">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider">Staff Accounts</span>
+                                <span className="text-[11px] font-extrabold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-100">
+                                  {percent}% Used
+                                </span>
+                              </div>
+                              <div>
+                                <div className="text-2xl font-black text-slate-900">{used} Accounts</div>
+                                <div className="text-xs text-slate-500 font-medium">of {limit} total staff seats</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div className="bg-amber-600 h-full rounded-full transition-all duration-500" style={{ width: `${percent}%` }} />
+                                </div>
+                                <div className="flex justify-between text-[10px] text-slate-400 font-semibold pt-0.5">
+                                  <span>{avail} seats available</span>
+                                  <span>Role RBAC</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+
+                      {/* 3. Main 70% / 30% Expanded Content Layout */}
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                        {/* Left Main Section (70% -> col-span-8) */}
+                        <div className="lg:col-span-8 space-y-6">
+                          {/* Plan Preferences Cards Grid */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-5">
+                            <div>
+                              <h3 className="text-base font-extrabold text-slate-900">Plan Controls & Configuration</h3>
+                              <p className="text-xs text-slate-500 mt-0.5">Manage automated alerts, feature toggles, and usage limits.</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {[
+                                { id: "overage", title: "Usage Overage Alerts", desc: "Get notified via email when order volume reaches 80% or 90% of your plan limit.", icon: Bell, color: "bg-indigo-50 text-indigo-600", active: true },
+                                { id: "safeguard", title: "Auto-Upgrade Safeguard", desc: "Automatically transition to Pro plan when monthly limit is reached to prevent downtime.", icon: ShieldCheck, color: "bg-emerald-50 text-emerald-600", active: true },
+                                { id: "routing", title: "Custom Domain Routing", desc: "Connect shop.yourdomain.com with auto-renewing SSL encryption certificates.", icon: Globe, color: "bg-blue-50 text-blue-600", active: true },
+                                { id: "cdn", title: "Priority CDN Asset Delivery", desc: "Accelerate storefront image loading using Cloudflare global edge network.", icon: Database, color: "bg-amber-50 text-amber-600", active: true },
+                              ].map((pref) => {
+                                const PrefIcon = pref.icon;
+                                return (
+                                  <div key={pref.id} className="p-4 rounded-xl border border-slate-200/90 hover:border-indigo-200 bg-white transition-all space-y-3 shadow-2xs">
+                                    <div className="flex items-start justify-between gap-3">
+                                      <div className={`h-9 w-9 rounded-xl flex items-center justify-center font-bold shrink-0 ${pref.color}`}>
+                                        <PrefIcon className="h-4 w-4" />
+                                      </div>
+                                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${pref.active ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-500 border-slate-200"}`}>
+                                        {pref.active ? "Enabled" : "Disabled"}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <h4 className="text-xs font-extrabold text-slate-900">{pref.title}</h4>
+                                      <p className="text-[11px] text-slate-500 font-medium leading-relaxed mt-1">{pref.desc}</p>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setActionSuccess(`${pref.title} settings updated!`)}
+                                      className="text-xs font-bold text-[#4F46E5] hover:text-indigo-700 flex items-center gap-1 pt-1 cursor-pointer"
+                                    >
+                                      <span>Configure Settings</span>
+                                      <ChevronRight className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Feature Limits & Entitlements Table */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+                            <div>
+                              <h3 className="text-base font-extrabold text-slate-900">Feature Entitlements</h3>
+                              <p className="text-xs text-slate-500 mt-0.5">Overview of features and quota allocations included in your current tier.</p>
+                            </div>
+
+                            <div className="border border-slate-200/90 rounded-xl overflow-hidden">
+                              <table className="w-full text-left border-collapse text-xs">
+                                <thead>
+                                  <tr className="bg-slate-50/80 border-b border-slate-200/90 text-[10px] font-extrabold uppercase text-slate-400">
+                                    <th className="py-3 px-4">Feature Name</th>
+                                    <th className="py-3 px-4">Allocation / Status</th>
+                                    <th className="py-3 px-4">Category</th>
+                                    <th className="py-3 px-4 text-right">Action</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                                  {[
+                                    { name: "Razorpay Native Checkout", limit: "Included (0% platform fee)", cat: "Payments", status: "Active" },
+                                    { name: "Custom Domain SSL", limit: "1 Domain (CNAME routing)", cat: "Hosting", status: "Active" },
+                                    { name: "Multi-Currency Checkout", limit: "15 Currencies Supported", cat: "Storefront", status: "Active" },
+                                    { name: "Automated Tax Calculation (GST)", limit: "Automated 18% Rule", cat: "Finance", status: "Active" },
+                                    { name: "White-Label Email Templates", limit: "Tier Included", cat: "Marketing", status: "Active" },
+                                    { name: "Dedicated API Keys & Webhooks", limit: "10,000 req / min", cat: "Developer", status: "Active" },
+                                  ].map((row) => (
+                                    <tr key={row.name} className="hover:bg-slate-50/60 transition-colors">
+                                      <td className="py-3 px-4 font-bold text-slate-900">{row.name}</td>
+                                      <td className="py-3 px-4 text-slate-600">{row.limit}</td>
+                                      <td className="py-3 px-4">
+                                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">
+                                          {row.cat}
+                                        </span>
+                                      </td>
+                                      <td className="py-3 px-4 text-right">
+                                        <button
+                                          type="button"
+                                          onClick={() => setActionSuccess(`Managing ${row.name}`)}
+                                          className="text-xs font-bold text-[#4F46E5] hover:underline cursor-pointer"
+                                        >
+                                          Manage
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+
+                          {/* Danger Zone */}
+                          <div className="bg-rose-50/40 border border-rose-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+                            <div>
+                              <h3 className="text-base font-extrabold text-rose-900">Danger Zone</h3>
+                              <p className="text-xs text-rose-700 mt-0.5">Critical store subscription actions and ownership controls.</p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
+                              <div>
+                                <h4 className="text-xs font-bold text-slate-900">Cancel Store Subscription</h4>
+                                <p className="text-[11px] text-slate-500">Canceling will downgrade your store to Free tier at the end of billing cycle.</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (billingInfo.isTrial) {
+                                    setActionError("Plan changes are locked during your 60-day free trial as full Growth features are active for ₹0.");
+                                  } else {
+                                    handleSelectPlanTier("free");
+                                  }
+                                }}
+                                disabled={loading}
+                                className="px-4 py-2 border border-rose-300 hover:bg-rose-600 hover:text-white text-rose-700 font-bold text-xs rounded-xl shadow-2xs transition-colors cursor-pointer shrink-0"
+                              >
+                                {loading ? "Updating..." : "Cancel Subscription"}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Sticky Column (30% -> col-span-4) */}
+                        <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-6">
+                          {/* Razorpay Payment Method & Monthly Plan Subscription Card */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-base font-extrabold text-slate-900">Payment & Plan Checkout</h3>
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${billingInfo.hasPaymentMethod ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-amber-50 text-amber-700 border-amber-200"}`}>
+                                {billingInfo.hasPaymentMethod ? "Configured" : "Action Needed"}
+                              </span>
+                            </div>
+                            <div className="p-3.5 bg-slate-50/70 border border-slate-200/80 rounded-xl space-y-3 text-xs">
+                              <div className="flex items-center gap-2 font-extrabold text-slate-900">
+                                <CreditCard className="h-4 w-4 text-indigo-600" />
+                                <span>{billingInfo.hasPaymentMethod ? (billingInfo.paymentMethodType || "Razorpay AutoPay Active") : "No Payment Method Attached"}</span>
+                              </div>
+                              <p className="text-[11px] text-slate-500 font-medium leading-relaxed">
+                                Choose your desired plan tier below to process monthly subscription billing directly via Razorpay online payment.
+                              </p>
+
+                              {/* Plan Selection Dropdown */}
+                              <div className="space-y-1 pt-1">
+                                <label className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider block">Target Subscription Tier</label>
+                                <select
+                                  value={selectedPaymentPlan}
+                                  onChange={(e) => setSelectedPaymentPlan(e.target.value)}
+                                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 shadow-2xs cursor-pointer"
+                                >
+                                  <option value="starter">Starter Plan — ₹299 / month</option>
+                                  <option value="growth">Growth Plan — ₹699 / month</option>
+                                  <option value="pro">Pro Plan — ₹1,499 / month</option>
+                                  <option value="agency">Agency Plan — ₹4,999 / month</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleSetupRazorpayPaymentMethod(selectedPaymentPlan)}
+                              disabled={loading}
+                              className="w-full py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98"
+                            >
+                              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5 text-amber-300 fill-amber-300" />}
+                              <span>
+                                {selectedPaymentPlan === "starter" ? "⚡ Pay & Subscribe (₹299/mo)" : selectedPaymentPlan === "pro" ? "⚡ Pay & Subscribe (₹1,499/mo)" : selectedPaymentPlan === "agency" ? "⚡ Pay & Subscribe (₹4,999/mo)" : "⚡ Pay & Subscribe (₹699/mo)"}
+                              </span>
+                            </button>
+                          </div>
+
+                          {/* Plan Details Key-Value Card */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+                            <h3 className="text-base font-extrabold text-slate-900">Plan Metadata</h3>
+                            <div className="space-y-3 text-xs">
+                              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Plan Name</span>
+                                <span className="font-extrabold text-slate-900 uppercase">
+                                  {(billingInfo.plan || settings.plan || "growth")} Plan
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Billing Price</span>
+                                <span className="font-extrabold text-slate-900">
+                                  {billingInfo.isTrial ? "₹0 (Free Trial)" : `${formatINR(billingInfo.price ?? 699)} / month`}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Trial Status</span>
+                                <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100">
+                                  {billingInfo.isTrial ? `${billingInfo.trialDaysRemaining ?? 60} Days Left` : "Trial Completed"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Next Renewal</span>
+                                <span className="font-bold text-slate-800">{billingInfo.nextBillingDate || "15 Aug 2026"}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                                <span className="text-slate-500 font-medium">Payment Gateway</span>
+                                <span className="font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md text-[11px] flex items-center gap-1">
+                                  ⚡ {billingInfo.paymentGateway || "Razorpay"}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between py-2">
+                                <span className="text-slate-500 font-medium">Account Status</span>
+                                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
+                                  {billingInfo.status || "Active & Healthy"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Recent Invoices Card */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4">
+                            <div className="flex items-center justify-between">
+                              <h3 className="text-sm font-extrabold text-slate-900">Recent Invoices</h3>
+                              <span className="text-[11px] font-bold text-slate-500">
+                                {billingInfo.statements?.length || 0} Total
+                              </span>
+                            </div>
+                            <div className="space-y-2.5">
+                              {(billingInfo.statements || []).map((inv: any) => (
+                                <div key={inv.statementId || inv.id} className="p-3 bg-slate-50/70 border border-slate-100 rounded-xl flex items-center justify-between text-xs">
+                                  <div>
+                                    <div className="font-bold text-slate-900">{inv.statementId || inv.id}</div>
+                                    <div className="text-[10px] text-slate-400 font-medium">
+                                      {inv.createdAt || inv.date} • {formatINR(inv.amount || 0)}
+                                    </div>
+                                  </div>
+                                  <a
+                                    href={`${API_URL}/store/billing/statement/${inv.statementId || inv.id}?token=${token}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 font-bold text-[11px] rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    <span>PDF</span>
+                                  </a>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Documentation & Support Card */}
+                          <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-3">
+                            <h3 className="text-sm font-extrabold text-slate-900">Basecart Merchant Support</h3>
+                            <p className="text-xs text-slate-500 leading-normal font-medium">
+                              Need assistance with your plan, custom billing, or platform extensions?
+                            </p>
+                            <div className="pt-1 space-y-2">
+                              <button
+                                type="button"
+                                onClick={() => setActionSuccess("Opening Basecart Platform Documentation")}
+                                className="w-full py-2 px-3 bg-indigo-50/70 hover:bg-indigo-100/70 text-[#4F46E5] font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                              >
+                                <FileText className="h-3.5 w-3.5" />
+                                <span>Platform Documentation</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setActionSuccess("Connecting to Basecart Priority Merchant Support")}
+                                className="w-full py-2 px-3 bg-indigo-50/70 hover:bg-indigo-100/70 text-[#4F46E5] font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                              >
+                                <HelpCircle className="h-3.5 w-3.5" />
+                                <span>Contact Priority Support</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Full-Width Upgrade Plan Comparison Table Grid */}
+                      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-5">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-base font-extrabold text-slate-900">Compare Basecart Platform Tiers</h3>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              Choose a plan and pay via Razorpay to unlock limits, custom checkout workflows, and priority support.
+                            </p>
+                          </div>
+                          <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                            Billing Currency: INR (₹)
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                          {[
+                            { id: "free", name: "Free", sub: "For getting started", price: "₹0 / month", desc: "Basic storefront & manual order management" },
+                            { id: "starter", name: "Starter", sub: "For growing stores", price: "₹299 / month", desc: "Custom domain & 500 monthly orders limit" },
+                            { id: "growth", name: "Growth", sub: "For scaling businesses", price: "₹699 / month", desc: "5,000 monthly orders, Razorpay integration & white-label emails" },
+                            { id: "pro", name: "Pro", sub: "For high-volume stores", price: "₹1,499 / month", desc: "25,000 monthly orders, custom CSS & multi-warehouse inventory" },
+                            { id: "agency", name: "Agency", sub: "For white-label partners", price: "₹4,999 / month", desc: "Unlimited stores, white-label dashboard & priority SLA" },
+                          ].map((tier) => {
+                            const isCurrent = (billingInfo.plan || settings.plan || "growth").toLowerCase() === tier.id;
+                            const isFree = tier.id === "free";
+                            return (
+                              <div
+                                key={tier.id}
+                                className={`p-5 rounded-2xl border flex flex-col justify-between space-y-4 transition-all relative ${
+                                  isCurrent
+                                    ? "border-2 border-[#4F46E5] bg-indigo-50/30 shadow-xs"
+                                    : "border-slate-200 hover:border-slate-300 bg-white"
+                                }`}
+                              >
+                                {isCurrent && (
+                                  <span className="absolute top-3 right-3 text-[9px] font-black uppercase bg-[#4F46E5] text-white px-2 py-0.5 rounded-full shadow-xs">
+                                    Active
+                                  </span>
+                                )}
+                                <div className="space-y-1.5">
+                                  <h4 className="text-base font-black text-slate-900">{tier.name}</h4>
+                                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">{tier.sub}</p>
+                                  <p className="text-lg font-black text-slate-900 pt-1">{tier.price}</p>
+                                  <p className="text-[11px] text-slate-500 leading-snug pt-1 font-medium">{tier.desc}</p>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  disabled={isCurrent || loading}
+                                  onClick={() => {
+                                    if (isFree) {
+                                      handleSelectPlanTier("free");
+                                    } else {
+                                      handleSetupRazorpayPaymentMethod(tier.id);
+                                    }
+                                  }}
+                                  className={`w-full py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1 ${
+                                    isCurrent
+                                      ? "bg-indigo-100/90 text-[#4F46E5] border border-indigo-200 cursor-default"
+                                      : "bg-[#4F46E5] hover:bg-indigo-700 text-white shadow-xs active:scale-98 cursor-pointer"
+                                  }`}
+                                >
+                                  {isCurrent ? "Current Active Tier" : isFree ? "Switch to Free" : `⚡ Pay & Subscribe (${tier.price.split(" ")[0]})`}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 11. STAFF & PERMISSIONS (TEAM USERS) SETTINGS */}
+                  {["users", "team", "staff", "members"].includes(settingsSubTab) && (
+                    <UsersTeamTab
+                      token={token}
+                      API_URL={API_URL}
+                      staffLimit={billingInfo.staffLimit || 10}
+                    />
+                  )}
+
+                  {/* 12. OTHER SUB-TABS FALLBACK */}
+                  {!["general", "payments", "shipping", "checkout", "taxes", "domains", "policies", "brand", "notifications", "plan", "users", "team", "staff", "members"].includes(settingsSubTab) && (
                     <div className="space-y-4 animate-fade-in max-w-4xl">
                       <h2 className="text-xl font-bold tracking-tight text-slate-900 capitalize">{settingsSubTab} Settings</h2>
                       <p className="text-xs text-slate-500">Configure your store settings and automated preferences for {settingsSubTab}.</p>
@@ -12064,8 +12840,8 @@ export default function MerchantDashboard() {
                 </div>
                 {[
                   { id: "store-design", name: "Storefront Studio", icon: Store },
-                  { id: "brand", name: "Agentic Store & AI", icon: Bot },
-                  { id: "emails", name: "Headless Store", icon: Code, badge: "Soon" },
+                  { id: "agentic", name: "Agentic Store & AI", icon: Bot },
+                  { id: "headless", name: "Headless Store", icon: Code, badge: "Soon" },
                 ].map((item) => {
                   const Icon = item.icon;
                   const isActive = activeTab === item.id;

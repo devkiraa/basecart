@@ -1,20 +1,33 @@
 import Link from "next/link";
+import { ShoppingBag, Home, ArrowLeft } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center text-slate-800 font-sans px-6">
-      <div className="text-center space-y-4 max-w-md">
-        <p className="text-7xl font-black text-slate-200">404</p>
-        <h1 className="text-2xl font-bold text-slate-900">Page not found</h1>
-        <p className="text-slate-500 text-sm leading-relaxed">
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
-        </p>
-        <Link
-          href="/"
-          className="inline-block mt-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
-        >
-          Back to Home
-        </Link>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 text-center font-sans">
+      <div className="max-w-md w-full bg-white border border-slate-200/90 rounded-3xl p-8 shadow-xl space-y-6">
+        <div className="h-16 w-16 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mx-auto shadow-xs">
+          <ShoppingBag className="h-8 w-8" />
+        </div>
+
+        <div className="space-y-2">
+          <span className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-200 px-3 py-1 rounded-full uppercase tracking-widest">
+            404 Error
+          </span>
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Page Not Found</h1>
+          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+            The page or product link you are looking for doesn't exist, has been removed, or moved to a new destination.
+          </p>
+        </div>
+
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href="/"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-[#4F46E5] hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-all active:scale-98"
+          >
+            <Home className="h-4 w-4" />
+            <span>Return to Storefront</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

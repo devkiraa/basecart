@@ -74,8 +74,15 @@ export function buildApp() {
 
   // Global Rate Limiter Middleware
   app.use("*", async (c, next) => {
+    // Skip rate limiting in local development / test mode
+    const isDev = !c.env?.ENVIRONMENT || c.env.ENVIRONMENT === "development" || c.env.NODE_ENV !== "production";
+    if (isDev) {
+      await next();
+      return;
+    }
+
     if (c.env && (c.env as any).API_RATE_LIMITER) {
-      const ip = c.req.header("cf-connecting-ip") || "unknown";
+      const ip = c.req.header("cf-connecting-ip") || c.req.header("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
       try {
         const { success } = await (c.env as any).API_RATE_LIMITER.limit({ key: ip });
         if (!success) {

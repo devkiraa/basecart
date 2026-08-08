@@ -1,0 +1,53 @@
+# Basecart E-commerce Platform Architecture & AI Documentation (`llms.txt`)
+
+Basecart is a production-ready, ultra-fast, multi-tenant headless e-commerce SaaS platform built for high scale, reliability, and security.
+
+> Platform Web Host: https://basecart.app  
+> API Base URL: https://api.basecart.app  
+> Merchant Console: https://merchant.basecart.app  
+
+---
+
+## 1. System Architecture
+
+- **Frontend Core**: Next.js 14+ App Router, React 18, TailwindCSS, TypeScript.
+- **Backend Core**: Cloudflare Workers / Hono framework (`packages/backend`).
+- **Database Layer**: Multi-tenant database routing using Cloudflare D1 (SQLite) and Durable Objects (`TenantDO`).
+- **Storage**: AWS S3 / Cloudflare R2 for product media assets with edge optimization (`getOptimizedImageUrl`).
+- **Payment Processing**: Razorpay API integration with HMAC-SHA256 signature verification and order creation flows.
+- **Logistics**: Shiprocket courier API integration for automated AWB tracking & shipping labels.
+
+---
+
+## 2. Key Web Applications & Routes
+
+### Merchant Dashboard (`packages/merchant-dashboard`)
+- `/login` & `/signup`: Merchant onboarding with 60-day free trial auto-assignment.
+- `/store/[subdomain]`: Main operational console (Analytics, Orders, Catalog, Customers).
+- `/store/[subdomain]/settings/plan`: Subscription tier management & Razorpay checkout (Starter ₹299, Growth ₹699, Pro ₹1,499, Agency ₹4,999).
+- `/store/[subdomain]/settings/team`: Staff & Permissions access control matrix (`owner`, `admin`, `fulfillment`, `support`).
+- `/store/[subdomain]/settings/notifications`: Transactional email templates (Order Shipped, Confirmation) via ZeptoMail.
+
+### Customer Storefront (`packages/storefront`)
+- `/store/[subdomain]`: Dynamic storefront homepage rendered via customizable theme engine (Minimalist, Cyber, Modern, Elegant).
+- `/store/[subdomain]/products/[slug]`: Product details page with variant selectors, live inventory badges, interactive customer reviews, and JSON-LD schema markup.
+- `/store/[subdomain]/cart`: Slide-out shopping cart drawer with live subtotal, shipping progress bar, and coupon application.
+- `/store/[subdomain]/checkout`: Seamless Razorpay Web Checkout integration with IGST tax breakdown.
+
+---
+
+## 3. SEO, Metadata & Search Engine Guidelines
+
+- **Canonical URLs**: All public store pages auto-generate dynamic `<link rel="canonical">` tags based on host header.
+- **Structured Data (JSON-LD)**: Product detail pages include Schema.org `Product`, `Offer`, and `AggregateRating` microdata.
+- **OpenGraph & Twitter Cards**: Dynamic social preview tags (`og:title`, `og:description`, `og:image`, `og:type`) embedded on every route.
+- **Robots Directives**: Storefront allows search crawlers (`/robots.txt`), pointing directly to `/sitemap.xml`. Admin dashboard explicitly blocks indexing (`noindex, nofollow`).
+
+---
+
+## 4. API & Integration Reference
+
+- `POST /auth/merchant/signup`: Registers merchant tenant & provisions isolated database schema.
+- `POST /api/create-order`: Generates Razorpay server-side `order_id` for secure checkout.
+- `POST /api/verify-payment`: Validates Razorpay HMAC-SHA256 signature and marks orders paid.
+- `GET /store/staff` & `POST /store/staff/invite`: Manages team staff accounts and RBAC permissions.

@@ -1,2 +1,7 @@
-export const runtime = "edge";
-export { default } from "../page";
+"use client";
+
+import Dashboard from "@/app/dashboard/page";
+
+export default function DashboardSlugPage() {
+  return <Dashboard />;
+}

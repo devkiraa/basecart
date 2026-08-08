@@ -832,6 +832,42 @@ app.get("/admin/audit-logs", authenticateAdmin, async (c) => {
 });
 
 /**
+ * Get Onboarding Leads (Abandoned Recovery & Conversion Telemetry)
+ */
+app.get("/admin/onboarding-leads", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+  const statusFilter = c.req.query("status") || "all";
+
+  let query = "SELECT * FROM onboarding_leads";
+  const params: any[] = [];
+
+  if (statusFilter !== "all") {
+    query += " WHERE status = ?";
+    params.push(statusFilter);
+  }
+
+  query += " ORDER BY updatedAt DESC LIMIT 200";
+
+  const stmt = controlDb.prepare(query);
+  const result = params.length > 0 ? await stmt.bind(...params).all() : await stmt.all();
+  const leads = result.results || [];
+
+  const totalLeads = leads.length;
+  const draftLeads = leads.filter((l: any) => l.status === "draft").length;
+  const completedLeads = leads.filter((l: any) => l.status === "completed").length;
+
+  return c.json({
+    totalLeads,
+    draftLeads,
+    completedLeads,
+    leads: leads.map((l: any) => ({
+      ...l,
+      payload: l.payload ? (typeof l.payload === "string" ? JSON.parse(l.payload) : l.payload) : null,
+    })),
+  });
+});
+
+/**
  * Get all super admins
  */
 app.get("/admin/admins", authenticateAdmin, async (c) => {
