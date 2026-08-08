@@ -240,9 +240,14 @@ export async function ensureAdminTables(db: any) {
     allowCustomCssJs INTEGER NOT NULL DEFAULT 1,
     allowGstInvoices INTEGER NOT NULL DEFAULT 1,
     platformFeePercent REAL NOT NULL DEFAULT 0.0,
+    featuresJson TEXT DEFAULT '[]',
     paywallMessage TEXT,
     updatedAt TEXT NOT NULL
   )`).run();
+
+  try {
+    await db.prepare("ALTER TABLE plan_configs ADD COLUMN featuresJson TEXT DEFAULT '[]'").run();
+  } catch (e) {}
 
   const planCount: any = await db.prepare("SELECT COUNT(*) as total FROM plan_configs").first();
   if (!planCount || planCount.total === 0) {
@@ -267,20 +272,27 @@ export async function ensureAdminTables(db: any) {
         allowCustomCssJs: 0,
         allowGstInvoices: 0,
         platformFeePercent: 0.0,
+        featuresJson: JSON.stringify([
+          "Growth Tier Full Access",
+          "First 100 Orders OR ₹25,000 GMV",
+          "Razorpay & Stripe Payment Gateways Enabled",
+          "Custom Domain Mapping",
+          "AI Description Writer",
+        ]),
         paywallMessage: "You've earned ₹25,000 using Basecart! Select a plan to continue scaling.",
         updatedAt: new Date().toISOString(),
       },
       {
         planId: "tier1",
-        name: "Basic (Order Receiver)",
+        name: "BASIC",
         price: 99,
         billingPeriod: "monthly",
-        targetAudience: "Instagram sellers, home bakers & micro-sellers",
+        targetAudience: "Ideal for Instagram sellers & WhatsApp order intake.",
         orderCap: -1,
         gmvCap: -1,
         productCap: 100,
         allowCustomDomain: 0,
-        allowAutomatedGateways: 0,
+        allowAutomatedGateways: 1,
         allowAutomatedShipping: 0,
         allowAbandonedCart: 0,
         allowAiWriter: 0,
@@ -290,7 +302,15 @@ export async function ensureAdminTables(db: any) {
         allowCustomCssJs: 0,
         allowGstInvoices: 0,
         platformFeePercent: 0.0,
-        paywallMessage: "Upgrade to Starter (₹399) to connect custom domain & online payment gateways.",
+        featuresJson: JSON.stringify([
+          "Up to 100 Product Listings",
+          "Direct WhatsApp Checkout",
+          "Razorpay & Stripe Payment Gateways",
+          "Manual UPI & COD Order Tracking",
+          "Standard Storefront Theme",
+          "0% Platform Transaction Fees",
+        ]),
+        paywallMessage: "Upgrade to Growth (₹1,499) for custom domain, Shiprocket shipping & AI writer.",
         updatedAt: new Date().toISOString(),
       },
       {
@@ -313,15 +333,22 @@ export async function ensureAdminTables(db: any) {
         allowCustomCssJs: 0,
         allowGstInvoices: 0,
         platformFeePercent: 0.0,
+        featuresJson: JSON.stringify([
+          "Custom Domain Mapping (yourbrand.com)",
+          "Razorpay & Stripe Payment Gateways",
+          "Up to 250 Active Products",
+          "Standard Templates & Themes",
+          "0% Platform Transaction Fees",
+        ]),
         paywallMessage: "Upgrade to Growth (₹1,499) for unlimited products, Shiprocket shipping & AI writer.",
         updatedAt: new Date().toISOString(),
       },
       {
         planId: "tier3",
-        name: "Growth (Recommended)",
+        name: "GROWTH ⭐",
         price: 1499,
         billingPeriod: "monthly",
-        targetAudience: "Active D2C brands running ad campaigns and scaling",
+        targetAudience: "Built for scaling D2C brands with automated shipping.",
         orderCap: -1,
         gmvCap: -1,
         productCap: -1,
@@ -336,15 +363,25 @@ export async function ensureAdminTables(db: any) {
         allowCustomCssJs: 0,
         allowGstInvoices: 1,
         platformFeePercent: 0.0,
+        featuresJson: JSON.stringify([
+          "Custom Domain Mapping (yourbrand.com)",
+          "Razorpay & Stripe Payment Gateways",
+          "Unlimited Products & Orders",
+          "Shiprocket Automated Shipping & AWBs",
+          "Abandoned Cart Recovery (WhatsApp & Email)",
+          "AI Description Writer & Marketing Tools",
+          "Product Options Matrix (Sizes, Colors, Variants)",
+          "0% Platform Transaction Fees",
+        ]),
         paywallMessage: "Upgrade to Business (₹2,999) for team seats, developer API & custom scripts.",
         updatedAt: new Date().toISOString(),
       },
       {
         planId: "tier4",
-        name: "Business (Pro)",
+        name: "BUSINESS",
         price: 2999,
         billingPeriod: "monthly",
-        targetAudience: "High-volume D2C brands with team workflows",
+        targetAudience: "For high-volume brands and multi-member teams.",
         orderCap: -1,
         gmvCap: -1,
         productCap: -1,
@@ -359,6 +396,14 @@ export async function ensureAdminTables(db: any) {
         allowCustomCssJs: 1,
         allowGstInvoices: 1,
         platformFeePercent: 0.0,
+        featuresJson: JSON.stringify([
+          "Multi-Staff Accounts (5 Team Seats)",
+          "Developer REST API & Custom Webhooks",
+          "Custom CSS / JS Code Injection (Pixel & Scripts)",
+          "Automated GST Invoices & PDF Export",
+          "Dedicated Account Manager & Priority 24/7 Support",
+          "0% Platform Transaction Fees",
+        ]),
         paywallMessage: "Unlimited high-volume enterprise operations.",
         updatedAt: new Date().toISOString(),
       },
@@ -366,7 +411,7 @@ export async function ensureAdminTables(db: any) {
 
     for (const p of seedPlans) {
       await db.prepare(
-        "INSERT INTO plan_configs (planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart, allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs, allowGstInvoices, platformFeePercent, paywallMessage, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO plan_configs (planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap, allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart, allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs, allowGstInvoices, platformFeePercent, featuresJson, paywallMessage, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
       )
         .bind(
           p.planId,
@@ -388,6 +433,7 @@ export async function ensureAdminTables(db: any) {
           p.allowCustomCssJs,
           p.allowGstInvoices,
           p.platformFeePercent,
+          p.featuresJson,
           p.paywallMessage,
           p.updatedAt
         )
@@ -2129,14 +2175,20 @@ app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
 
   for (const p of plans) {
     if (!p.planId) continue;
+    const featuresJsonStr = Array.isArray(p.featuresList)
+      ? JSON.stringify(p.featuresList)
+      : typeof p.featuresJson === "string"
+      ? p.featuresJson
+      : JSON.stringify(p.featuresJson || []);
+
     await controlDb
       .prepare(
         `INSERT OR REPLACE INTO plan_configs (
           planId, name, price, billingPeriod, targetAudience, orderCap, gmvCap, productCap,
           allowCustomDomain, allowAutomatedGateways, allowAutomatedShipping, allowAbandonedCart,
           allowAiWriter, allowStaffSeats, maxStaffSeats, allowDeveloperApi, allowCustomCssJs,
-          allowGstInvoices, platformFeePercent, paywallMessage, updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          allowGstInvoices, platformFeePercent, featuresJson, paywallMessage, updatedAt
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .bind(
         p.planId,
@@ -2158,6 +2210,7 @@ app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
         p.allowCustomCssJs ? 1 : 0,
         p.allowGstInvoices ? 1 : 0,
         Number(p.platformFeePercent) || 0.0,
+        featuresJsonStr,
         p.paywallMessage || "",
         updatedAt
       )
