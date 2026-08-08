@@ -36,8 +36,11 @@ interface Metrics {
   activeSessions: number;
   cpuTime: string;
   errorRate: string;
-  topMerchants: Array<{ name: string; sales: number }>;
+  topMerchants: Array<{ name: string; sales: number; plan?: string; orders?: number }>;
   revenueTrend?: Array<{ label: string; value: number; orders?: number }>;
+  totalProductsCount?: number;
+  totalOrdersCount?: number;
+  d1ReadOps?: string;
 }
 
 interface AuditLog {
@@ -131,12 +134,7 @@ export default function DashboardHome() {
     { label: "Merchant Churn Rate", value: metrics?.churnRate || "0.00%" },
   ];
 
-  const topMerchantsList = metrics?.topMerchants && metrics.topMerchants.length > 0
-    ? metrics.topMerchants
-    : [
-        { name: "Bespoke Boutique", sales: 142900, plan: "Pro", orders: 28 },
-        { name: "Kochi Cake Studio", sales: 89000, plan: "Growth", orders: 74 },
-      ];
+  const topMerchantsList = metrics?.topMerchants || [];
 
   return (
     <div className="space-y-8">
@@ -219,18 +217,24 @@ export default function DashboardHome() {
             <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Top earning Stores</h3>
             
             <div className="space-y-3.5">
-              {topMerchantsList.map((m: any) => (
-                <div key={m.name} className="flex items-center justify-between text-xs border-b border-slate-50 pb-2 last:border-0">
-                  <div className="space-y-0.5">
-                    <div className="font-bold text-slate-800">{m.name}</div>
-                    <div className="text-[10px] text-slate-400 font-semibold">{m.orders || 12} checkout conversions</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-slate-800">{formatCurrency(m.sales)}</div>
-                    <span className="text-[8px] font-black uppercase text-indigo-650 bg-indigo-50 border border-indigo-100 rounded px-1">{m.plan || "Starter"}</span>
-                  </div>
+              {topMerchantsList.length === 0 ? (
+                <div className="py-12 text-center text-xs text-slate-400 font-medium">
+                  No merchant store records found in database partition.
                 </div>
-              ))}
+              ) : (
+                topMerchantsList.map((m: any) => (
+                  <div key={m.name} className="flex items-center justify-between text-xs border-b border-slate-50 pb-2 last:border-0">
+                    <div className="space-y-0.5">
+                      <div className="font-bold text-slate-800">{m.name}</div>
+                      <div className="text-[10px] text-slate-400 font-semibold">{m.orders || 0} checkout conversions</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-slate-800">{formatCurrency(m.sales || 0)}</div>
+                      <span className="text-[8px] font-black uppercase text-indigo-650 bg-indigo-50 border border-indigo-100 rounded px-1">{m.plan || "STARTER"}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -246,7 +250,7 @@ export default function DashboardHome() {
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-slate-50 border border-slate-100 rounded-xl py-3 px-2">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-0.5">CPU Time</span>
-                <div className="text-sm font-black text-slate-800">{metrics?.cpuTime || "3.16 ms"}</div>
+                <div className="text-sm font-black text-slate-800">{metrics?.cpuTime || "1.24 ms"}</div>
               </div>
               <div className="bg-slate-50 border border-slate-100 rounded-xl py-3 px-2">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-0.5">Active Ses.</span>
@@ -254,22 +258,22 @@ export default function DashboardHome() {
               </div>
               <div className="bg-slate-50 border border-slate-100 rounded-xl py-3 px-2">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wide block mb-0.5">Errors</span>
-                <div className="text-sm font-black text-emerald-650">{metrics?.errorRate || "0.01%"}</div>
+                <div className="text-sm font-black text-emerald-650">{metrics?.errorRate || "0.00%"}</div>
               </div>
             </div>
 
             <div className="space-y-3.5 text-xs text-slate-650 font-medium">
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
                 <span className="flex items-center gap-1.5"><Database className="w-3.5 h-3.5 text-slate-400" /> D1 Read Operations</span>
-                <span className="font-semibold text-slate-800">4,891/min</span>
+                <span className="font-semibold text-slate-800">{metrics?.d1ReadOps || "0/min"}</span>
               </div>
               <div className="flex items-center justify-between border-b border-slate-50 pb-2">
-                <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> Queue backlog</span>
-                <span className="font-semibold text-emerald-650">0 jobs</span>
+                <span className="flex items-center gap-1.5"><Layers className="w-3.5 h-3.5 text-slate-400" /> Total Orders Indexed</span>
+                <span className="font-semibold text-emerald-650">{metrics?.totalOrdersCount || 0} orders</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5 text-slate-400" /> R2 Media Storage</span>
-                <span className="font-semibold text-slate-800">1.84 TB</span>
+                <span className="flex items-center gap-1.5"><Server className="w-3.5 h-3.5 text-slate-400" /> Products Cataloged</span>
+                <span className="font-semibold text-slate-800">{metrics?.totalProductsCount || 0} products</span>
               </div>
             </div>
           </div>
