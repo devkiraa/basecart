@@ -114,17 +114,7 @@ export default function MarketplaceManager() {
     loadData();
   };
 
-  const satoshiTheme = themes.find((t) => t.id === "satoshi") || {
-    id: "satoshi",
-    name: "Satoshi",
-    developer: "Basecart Core Team",
-    status: "published",
-    rating: 5.0,
-    downloads: 2450,
-    isFeatured: 1,
-    version: "1.0.0",
-  };
-
+  const satoshiTheme = themes.find((t) => t.id === "satoshi") || null;
   const submittedThemes = themes.filter((t) => t.id !== "satoshi" && t.status === "pending");
   const otherActiveThemes = themes.filter((t) => t.id !== "satoshi" && t.status === "published");
 
@@ -183,14 +173,14 @@ export default function MarketplaceManager() {
                 </div>
 
                 <h2 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-3">
-                  {satoshiTheme.name}
+                  {satoshiTheme?.name || "Satoshi"}
                   <span className="text-xs font-mono text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-700/50">
-                    v{satoshiTheme.version}
+                    v{satoshiTheme?.version || "1.0.0"}
                   </span>
                 </h2>
 
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Basecart's flagship storefront design system engineered specifically for Indian SMB merchants. Optimized for mobile conversions, lightning-fast edge rendering, instant search drawers, Razorpay inline checkouts, and native WhatsApp Business order confirmations.
+                  Basecart&apos;s flagship storefront design system engineered specifically for Indian SMB merchants. Optimized for mobile conversions, lightning-fast edge rendering, instant search drawers, Razorpay inline checkouts, and native WhatsApp Business order confirmations.
                 </p>
 
                 <div className="flex flex-wrap gap-2 pt-1">
@@ -212,18 +202,20 @@ export default function MarketplaceManager() {
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-3 shrink-0 md:w-64 text-xs">
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-slate-400 font-medium">Developer</span>
-                  <span className="font-bold text-white">{satoshiTheme.developer}</span>
+                  <span className="font-bold text-white">{satoshiTheme?.developer || "Basecart Core Team"}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-slate-400 font-medium">Rating</span>
                   <div className="flex items-center gap-1 font-bold text-amber-300">
                     <Star className="w-3.5 h-3.5 fill-amber-300" />
-                    <span>{satoshiTheme.rating} / 5.0</span>
+                    <span>{satoshiTheme?.rating || 5.0} / 5.0</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-b border-white/10 pb-2">
                   <span className="text-slate-400 font-medium">Stores Installed</span>
-                  <span className="font-mono font-bold text-white">{satoshiTheme.downloads}</span>
+                  <span className="font-mono font-bold text-white">
+                    {loading ? "..." : (satoshiTheme?.downloads || 0)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 font-medium">License</span>

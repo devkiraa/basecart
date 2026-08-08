@@ -1609,8 +1609,15 @@ app.get("/admin/analytics", authenticateAdmin, async (c) => {
 
 app.get("/admin/marketplace/themes", authenticateAdmin, async (c) => {
   const controlDb = getControlDb(c.env);
+  const tenantsResult = await controlDb.prepare("SELECT COUNT(*) as total FROM tenants").first<{ total: number }>();
+  const totalMerchants = tenantsResult?.total || 0;
+
   const result = await controlDb.prepare("SELECT * FROM marketplace_themes").all();
-  return c.json(result.results || []);
+  const list = (result.results || []).map((t: any) => ({
+    ...t,
+    downloads: t.id === "satoshi" ? totalMerchants : t.downloads,
+  }));
+  return c.json(list);
 });
 
 app.post("/admin/marketplace/themes/:id/approve", authenticateAdmin, async (c) => {
