@@ -110,6 +110,9 @@ export default function MerchantDetailPage() {
   };
 
   const handlePlanChange = async (newPlan: "starter" | "growth" | "pro") => {
+    setDetails((prev) =>
+      prev ? { ...prev, store: { ...prev.store, plan: newPlan } } : null
+    );
     try {
       const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/plan`, {
         method: "PATCH",
@@ -121,10 +124,14 @@ export default function MerchantDetailPage() {
       await loadDetails();
     } catch (err: any) {
       alert(err.message);
+      await loadDetails();
     }
   };
 
   const handleAccountTypeChange = async (newAccountType: "live" | "promotional" | "testing" | "internal") => {
+    setDetails((prev) =>
+      prev ? { ...prev, store: { ...prev.store, accountType: newAccountType } } : null
+    );
     try {
       const res = await fetch(`${API_URL}/admin/merchants/${tenantId}/account-type`, {
         method: "PATCH",
@@ -136,6 +143,7 @@ export default function MerchantDetailPage() {
       await loadDetails();
     } catch (err: any) {
       alert(err.message);
+      await loadDetails();
     }
   };
 
@@ -308,62 +316,69 @@ export default function MerchantDetailPage() {
             </div>
           </div>
 
-          <div className="flex gap-4 flex-wrap">
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-2.5 text-center flex flex-col justify-center min-w-[130px]">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">Plan Tier</label>
+          <div className="flex gap-3 flex-wrap items-center">
+            {/* Plan Tier Selector */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 flex flex-col justify-center min-w-[150px] shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Plan Tier
+              </span>
               <select
                 value={store.plan}
                 onChange={(e) => handlePlanChange(e.target.value as any)}
-                className="bg-transparent text-sm font-bold text-slate-800 uppercase focus:outline-none cursor-pointer border-b border-dashed border-slate-300 text-center"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer shadow-2xs transition-all hover:bg-slate-50"
               >
-                <option value="starter">Starter</option>
-                <option value="growth">Growth</option>
-                <option value="pro">Pro</option>
+                <option value="starter">Starter Plan</option>
+                <option value="growth">Growth Plan</option>
+                <option value="pro">Pro Plan</option>
               </select>
             </div>
 
-            {/* Account Type Selector — controls billing exemption */}
-            <div className={`border rounded-xl px-5 py-2.5 text-center flex flex-col justify-center min-w-[150px] ${
-              store.accountType === "live"
-                ? "bg-blue-50 border-blue-200"
-                : store.accountType === "promotional"
-                ? "bg-amber-50 border-amber-200"
-                : store.accountType === "testing"
-                ? "bg-purple-50 border-purple-200"
+            {/* Account Type Selector (Billing Exemption Control) */}
+            <div className={`border rounded-xl px-3.5 py-2.5 flex flex-col justify-center min-w-[170px] transition-all shadow-2xs ${
+              (store.accountType || "live") === "live"
+                ? "bg-blue-50/50 border-blue-200"
+                : (store.accountType) === "promotional"
+                ? "bg-amber-50/60 border-amber-200"
+                : (store.accountType) === "testing"
+                ? "bg-purple-50/60 border-purple-200"
                 : "bg-slate-50 border-slate-200"
             }`}>
-              <div className="flex items-center justify-center gap-1 mb-0.5">
-                <Tag className={`w-3 h-3 ${
-                  store.accountType === "live" ? "text-blue-500"
-                  : store.accountType === "promotional" ? "text-amber-500"
-                  : store.accountType === "testing" ? "text-purple-500"
-                  : "text-slate-400"
-                }`} />
-                <label className={`text-[10px] font-bold uppercase tracking-wider ${
-                  store.accountType === "live" ? "text-blue-500"
-                  : store.accountType === "promotional" ? "text-amber-500"
-                  : store.accountType === "testing" ? "text-purple-500"
-                  : "text-slate-400"
-                }`}>Account Type</label>
+              <div className="flex items-center justify-between gap-1 mb-1">
+                <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
+                  (store.accountType || "live") === "live" ? "text-blue-600"
+                  : (store.accountType) === "promotional" ? "text-amber-700"
+                  : (store.accountType) === "testing" ? "text-purple-700"
+                  : "text-slate-500"
+                }`}>
+                  <Tag className="w-3 h-3" />
+                  Account Type
+                </span>
+                {(store.accountType && store.accountType !== "live") && (
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200 uppercase">
+                    Exempt
+                  </span>
+                )}
               </div>
               <select
                 value={store.accountType || "live"}
                 onChange={(e) => handleAccountTypeChange(e.target.value as any)}
-                className="bg-transparent text-sm font-bold focus:outline-none cursor-pointer border-b border-dashed text-center capitalize border-slate-300 text-slate-800"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer shadow-2xs transition-all hover:bg-slate-50"
               >
                 <option value="live">🟢 Live (Billed)</option>
-                <option value="promotional">🟡 Promotional</option>
-                <option value="testing">🟣 Testing</option>
-                <option value="internal">⚪ Internal</option>
+                <option value="promotional">🟡 Promotional (Free)</option>
+                <option value="testing">🟣 Testing (QA)</option>
+                <option value="internal">⚪ Internal (Demo)</option>
               </select>
-              {store.accountType && store.accountType !== "live" && (
-                <p className="text-[10px] text-amber-600 font-semibold mt-1">Billing exempt</p>
-              )}
             </div>
 
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl px-5 py-3 text-center">
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Sales</p>
-              <p className="text-base font-bold text-slate-800 mt-0.5">{orders.length} orders</p>
+            {/* Total Sales Card */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-center flex flex-col justify-center min-w-[120px] shadow-2xs">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Total Sales
+              </span>
+              <span className="text-sm font-bold text-slate-800">
+                {orders.length} <span className="text-xs font-medium text-slate-500">orders</span>
+              </span>
             </div>
           </div>
         </div>

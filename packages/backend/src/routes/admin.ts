@@ -646,6 +646,7 @@ app.get("/admin/merchants/:tenantId/details", authenticateAdmin, async (c) => {
       subdomain: store.subdomain,
       plan: store.plan || "starter",
       status: store.status || "active",
+      accountType: store.accountType || "live",
       gstin: store.gstin || "",
       registeredBusinessName: store.registeredBusinessName || "",
       registeredBusinessAddress: store.registeredBusinessAddress || "",
