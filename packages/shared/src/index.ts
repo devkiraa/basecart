@@ -213,6 +213,19 @@ export const CheckoutSchema = z.object({
   lineItems: z.array(CartItemSchema).min(1),
   discountCode: z.string().optional(),
   idempotencyKey: z.string().uuid().or(z.string().min(10)),
+  originContext: z
+    .object({
+      originUrl: z.string().optional(),
+      sectionId: z.string().optional(),
+      unitId: z.string().optional(),
+      lessonId: z.string().optional(),
+      adaptiveId: z.string().optional(),
+      utmSource: z.string().optional(),
+      utmMedium: z.string().optional(),
+      utmCampaign: z.string().optional(),
+      referrer: z.string().optional(),
+    })
+    .optional(),
 }).strict();
 
 export type CheckoutInput = z.infer<typeof CheckoutSchema>;

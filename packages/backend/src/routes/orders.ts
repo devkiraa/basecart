@@ -549,7 +549,7 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
     }, 400);
   }
 
-  const { customerName, customerEmail, customerPhone, shippingAddress, lineItems, discountCode, idempotencyKey } = parseResult.data;
+  const { customerName, customerEmail, customerPhone, shippingAddress, lineItems, discountCode, idempotencyKey, originContext } = parseResult.data;
 
   const tenantDb = await getTenantDb(tenantId, c.env);
 
@@ -669,7 +669,11 @@ app.post("/store/:subdomain/checkout", resolveStorefrontTenant, async (c) => {
 
     const createdAt = new Date().toISOString();
     const customerId = c.get("user")?.userId || crypto.randomUUID();
-    const addressStr = typeof shippingAddress === "string" ? shippingAddress : JSON.stringify(shippingAddress);
+    const addressObj = typeof shippingAddress === "string" ? JSON.parse(shippingAddress) : { ...shippingAddress };
+    if (originContext) {
+      addressObj.originContext = originContext;
+    }
+    const addressStr = JSON.stringify(addressObj);
 
     // Generate incremental orderNumber
     const maxNumRow = await tenantDb.prepare("SELECT MAX(orderNumber) as lastNum FROM orders").first<{ lastNum: number }>();

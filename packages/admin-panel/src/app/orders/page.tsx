@@ -36,6 +36,17 @@ interface Order {
   gateway: string;
   country: string;
   state: string;
+  originContext?: {
+    originUrl?: string;
+    sectionId?: string;
+    unitId?: string;
+    lessonId?: string;
+    adaptiveId?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    referrer?: string;
+  };
 }
 
 export default function OrdersOverview() {
@@ -339,7 +350,38 @@ export default function OrdersOverview() {
               ) : (
                 paginatedOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-indigo-600">{order.id}</td>
+                    <td className="py-4 px-6 font-mono font-bold text-indigo-600">
+                      <div>{order.id}</div>
+                      {order.originContext && (
+                        <div className="mt-1 space-y-1 font-sans text-[10px] bg-indigo-50/70 border border-indigo-100 rounded-lg p-2 max-w-xs">
+                          <div className="font-bold text-indigo-900 truncate" title={order.originContext.originUrl}>
+                            Origin: {order.originContext.originUrl || "Deep Link"}
+                          </div>
+                          <div className="flex flex-wrap gap-1 font-mono text-[9px]">
+                            {order.originContext.sectionId && (
+                              <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-bold">
+                                sectionId: {order.originContext.sectionId}
+                              </span>
+                            )}
+                            {order.originContext.unitId && (
+                              <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
+                                unitId: {order.originContext.unitId}
+                              </span>
+                            )}
+                            {order.originContext.lessonId && (
+                              <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                                lessonId: {order.originContext.lessonId}
+                              </span>
+                            )}
+                            {order.originContext.adaptiveId && (
+                              <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">
+                                adaptiveId: {order.originContext.adaptiveId}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </td>
                     <td className="py-4 px-6 font-semibold text-slate-800">
                       <div>{order.merchant}</div>
                       {order.subdomain && (

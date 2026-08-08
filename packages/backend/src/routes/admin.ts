@@ -1541,10 +1541,12 @@ app.get("/admin/orders", authenticateAdmin, async (c) => {
       const orders = ordersRes.results || [];
       for (const o of orders) {
         let state = t.state || t.registeredState || "Kerala";
+        let originContext: any = null;
         if (o.shippingAddress && typeof o.shippingAddress === "string") {
           try {
             const addrObj = JSON.parse(o.shippingAddress);
             if (addrObj.state) state = addrObj.state;
+            if (addrObj.originContext) originContext = addrObj.originContext;
           } catch (e) {
             if (o.shippingAddress.includes("Kerala")) state = "Kerala";
             else if (o.shippingAddress.includes("Karnataka")) state = "Karnataka";
@@ -1566,6 +1568,7 @@ app.get("/admin/orders", authenticateAdmin, async (c) => {
           gateway: o.paymentId || o.razorpayPaymentId ? "Razorpay (Online)" : o.paymentStatus === "paid" ? "Razorpay" : "Cash on Delivery",
           country: t.country || "India",
           state,
+          originContext,
         });
       }
     } catch (err) {

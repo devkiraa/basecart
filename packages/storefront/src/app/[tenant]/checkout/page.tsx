@@ -2,12 +2,13 @@
 
 export const runtime = "edge";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { useCart } from "../../../lib/cart";
 import { getOptimizedImageUrl } from "../../../lib/image";
+import { initUrlTracker, getOriginContext } from "../../../lib/url_tracker";
 import {
   CreditCard,
   Shield,
@@ -52,6 +53,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"razorpay" | "cod">("razorpay");
+
+  useEffect(() => {
+    initUrlTracker();
+  }, []);
 
   const [form, setForm] = useState({
     name: "",
@@ -137,6 +142,8 @@ export default function CheckoutPage() {
     try {
       const idempotencyKey = `checkout_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
+      const originContext = getOriginContext();
+
       const payload = {
         customerName: form.name,
         customerEmail: form.email,
@@ -155,6 +162,7 @@ export default function CheckoutPage() {
           variantId: i.variant || null,
         })),
         idempotencyKey,
+        ...(originContext ? { originContext } : {}),
       };
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.basecart.app";

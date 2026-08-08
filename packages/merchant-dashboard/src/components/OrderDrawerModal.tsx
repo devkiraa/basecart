@@ -116,6 +116,45 @@ export default function OrderDrawerModal({ order, onClose }: OrderDrawerProps) {
               <span>₹{order.total}</span>
             </div>
           </div>
+
+          {/* URL Origin & Attribution Tracing */}
+          {order.shippingAddress?.originContext && (
+            <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 space-y-2 text-xs">
+              <div className="text-[10px] font-black uppercase text-indigo-900 tracking-wider">
+                URL Origin & Attribution Tracing
+              </div>
+              <div className="text-indigo-950 font-bold break-all bg-white/80 p-2 rounded-lg border border-indigo-100 font-mono text-[10px]">
+                {order.shippingAddress.originContext.originUrl || "Direct Deep Link"}
+              </div>
+              <div className="flex flex-wrap gap-1.5 font-mono text-[10px] pt-1">
+                {order.shippingAddress.originContext.sectionId && (
+                  <span className="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-md font-bold">
+                    sectionId: {order.shippingAddress.originContext.sectionId}
+                  </span>
+                )}
+                {order.shippingAddress.originContext.unitId && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-md font-bold">
+                    unitId: {order.shippingAddress.originContext.unitId}
+                  </span>
+                )}
+                {order.shippingAddress.originContext.lessonId && (
+                  <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md font-bold">
+                    lessonId: {order.shippingAddress.originContext.lessonId}
+                  </span>
+                )}
+                {order.shippingAddress.originContext.adaptiveId && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md font-bold">
+                    adaptiveId: {order.shippingAddress.originContext.adaptiveId}
+                  </span>
+                )}
+                {order.shippingAddress.originContext.utmSource && (
+                  <span className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-md font-bold">
+                    utm_source: {order.shippingAddress.originContext.utmSource}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
