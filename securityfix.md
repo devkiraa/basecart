@@ -149,40 +149,40 @@ Task 2: Harden Admin Signup (HIGH)
 
 Task 3: Fix JSON-LD XSS (MEDIUM)
 
-- [ ] Update ProductInteractiveSection.tsx line 79
-- [ ] Update product detail page page.tsx line 167
-- [ ] Sanitize all dynamic content before JSON-LD injection
-- [ ] Consider using a JSON-LD library with built-in escaping
+- [x] Update ProductInteractiveSection.tsx line 79
+- [x] Update product detail page page.tsx line 167
+- [x] Sanitize all dynamic content before JSON-LD injection
+- [x] Consider using a JSON-LD library with built-in escaping
 
 Task 4: Update Dependencies (MEDIUM)
 
-- [ ] Check latest Next.js version: npm info next version
-- [ ] Update all frontend package.json files
-- [ ] Run npm audit and fix vulnerabilities
-- [ ] Update package-lock.json
+- [x] Check latest Next.js version: npm info next version
+- [x] Update all frontend package.json files
+- [x] Run npm audit and fix vulnerabilities
+- [x] Update package-lock.json
 
 Task 5: Redact PII in Logs (MEDIUM)
 
-- [ ] Audit all console.log/console.error in backend routes
-- [ ] Apply sanitizeLogPII() to all PII-containing log statements
-- [ ] Files to update: admin.ts, emails/index.ts, emails/zeptomail.ts, orders.ts
+- [x] Audit all console.log/console.error in backend routes
+- [x] Apply sanitizeLogPII() to all PII-containing log statements
+- [x] Files to update: admin.ts, emails/index.ts, emails/zeptomail.ts, orders.ts
 
 Task 6: Enforce Production Rate Limiting (MEDIUM)
 
-- [ ] Add CI/CD validation for API_RATE_LIMITER binding
-- [ ] Add deployment check in wrangler.toml
-- [ ] Consider making rate limiter fail-closed even without binding
+- [x] Add CI/CD validation for API_RATE_LIMITER binding
+- [x] Add deployment check in wrangler.toml
+- [x] Consider making rate limiter fail-closed even without binding
 
 Task 7: Review Mock Bypass (MEDIUM)
 
-- [ ] Verify mock-signature-bypass only accepted when NODE_ENV=test
-- [ ] Confirm storefront checkout mock flow is dev-only
-- [ ] Add explicit environment check in storefront if needed
+- [x] Verify mock-signature-bypass only accepted when NODE_ENV=test
+- [x] Confirm storefront checkout mock flow is dev-only
+- [x] Add explicit environment check in storefront if needed
 
 Task 8: Clean up Mock Credentials (MEDIUM)
 
-- [ ] Document that mock S3 credentials are dev-only
-- [ ] Add runtime guard to prevent use in production: if (NODE_ENV === "production" && credentials are mock) throw error
+- [x] Document that mock S3 credentials are dev-only
+- [x] Add runtime guard to prevent use in production: if (NODE_ENV === "production" && credentials are mock) throw error
 
 Task 9: Add HTML Sanitization (LOW)
 
@@ -200,13 +200,13 @@ Task 10: Security Monitoring
 Files Modified Checklist
 
 - [ ] D:\basecart\.env (secrets rotation)
-- [ ] D:\basecart\packages/backend\src\app.ts (rate limiter enforcement)
-- [ ] D:\basecart\packages/backend\src\routes\auth.ts (admin signup hardening)
-- [ ] D:\basecart\packages/backend\src\routes\admin.ts (PII logging)
-- [ ] D:\basecart\packages/backend\src\middleware\csrf.ts (review CSRF for Bearer tokens)
-- [ ] D:\basecart\packages/storefront\src\app\[tenant]\products\[productId]\page.tsx (XSS fix)
-- [ ] D:\basecart\packages/storefront\src\components\ProductInteractiveSection.tsx (XSS fix)
-- [ ] D:\basecart\packages/storefront\src\app\page.tsx (verify mock bypass)
-- [ ] D:\basecart\packages/emails\src\index.ts (PII logging)
-- [ ] D:\basecart\packages/emails\src\services\zeptomail.ts (PII logging)
-- [ ] All packages/*/package.json (dependency updates)
+- [x] D:\basecart\packages/backend\src\app.ts (rate limiter enforcement)
+- [x] D:\basecart\packages/backend\src\routes/auth.ts (admin signup hardening)
+- [x] D:\basecart\packages/backend\src\routes/admin.ts (PII logging)
+- [x] D:\basecart\packages/backend\src/middleware/csrf.ts (review CSRF for Bearer tokens)
+- [x] D:\basecart\packages/storefront\src/app/[tenant]/products/[productId]/page.tsx (XSS fix)
+- [x] D:\basecart\packages/storefront\src/components/ProductInteractiveSection.tsx (XSS fix)
+- [x] D:\basecart\packages/storefront\src/app/page.tsx (verify mock bypass)
+- [x] D:\basecart\packages/emails\src/index.ts (PII logging)
+- [x] D:\basecart\packages/emails\src/services/zeptomail.ts (PII logging)
+- [x] All packages/*/package.json (dependency updates)
