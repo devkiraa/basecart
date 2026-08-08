@@ -72,11 +72,18 @@ export function ProductInteractiveSection({ product }: ProductInteractiveProps) 
     },
   };
 
+  // Sanitize JSON-LD to prevent XSS: escape special HTML characters
+  const safeJsonLd = JSON.stringify(schemaJsonLd)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/"/g, "\\\"");
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd }}
       />
       <div className="space-y-6">
       <ToastContainer toasts={toasts} onClose={removeToast} />

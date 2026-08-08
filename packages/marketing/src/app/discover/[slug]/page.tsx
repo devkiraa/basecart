@@ -252,11 +252,15 @@ export default function LocalNichePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-white text-slate-600 font-sans antialiased overflow-x-hidden selection:bg-blue-50 selection:text-blue-600">
       
-      {/* Inject JSON-LD Schema structured data */}
+      {/* Inject JSON-LD Schema structured data (sanitized for XSS protection) */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([breadcrumbSchema, productSchema]),
+          __html: JSON.stringify([breadcrumbSchema, productSchema])
+            .replace(/</g, "\\u003c")
+            .replace(/>/g, "\\u003e")
+            .replace(/&/g, "\\u0026")
+            .replace(/"/g, "\\\""),
         }}
       />
 

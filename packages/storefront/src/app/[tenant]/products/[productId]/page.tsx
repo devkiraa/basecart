@@ -165,7 +165,11 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify([breadcrumbSchema, productSchema]),
+          __html: JSON.stringify([breadcrumbSchema, productSchema])
+            .replace(/</g, "\\u003c")
+            .replace(/>/g, "\\u003e")
+            .replace(/&/g, "\\u0026")
+            .replace(/"/g, "\\\""),
         }}
       />
 
