@@ -142,8 +142,8 @@ export default function LoginPage() {
                 icon: <Grid className="h-4.5 w-4.5 text-blue-600" />
               },
               {
-                title: "High Performance Architecture",
-                desc: "Powered by Cloudflare Durable Objects and SQLite D1 central control database.",
+                title: "Fast, Reliable Infrastructure",
+                desc: "Real-time data synchronization and instant platform management capabilities.",
                 icon: <Info className="h-4.5 w-4.5 text-blue-600" />
               }
             ].map((item, idx) => (
