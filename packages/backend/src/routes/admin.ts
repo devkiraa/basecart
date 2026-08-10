@@ -2228,13 +2228,17 @@ app.post("/admin/plan-configs", authenticateAdmin, async (c) => {
 });
 
 app.get("/admin/infrastructure/status", async (c) => {
-  const accountId = c.env?.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = c.env?.CLOUDFLARE_API_TOKEN;
+  const rawAccountId = c.env?.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || "";
+  const rawApiToken = c.env?.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN || "";
+
+  const accountId = rawAccountId.replace(/^["']|["']$/g, "").trim();
+  const apiToken = rawApiToken.replace(/^["']|["']$/g, "").trim();
 
   let deployments: any[] = [];
   let cfApiConnected = false;
 
   if (accountId && apiToken) {
+    cfApiConnected = true;
     try {
       const projects = ["basecart-marketing", "basecart-merchant-dashboard", "basecart-storefront", "basecart-admin-panel"];
       const fetchPromises = projects.map(async (project) => {
@@ -2259,13 +2263,14 @@ app.get("/admin/infrastructure/status", async (c) => {
             createdOn: dep.created_on,
             modifiedOn: dep.modified_on,
           }));
+        } else {
+          console.warn(`Cloudflare API status ${res.status} for project ${project}:`, await res.text());
         }
         return [];
       });
 
       const results = await Promise.all(fetchPromises);
       deployments = results.flat().sort((a, b) => new Date(b.createdOn).getTime() - new Date(a.createdOn).getTime());
-      cfApiConnected = true;
     } catch (err) {
       console.error("Failed to query Cloudflare Pages API:", err);
     }
