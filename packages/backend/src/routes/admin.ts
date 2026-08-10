@@ -2240,7 +2240,22 @@ app.get("/admin/infrastructure/status", async (c) => {
   if (accountId && apiToken) {
     cfApiConnected = true;
     try {
-      const projects = ["basecart-marketing", "basecart-merchant-dashboard", "basecart-storefront", "basecart-admin-panel"];
+      let projects = ["basecart-marketing", "basecart-merchant-dashboard", "basecart-storefront", "basecart-admin-panel"];
+      
+      // Try fetching all user's projects dynamically to ensure correct project names are matched
+      const projectsRes = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects`, {
+        headers: {
+          "Authorization": `Bearer ${apiToken}`,
+          "Content-Type": "application/json"
+        }
+      });
+      if (projectsRes.ok) {
+        const pData: any = await projectsRes.json();
+        if (Array.isArray(pData.result) && pData.result.length > 0) {
+          projects = pData.result.map((p: any) => p.name);
+        }
+      }
+
       const fetchPromises = projects.map(async (project) => {
         const res = await fetch(`https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${project}/deployments`, {
           headers: {
@@ -2263,8 +2278,6 @@ app.get("/admin/infrastructure/status", async (c) => {
             createdOn: dep.created_on,
             modifiedOn: dep.modified_on,
           }));
-        } else {
-          console.warn(`Cloudflare API status ${res.status} for project ${project}:`, await res.text());
         }
         return [];
       });
