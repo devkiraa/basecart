@@ -242,7 +242,7 @@ export default function LocalNichePage({ params }: Props) {
     },
     "offers": {
       "@type": "Offer",
-      "price": "299",
+      "price": "99",
       "priceCurrency": "INR",
       "availability": "https://schema.org/InStock",
       "url": `https://basecart.app/discover/${data.slug}`
@@ -259,8 +259,7 @@ export default function LocalNichePage({ params }: Props) {
           __html: JSON.stringify([breadcrumbSchema, productSchema])
             .replace(/</g, "\\u003c")
             .replace(/>/g, "\\u003e")
-            .replace(/&/g, "\\u0026")
-            .replace(/"/g, "\\\""),
+            .replace(/&/g, "\\u0026"),
         }}
       />
 

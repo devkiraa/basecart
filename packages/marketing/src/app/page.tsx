@@ -74,7 +74,7 @@ export default function LandingPage() {
         "@type": "AggregateOffer",
         "priceCurrency": "INR",
         "lowPrice": "0",
-        "highPrice": "1499",
+        "highPrice": "2999",
         "offerCount": "4"
       },
       "description": "The top Shopify alternative for Indian brands, Instagram boutiques, and local businesses in Kerala offering WhatsApp store integration and instant UPI payment automation."
@@ -130,8 +130,7 @@ export default function LandingPage() {
           __html: JSON.stringify(jsonLdSchema)
             .replace(/</g, "\\u003c")
             .replace(/>/g, "\\u003e")
-            .replace(/&/g, "\\u0026")
-            .replace(/"/g, "\\\""),
+            .replace(/&/g, "\\u0026"),
         }}
       />
 
@@ -183,7 +182,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-slate-500 font-medium max-w-2xl mx-auto">
-              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for your first 100 orders or ₹25,000 in sales (whichever comes first). No credit card required.
+              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for 60 days, or your first 100 orders / ₹25,000 in sales (whichever comes first). No credit card required.
             </p>
           </AnimatedSection>
 
@@ -244,7 +243,7 @@ export default function LandingPage() {
 
             {/* Growth Plan (Popular) */}
             <AnimatedSection delay={0.12}>
-              <div className="h-full bg-white border-2 border-indigo-600 rounded-2xl p-6 space-y-6 relative flex flex-col justify-between group shadow-xl scale-102 z-10">
+              <div className="h-full bg-white border-2 border-indigo-600 rounded-2xl p-6 space-y-6 relative flex flex-col justify-between group shadow-xl scale-[1.02] z-10">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] font-black uppercase px-3 py-0.5 rounded-full shadow-sm">
                   RECOMMENDED ⭐
                 </div>

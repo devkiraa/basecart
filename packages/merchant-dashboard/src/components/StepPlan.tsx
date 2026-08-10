@@ -72,7 +72,9 @@ const DEFAULT_PLANS = [
 ];
 
 export default function StepPlan({ data, onChange, onNext, onBack, loading }: StepPlanProps) {
-  const selectedPlanId = data.selectedPlan || "trial";
+  const selectedPlanId = data.selectedPlan || "free";
+  // Signup defaults to "free"/"trial" — highlight Growth as the trial anchor
+  const isTrialAnchor = selectedPlanId === "free" || selectedPlanId === "trial";
 
   const handleSelectPlan = (id: string) => {
     onChange({ selectedPlan: id });
@@ -110,7 +112,7 @@ export default function StepPlan({ data, onChange, onNext, onBack, loading }: St
 
       <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
         {DEFAULT_PLANS.map((plan) => {
-          const active = selectedPlanId === plan.id || (selectedPlanId === "trial" && plan.id === "growth");
+          const active = selectedPlanId === plan.id || (isTrialAnchor && plan.id === "growth");
           return (
             <div
               key={plan.id}
@@ -169,7 +171,7 @@ export default function StepPlan({ data, onChange, onNext, onBack, loading }: St
           disabled={loading}
           className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start 100-Order Free Trial"}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start 60-Day Free Trial"}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

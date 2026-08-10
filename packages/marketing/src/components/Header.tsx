@@ -24,6 +24,7 @@ export default function Header() {
           <a href="/pricing" className="hover:text-blue-600 py-1.5 transition-colors">Pricing</a>
           <a href="/themes" className="hover:text-blue-600 py-1.5 transition-colors">Themes</a>
           <a href="/integrations" className="hover:text-blue-600 py-1.5 transition-colors">Integrations</a>
+          <a href="/vs" className="hover:text-blue-600 py-1.5 transition-colors">Compare</a>
           <a href="/faq" className="hover:text-blue-600 py-1.5 transition-colors">FAQ</a>
           <a href="/blog" className="hover:text-blue-600 py-1.5 transition-colors">Blog</a>
         </nav>
@@ -61,6 +62,7 @@ export default function Header() {
           <a href="/pricing" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Pricing</a>
           <a href="/themes" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Themes</a>
           <a href="/integrations" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Integrations</a>
+          <a href="/vs" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Compare</a>
           <a href="/faq" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">FAQ</a>
           <a href="/blog" className="text-sm font-semibold text-slate-700 hover:text-blue-600 py-2">Blog</a>
           <div className="h-px bg-slate-100 my-2" />

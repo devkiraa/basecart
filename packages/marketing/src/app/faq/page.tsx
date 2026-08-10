@@ -16,7 +16,7 @@ export default function FAQPage() {
     },
     {
       q: "Can I use my own custom domain?",
-      a: "Yes! Starting from our Starter plan, you can map your own custom domain (e.g. yourstore.com) to your storefront. We provide automatic SSL certificate generation and global CDN hosting via Cloudflare."
+      a: "Yes! Starting from our Plus plan, you can map your own custom domain (e.g. yourstore.com) to your storefront. We provide automatic SSL certificate generation and global CDN hosting via Cloudflare."
     },
     {
       q: "Are there any hidden transaction fees?",

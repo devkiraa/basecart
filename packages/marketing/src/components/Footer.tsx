@@ -46,7 +46,7 @@ export default function Footer() {
           <h4 className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-4">Resources</h4>
           <div className="space-y-3 text-xs font-semibold text-slate-500 select-none">
             <a href="https://docs.basecart.app" target="_blank" rel="noopener noreferrer" className="block hover:text-slate-900 transition-colors">Documentation</a>
-            <a href="/faq" className="block hover:text-slate-900 transition-colors">API Reference</a>
+            <a href="/vs" className="block hover:text-slate-900 transition-colors">Compare Alternatives</a>
             <a href="/blog" className="block hover:text-slate-900 transition-colors">Guides & Tutorials</a>
             <a href="/integrations" className="block hover:text-slate-900 transition-colors">Integrations Hub</a>
           </div>
