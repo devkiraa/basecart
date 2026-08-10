@@ -225,8 +225,7 @@ export default function SignupPage() {
               {[
                 { step: 1, label: "Account" },
                 { step: 2, label: "Store" },
-                { step: 3, label: "Business" },
-                { step: 4, label: "Plan" }
+                { step: 3, label: "Business" }
               ].map((s) => {
                 const isCompleted = s.step < wizardStep;
                 const isActive = s.step === wizardStep;
@@ -281,14 +280,6 @@ export default function SignupPage() {
                 data={onboardingData} 
                 onChange={handleUpdateOnboarding} 
                 onBack={() => setWizardStep(2)}
-                onNext={() => handleStepNext(4)} 
-              />
-            )}
-            {wizardStep === 4 && (
-              <StepPlan 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
-                onBack={() => setWizardStep(3)}
                 onNext={handleSignupComplete} 
                 loading={loading}
               />

@@ -6,6 +6,7 @@ interface StepBusinessProps {
   onChange: (fields: any) => void;
   onNext: () => void;
   onBack: () => void;
+  loading?: boolean;
 }
 
 const TEAM_SIZES = ["1", "2-5", "6-20", "20+"];
@@ -13,7 +14,7 @@ const MONTHLY_ORDERS = ["0-50", "50-200", "200-1000", "1000+"];
 const PLATFORMS = ["None", "Shopify", "WooCommerce", "Custom", "Other"];
 const HEAR_ABOUT_US = ["Google Search", "Social Media", "Friend / Colleague", "Advertisement", "Other"];
 
-export default function StepBusiness({ data, onChange, onNext, onBack }: StepBusinessProps) {
+export default function StepBusiness({ data, onChange, onNext, onBack, loading }: StepBusinessProps) {
   const [localError, setLocalError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -186,9 +187,10 @@ export default function StepBusiness({ data, onChange, onNext, onBack }: StepBus
         </button>
         <button
           type="submit"
-          className="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-button text-sm transition-colors shadow-sm text-center"
+          disabled={loading}
+          className="w-2/3 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-button text-sm transition-colors shadow-sm text-center"
         >
-          Next Step
+          {loading ? "Creating Store..." : "Complete Signup & Launch"}
         </button>
       </div>
     </form>
