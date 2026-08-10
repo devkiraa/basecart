@@ -35,10 +35,6 @@ S3_BUCKET = "basecart-media-prod"
 MARKETING_URL = "https://basecart.app"
 MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
 
-# Razorpay credentials (overridden by .dev.vars in local dev, set as Wrangler secrets in production)
-RAZORPAY_KEY_ID = ""
-RAZORPAY_KEY_SECRET = ""
-
 # ZeptoMail configurations for production environment
 ZEPTOMAIL_API_URL = "https://api.zeptomail.in/v1.1/email"
 MAIL_FROM_ADDRESS = "noreply@basecart.app"
