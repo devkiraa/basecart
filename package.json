@@ -5,14 +5,15 @@
     "packages/*"
   ],
   "scripts": {
-    "clean:next": "node -e \"['merchant-dashboard','marketing','storefront','admin-panel'].forEach(p => { try{fs.rmSync('packages/'+p+'/.next',{recursive:true,force:true})}catch(e){} })\"",
+    "clean:next": "node -e \"['merchant-dashboard','marketing','storefront','admin-panel','status-page'].forEach(p => { try{fs.rmSync('packages/'+p+'/.next',{recursive:true,force:true})}catch(e){} })\"",
     "predev": "npm run clean:next",
-    "dev": "concurrently -n \"marketing,backend,merchant,storefront,admin\" -c \"cyan,magenta,blue,green,yellow\" \"npm run dev:marketing\" \"npm run dev:backend\" \"npm run dev:merchant\" \"npm run dev:storefront\" \"npm run dev:admin\"",
+    "dev": "concurrently -n \"marketing,backend,merchant,storefront,admin,status\" -c \"cyan,magenta,blue,green,yellow,red\" \"npm run dev:marketing\" \"npm run dev:backend\" \"npm run dev:merchant\" \"npm run dev:storefront\" \"npm run dev:admin\" \"npm run dev:status\"",
     "dev:marketing": "npm run dev --workspace=packages/marketing",
     "dev:backend": "npm run dev --workspace=packages/backend",
     "dev:merchant": "npm run dev --workspace=packages/merchant-dashboard",
     "dev:storefront": "npm run dev --workspace=packages/storefront",
     "dev:admin": "npm run dev --workspace=packages/admin-panel",
+    "dev:status": "npm run dev --workspace=packages/status-page",
     "build:backend": "npm run build --workspace=packages/backend",
     "build:storefront": "npm run build:shared && npx @cloudflare/next-on-pages --cwd packages/storefront",
     "build:shared": "npm run build --workspace=packages/shared && npm run build --workspace=packages/theme-sdk && npm run build --workspace=packages/theme-engine && npm run build --workspace=packages/emails",

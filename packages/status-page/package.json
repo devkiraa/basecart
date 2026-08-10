@@ -1,0 +1,32 @@
+{
+  "name": "@basecart/status-page",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "clean": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "predev": "node -e \"try{fs.rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
+    "dev": "next dev -p 3005",
+    "build": "next build",
+    "pages:build": "npx @cloudflare/next-on-pages",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@basecart/shared": "*",
+    "clsx": "^2.1.0",
+    "lucide-react": "^0.331.0",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwind-merge": "^2.2.1"
+  },
+  "devDependencies": {
+    "@cloudflare/next-on-pages": "^1.13.0",
+    "@types/node": "^20.11.19",
+    "@types/react": "^18.3.2",
+    "@types/react-dom": "^18.3.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.5.25",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.2.2"
+  }
+}
