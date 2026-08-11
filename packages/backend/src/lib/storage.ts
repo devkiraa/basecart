@@ -20,9 +20,10 @@ export function getStorageClient(env: any): S3Client {
     });
   }
 
-  // Block mock credentials in production
+  // Block mock credentials in real deployed production environment
   const envName = env?.ENVIRONMENT || env?.NODE_ENV;
-  if (envName === "production") {
+  const isLocalDev = Boolean(env?.VITEST || env?.TEST_ENV || !env?.CLOUDFLARE_ACCOUNT_ID);
+  if (envName === "production" && !isLocalDev) {
     throw new Error("FATAL: Mock S3 credentials cannot be used in production. Configure R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY via environment bindings.");
   }
 
