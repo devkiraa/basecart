@@ -32,6 +32,7 @@ COOKIE_DOMAIN_CUSTOMER = ".basecart.app"
 COOKIE_DOMAIN_ADMIN = ".basecart.app"
 CLOUDFLARE_ZONE_URL = "https://api.basecart.app"
 S3_BUCKET = "basecart-media-prod"
+R2_PUBLIC_URL = "https://pub-af5c686c60c84948a73c0f77f0f578ac.r2.dev"
 MARKETING_URL = "https://basecart.app"
 MERCHANT_DASHBOARD_URL = "https://merchant.basecart.app"
 

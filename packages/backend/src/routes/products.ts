@@ -74,7 +74,7 @@ async function validateSkuUniqueness(
 /**
  * Format database product row to payload array types
  */
-function formatProduct(prod: any) {
+function formatProduct(prod: any, env?: any) {
   if (!prod) return prod;
   const copy = { ...prod };
   if (copy.images && typeof copy.images === "string") {
@@ -83,6 +83,15 @@ function formatProduct(prod: any) {
     } catch (e) {
       copy.images = [];
     }
+  }
+  if (Array.isArray(copy.images) && env?.R2_PUBLIC_URL) {
+    const publicUrl = env.R2_PUBLIC_URL.replace(/\/$/, "");
+    copy.images = copy.images.map((img: string) => {
+      if (img && !img.startsWith("http://") && !img.startsWith("https://")) {
+        return `${publicUrl}/${img.replace(/^\//, "")}`;
+      }
+      return img;
+    });
   }
   if (copy.variants && typeof copy.variants === "string") {
     try {
@@ -184,7 +193,7 @@ app.post("/products", authenticateMerchant, async (c) => {
     .bind(productId)
     .first();
 
-  return c.json(formatProduct(saved), 201);
+  return c.json(formatProduct(saved, c.env), 201);
 });
 
 /**
@@ -194,7 +203,7 @@ app.get("/products", authenticateMerchant, async (c) => {
   const tenantId = c.get("tenantId")!;
   const tenantDb = await getTenantDb(tenantId, c.env);
   const result = await tenantDb.prepare("SELECT * FROM products ORDER BY createdAt DESC").all();
-  const products = (result.results || []).map(formatProduct);
+  const products = (result.results || []).map((p: any) => formatProduct(p, c.env));
   return c.json(products);
 });
 
@@ -215,7 +224,7 @@ app.get("/products/:id", authenticateMerchant, async (c) => {
     return c.json({ error: "Product not found" }, 404);
   }
 
-  return c.json(formatProduct(product));
+  return c.json(formatProduct(product, c.env));
 });
 
 /**
@@ -388,7 +397,7 @@ app.get("/store/:subdomain/products", resolveStorefrontTenant, async (c) => {
     .prepare("SELECT * FROM products WHERE status = 'active' ORDER BY createdAt DESC")
     .all();
 
-  const products = (result.results || []).map(formatProduct);
+  const products = (result.results || []).map((p: any) => formatProduct(p, c.env));
   return c.json(products);
 });
 
@@ -410,7 +419,7 @@ app.get("/store/:subdomain/products/:id", resolveStorefrontTenant, async (c) => 
     return c.json({ error: "Product not found or unavailable" }, 404);
   }
 
-  return c.json(formatProduct(product));
+  return c.json(formatProduct(product, c.env));
 });
 
 // -------------------------------------------------------------
