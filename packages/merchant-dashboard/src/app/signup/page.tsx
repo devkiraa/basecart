@@ -15,7 +15,7 @@ import StepStore from "../../components/StepStore";
 import StepBusiness from "../../components/StepBusiness";
 import StepPlan from "../../components/StepPlan";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
 
 export default function SignupPage() {

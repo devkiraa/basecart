@@ -14,7 +14,7 @@ import {
   Info
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,39 +30,36 @@ export default function LoginPage() {
   const [forgotPasswordSent, setForgotPasswordSent] = useState(false);
 
   useEffect(() => {
-    // Wait for backend to be reachable, then check existing session
     let cancelled = false;
-    const waitForBackend = async () => {
-      const maxRetries = 15;
-      for (let i = 0; i < maxRetries; i++) {
-        if (cancelled) return;
-        try {
-          const res = await fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" });
-          if (res.ok) { window.location.href = "/dashboard"; return; }
-          // Got a response (401 etc.) — backend is up
-          setBackendReady(true);
-
-          // Fallback: check localStorage token (local dev)
-          const storedToken = localStorage.getItem("basecart_token");
-          if (storedToken) {
-            try {
-              const meRes = await fetch(`${API_URL}/auth/merchant/me`, {
-                headers: { Authorization: `Bearer ${storedToken}` },
-              });
-              if (meRes.ok) { window.location.href = "/dashboard"; return; }
-              else { localStorage.removeItem("basecart_token"); }
-            } catch {}
-          }
+    const checkSession = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" });
+        if (res.ok && !cancelled) {
+          window.location.href = "/dashboard";
           return;
-        } catch {
-          // Connection refused — backend not ready yet, retry
-          await new Promise(r => setTimeout(r, 1500));
         }
+        
+        // Fallback: check localStorage token if present
+        const storedToken = localStorage.getItem("basecart_merchant_token") || localStorage.getItem("basecart_token");
+        if (storedToken && !cancelled) {
+          const meRes = await fetch(`${API_URL}/auth/merchant/me`, {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          });
+          if (meRes.ok) {
+            window.location.href = "/dashboard";
+            return;
+          } else {
+            localStorage.removeItem("basecart_token");
+            localStorage.removeItem("basecart_merchant_token");
+          }
+        }
+      } catch (e) {
+        // Backend offline or unreachable
+      } finally {
+        if (!cancelled) setBackendReady(true);
       }
-      // After all retries, show the form anyway
-      setBackendReady(true);
     };
-    waitForBackend();
+    checkSession();
     return () => { cancelled = true; };
   }, []);
 

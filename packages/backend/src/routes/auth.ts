@@ -23,8 +23,14 @@ import { authRateLimiterMiddleware } from "../middleware/rate_limiter";
 
 const app = new Hono<{ Bindings: any; Variables: any }>();
 
-// Enforce strict rate limiting on all authentication routes (G2, G3 requirements)
-app.use("/auth/*", authRateLimiterMiddleware);
+// Enforce strict rate limiting on authentication attempts (signup/login/passwords)
+app.use("/auth/*", async (c, next) => {
+  // Skip rate limiting on harmless session check reads (/auth/merchant/me, /auth/customer/me)
+  if (c.req.path.endsWith("/me") && c.req.method.toUpperCase() === "GET") {
+    return await next();
+  }
+  return authRateLimiterMiddleware(c, next);
+});
 
 function isLocalHostRequest(c: any): boolean {
   const host = c.req.header("host") || "";
