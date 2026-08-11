@@ -258,10 +258,28 @@ export default function Storefront() {
 
   if (loadingStore) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
-        <div className="text-center space-y-3">
-          <Loader2 className="h-8 w-8 text-indigo-600 animate-spin mx-auto" />
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Loading Store...</p>
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden font-sans">
+        {/* Background spatial glow gradient */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative flex flex-col items-center space-y-6 z-10">
+          {/* Spatial Weightless Multi-Orbit Spinner */}
+          <div className="relative flex items-center justify-center">
+            <div className="w-20 h-20 rounded-2xl border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
+            <div className="absolute inset-0 w-20 h-20 rounded-2xl border-2 border-blue-500/10 border-b-blue-400 animate-spin [animation-duration:2s]" />
+
+            <div className="absolute w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/30">
+              <ShoppingBag className="w-6 h-6 animate-pulse" />
+            </div>
+          </div>
+
+          <div className="text-center space-y-2">
+            <h2 className="text-xs font-black tracking-widest text-slate-100 uppercase">STOREFRONT ENGINE</h2>
+            <div className="flex items-center gap-2 justify-center">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <p className="text-xs font-semibold text-slate-400">Loading catalog & brand assets...</p>
+            </div>
+          </div>
         </div>
       </div>
     );

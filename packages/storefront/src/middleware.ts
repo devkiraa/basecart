@@ -29,8 +29,9 @@ export function middleware(request: NextRequest) {
     "marketing.internal",
   ];
 
-  // Bypass rewrite for base platforms hosts or dedicated demo routes
-  if (baseHosts.includes(hostname) || request.nextUrl.pathname.startsWith("/checkout-demo")) {
+  // Bypass rewrite for base platforms hosts or explicit query parameters (e.g. ?subdomain=pixcelart) or dedicated demo routes
+  const hasSubdomainQuery = request.nextUrl.searchParams.has("subdomain") || request.nextUrl.searchParams.has("store");
+  if (baseHosts.includes(hostname) || hasSubdomainQuery || request.nextUrl.pathname.startsWith("/checkout-demo")) {
     return NextResponse.next();
   }
 
