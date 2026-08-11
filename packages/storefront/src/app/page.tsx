@@ -259,11 +259,9 @@ export default function Storefront() {
   if (loadingStore) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center relative overflow-hidden font-sans">
-        {/* Background spatial glow gradient */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative flex flex-col items-center space-y-6 z-10">
-          {/* Spatial Weightless Multi-Orbit Spinner */}
           <div className="relative flex items-center justify-center">
             <div className="w-20 h-20 rounded-2xl border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
             <div className="absolute inset-0 w-20 h-20 rounded-2xl border-2 border-blue-500/10 border-b-blue-400 animate-spin [animation-duration:2s]" />
@@ -274,10 +272,10 @@ export default function Storefront() {
           </div>
 
           <div className="text-center space-y-2">
-            <h2 className="text-xs font-black tracking-widest text-slate-100 uppercase">STOREFRONT ENGINE</h2>
+            <h2 className="text-xs font-black tracking-widest text-slate-100 uppercase">{storeDisplayName || "BASECART STORE"}</h2>
             <div className="flex items-center gap-2 justify-center">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <p className="text-xs font-semibold text-slate-400">Loading catalog & brand assets...</p>
+              <p className="text-xs font-semibold text-slate-400">Loading storefront catalog & experiences...</p>
             </div>
           </div>
         </div>
@@ -471,28 +469,31 @@ export default function Storefront() {
         <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-16">
           {view === "catalog" && (
             <>
-              {/* 3. HERO SHOWCASE SECTION */}
+              {/* 3. HERO SHOWCASE SECTION (Antigravity Spatial Glassmorphism) */}
               <div
-                className="rounded-3xl p-6 sm:p-10 md:p-12 border border-slate-200/60 shadow-2xs text-left relative overflow-hidden"
+                className="rounded-3xl p-6 sm:p-10 md:p-12 border border-slate-200/60 shadow-xl shadow-slate-900/5 text-left relative overflow-hidden backdrop-blur-xl transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10"
                 style={{
                   backgroundImage: customSettings.heroBackgroundImage ? `url(${customSettings.heroBackgroundImage})` : undefined,
                   backgroundSize: "cover",
-                  backgroundColor: customSettings.heroBackgroundImage ? undefined : "#f7f5f0"
+                  backgroundColor: customSettings.heroBackgroundImage ? undefined : "#f8fafc"
                 }}
               >
-                <div className={`grid grid-cols-1 ${heroProductImage ? "md:grid-cols-12" : "max-w-2xl"} gap-8 items-center`}>
+                {/* Floating Radial Ambient Light */}
+                <div className="absolute -top-24 -right-24 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className={`grid grid-cols-1 ${heroProductImage ? "md:grid-cols-12" : "max-w-2xl"} gap-8 items-center relative z-10`}>
                   {/* Left Hero Column */}
                   <div className={`${heroProductImage ? "md:col-span-7 lg:col-span-8" : "w-full"} space-y-4`}>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-[10px] font-black text-indigo-700 tracking-wider uppercase border border-slate-200/80 shadow-2xs">
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse"></span>
-                      <span>{storeDisplayName} COLLECTION</span>
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-white/90 backdrop-blur-md rounded-full text-[10px] font-black text-indigo-700 tracking-wider uppercase border border-indigo-100 shadow-sm">
+                      <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                      <span>{storeDisplayName} OFFICIAL STORE</span>
                     </div>
 
                     <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-950 tracking-tight leading-tight">
                       Find Everything You Need
                     </h1>
 
-                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-sans max-w-lg">
+                    <p className="text-slate-600 text-xs sm:text-sm leading-relaxed font-medium max-w-lg">
                       Discover high-quality products at the best prices. Shop the latest trends and elevate your lifestyle with seamless checkout.
                     </p>
 
@@ -500,16 +501,16 @@ export default function Storefront() {
                       <button
                         onClick={() => document.getElementById("featured-products")?.scrollIntoView({ behavior: "smooth" })}
                         style={{ backgroundColor: primaryColor }}
-                        className="text-white font-black py-3 px-6 rounded-xl text-xs tracking-wider uppercase shadow-md hover:opacity-90 transition-all flex items-center gap-2"
+                        className="text-white font-black py-3.5 px-7 rounded-xl text-xs tracking-wider uppercase shadow-lg shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2.5 cursor-pointer"
                       >
-                        <span>Shop Now</span>
+                        <span>Shop Catalog</span>
                         <ArrowRight className="h-4 w-4" />
                       </button>
 
                       {categories.length > 1 && (
                         <button
                           onClick={() => document.getElementById("category-grid")?.scrollIntoView({ behavior: "smooth" })}
-                          className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-3 px-5 rounded-xl text-xs tracking-wider uppercase border border-slate-200 shadow-2xs transition-all"
+                          className="bg-white/80 backdrop-blur-md hover:bg-white text-slate-900 font-bold py-3.5 px-6 rounded-xl text-xs tracking-wider uppercase border border-slate-200/90 shadow-sm hover:shadow-md transition-all cursor-pointer"
                         >
                           Explore Categories
                         </button>
@@ -519,35 +520,41 @@ export default function Storefront() {
                     {/* Trust Badges Bar */}
                     <div className="pt-4 flex flex-wrap items-center gap-6 text-[11px] font-bold text-slate-600 border-t border-slate-200/60">
                       <div className="flex items-center gap-2">
-                        <Truck className="h-4 w-4 text-indigo-600 shrink-0" />
+                        <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600">
+                          <Truck className="h-4 w-4 shrink-0" />
+                        </div>
                         <span>Free Shipping <span className="text-[9px] font-normal text-slate-400 block">On orders over ₹999</span></span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <RotateCcw className="h-4 w-4 text-indigo-600 shrink-0" />
+                        <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600">
+                          <RotateCcw className="h-4 w-4 shrink-0" />
+                        </div>
                         <span>Easy Returns <span className="text-[9px] font-normal text-slate-400 block">30 days return policy</span></span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <ShieldCheck className="h-4 w-4 text-indigo-600 shrink-0" />
+                        <div className="p-1.5 bg-indigo-50 rounded-lg text-indigo-600">
+                          <ShieldCheck className="h-4 w-4 shrink-0" />
+                        </div>
                         <span>Secure Payment <span className="text-[9px] font-normal text-slate-400 block">100% secure checkout</span></span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Hero Image (ONLY rendered if DB provides a real product image) */}
+                  {/* Right Hero Card (Floating Antigravity Perspective) */}
                   {heroProductImage && (
-                    <div className="md:col-span-5 lg:col-span-4 h-64 sm:h-72 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-lg flex items-center justify-center overflow-hidden shrink-0">
+                    <div className="md:col-span-5 lg:col-span-4 h-64 sm:h-72 bg-white/90 backdrop-blur-xl rounded-2xl p-4 border border-slate-200/80 shadow-xl shadow-indigo-500/10 flex items-center justify-center overflow-hidden shrink-0 hover:-translate-y-1 transition-transform duration-300">
                       <div className="relative w-full h-full flex flex-col justify-between">
                         <img
                           src={heroProductImage}
                           alt={products[0].name}
-                          className="w-full h-48 object-contain rounded-xl"
+                          className="w-full h-48 object-contain rounded-xl drop-shadow-md"
                         />
-                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex items-center justify-between">
-                          <div className="overflow-hidden">
-                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Featured Arrival</span>
-                            <span className="text-xs font-black text-slate-900 truncate block">{products[0].name}</span>
+                        <div className="bg-slate-50/90 backdrop-blur-md p-2.5 rounded-xl border border-slate-100 flex items-center justify-between shadow-xs">
+                          <div className="overflow-hidden pr-2">
+                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-wider block">FEATURED ARRIVAL</span>
+                            <span className="text-xs font-extrabold text-slate-900 truncate block">{products[0].name}</span>
                           </div>
-                          <span className="text-xs font-black text-indigo-600">₹{products[0].price}</span>
+                          <span className="text-xs font-black text-slate-950 bg-white px-2.5 py-1 rounded-lg border border-slate-200 shadow-2xs">₹{products[0].price}</span>
                         </div>
                       </div>
                     </div>
@@ -555,7 +562,7 @@ export default function Storefront() {
                 </div>
               </div>
 
-              {/* 4. SHOP BY CATEGORY GRID */}
+              {/* 4. SHOP BY CATEGORY GRID (Antigravity Interactive Tiles) */}
               {categories.length > 1 && (
                 <div id="category-grid" className="space-y-5 text-left scroll-mt-24">
                   <div className="flex items-center justify-between">
@@ -565,7 +572,7 @@ export default function Storefront() {
                     </div>
                     <button
                       onClick={() => setActiveCategory("All")}
-                      className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 cursor-pointer"
                     >
                       <span>View all categories</span>
                       <ArrowRight className="h-3.5 w-3.5" />
@@ -585,22 +592,24 @@ export default function Storefront() {
                             setActiveCategory(cat);
                             document.getElementById("featured-products")?.scrollIntoView({ behavior: "smooth" });
                           }}
-                          className={`p-3.5 rounded-2xl border text-center transition-all group flex flex-col items-center justify-between gap-2.5 ${
+                          className={`p-4 rounded-2xl border text-center transition-all duration-300 group flex flex-col items-center justify-between gap-3 cursor-pointer ${
                             isSelected
-                              ? "bg-indigo-50 border-indigo-300 ring-2 ring-indigo-500/20 shadow-xs"
-                              : "bg-[#f8fafc] border-slate-200/80 hover:border-slate-300 hover:bg-white"
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/25 -translate-y-1"
+                              : "bg-white border-slate-200/90 text-slate-900 hover:border-indigo-300 hover:shadow-md hover:-translate-y-1"
                           }`}
                         >
-                          <div className="h-16 w-16 bg-white rounded-xl border border-slate-100 p-2 flex items-center justify-center overflow-hidden shadow-2xs group-hover:scale-105 transition-transform">
+                          <div className={`h-16 w-16 rounded-xl border p-2 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 ${
+                            isSelected ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100"
+                          }`}>
                             {firstCatImg ? (
                               <img src={firstCatImg} alt={cat} className="w-full h-full object-contain" />
                             ) : (
-                              <Package className="h-7 w-7 text-slate-300" />
+                              <Package className={`h-7 w-7 ${isSelected ? "text-white" : "text-slate-400"}`} />
                             )}
                           </div>
                           <div>
-                            <h4 className="text-xs font-extrabold text-slate-900 group-hover:text-indigo-600 transition-colors">{cat}</h4>
-                            <span className="text-[10px] text-slate-400 font-medium">{catProducts.length} {catProducts.length === 1 ? "Item" : "Items"}</span>
+                            <h4 className={`text-xs font-extrabold transition-colors ${isSelected ? "text-white" : "group-hover:text-indigo-600"}`}>{cat}</h4>
+                            <span className={`text-[10px] font-semibold block mt-0.5 ${isSelected ? "text-indigo-100" : "text-slate-400"}`}>{catProducts.length} {catProducts.length === 1 ? "Item" : "Items"}</span>
                           </div>
                         </button>
                       );
@@ -609,7 +618,7 @@ export default function Storefront() {
                 </div>
               )}
 
-              {/* 5. FEATURED PRODUCTS GRID */}
+              {/* 5. FEATURED PRODUCTS GRID (Weightless Glassmorphic Product Cards) */}
               <div id="featured-products" className="space-y-5 text-left scroll-mt-24">
                 <div className="flex items-center justify-between">
                   <div>
@@ -622,32 +631,32 @@ export default function Storefront() {
                 </div>
 
                 {filteredProducts.length === 0 ? (
-                  /* Compact Intentional Empty State for Products */
-                  <div className="py-12 px-6 text-center space-y-2 bg-[#f8fafc] border border-slate-200/80 rounded-2xl max-w-lg mx-auto shadow-2xs">
-                    <Package className="h-10 w-10 text-slate-300 mx-auto" />
-                    <h3 className="text-sm font-extrabold text-slate-900">No products in catalog yet</h3>
+                  <div className="py-14 px-6 text-center space-y-3 bg-white border border-slate-200/80 rounded-3xl max-w-lg mx-auto shadow-sm">
+                    <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto">
+                      <Package className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-sm font-extrabold text-slate-900">No products found</h3>
                     <p className="text-xs text-slate-500 leading-relaxed font-medium">
-                      This store currently has no active products listed in the database. Check back soon for new arrivals!
+                      No active products found for this category or search filter. Try clearing filters to see the full store collection.
                     </p>
                   </div>
                 ) : (
-                  /* Responsive Product Grid (Desktop 5 cols, Tablet 3 cols, Mobile 2 cols) */
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                     {filteredProducts.map((prod) => (
                       <div
                         key={prod.productId}
-                        className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-2xs hover:shadow-md transition-all group flex flex-col justify-between cursor-pointer"
+                        className="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-1 transition-all duration-300 group flex flex-col justify-between cursor-pointer"
                         onClick={() => setSelectedProductDetails(prod)}
                       >
                         {/* Image Frame */}
-                        <div className="aspect-square w-full bg-[#f8fafc] border-b border-slate-100 relative p-4 flex items-center justify-center overflow-hidden">
+                        <div className="aspect-square w-full bg-slate-50 border-b border-slate-100 relative p-4 flex items-center justify-center overflow-hidden">
                           {/* Wishlist Button */}
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
                               toggleWishlist(prod.productId);
                             }}
-                            className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-sm p-1.5 rounded-full shadow-2xs hover:scale-110 transition-transform z-10 text-slate-400 hover:text-rose-500"
+                            className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xs hover:scale-110 transition-transform z-10 text-slate-400 hover:text-rose-500 cursor-pointer"
                           >
                             <Heart className={`h-3.5 w-3.5 ${wishlist.includes(prod.productId) ? "fill-rose-500 text-rose-500" : ""}`} />
                           </button>
@@ -664,9 +673,9 @@ export default function Storefront() {
                         </div>
 
                         {/* Product Details */}
-                        <div className="p-3.5 space-y-2 flex-1 flex flex-col justify-between">
+                        <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                           <div>
-                            <h3 className="font-extrabold text-slate-900 text-xs line-clamp-1 leading-snug">{prod.name}</h3>
+                            <h3 className="font-extrabold text-slate-900 text-xs line-clamp-1 leading-snug group-hover:text-indigo-600 transition-colors">{prod.name}</h3>
                             <div className="flex items-center gap-0.5 text-amber-400 text-[10px] my-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <span key={star} className={star <= Math.round(prod.rating || 5) ? "" : "text-slate-200"}>★</span>
@@ -676,14 +685,14 @@ export default function Storefront() {
                           </div>
 
                           <div className="flex items-center justify-between pt-2 border-t border-slate-100 mt-auto">
-                            <span className="font-black text-slate-900 text-sm">₹{prod.price}</span>
+                            <span className="font-black text-slate-950 text-sm">₹{prod.price}</span>
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 addToCart(prod);
                               }}
                               style={{ backgroundColor: primaryColor }}
-                              className="p-2 text-white rounded-xl shadow-2xs hover:opacity-90 transition-opacity"
+                              className="p-2.5 text-white rounded-xl shadow-xs hover:opacity-90 hover:scale-105 active:scale-95 transition-all cursor-pointer"
                               title="Add to Cart"
                             >
                               <ShoppingCart className="h-3.5 w-3.5" />
