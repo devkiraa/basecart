@@ -10941,13 +10941,6 @@ export default function MerchantDashboard() {
                         <span>Customize Theme</span>
                       </button>
 
-                      <button
-                        onClick={() => { if (activeTheme) setSelectedTheme(activeTheme); setCustomizerOpen(true); }}
-                        className="px-4 py-2.5 border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
-                      >
-                        Theme Settings
-                      </button>
-
                       <a
                         href={getStorefrontLink(settings.subdomain || "demo")}
                         target="_blank"

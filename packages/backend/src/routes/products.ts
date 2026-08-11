@@ -440,7 +440,11 @@ app.get("/collections", authenticateMerchant, async (c) => {
   } catch (e) {}
 
   try {
-    await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+    const info = await tenantDb.prepare("PRAGMA table_info(collections)").all();
+    const cols = info.results || [];
+    if (!cols.some((col: any) => col.name === "productIds")) {
+      await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+    }
   } catch (e) {}
 
   const result = await tenantDb.prepare("SELECT * FROM collections ORDER BY createdAt DESC").all();
@@ -502,7 +506,11 @@ app.post("/collections", authenticateMerchant, async (c) => {
   const productCount = prodIdsArr.length || body.productCount || 0;
 
   try {
-    await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+    const info = await tenantDb.prepare("PRAGMA table_info(collections)").all();
+    const cols = info.results || [];
+    if (!cols.some((col: any) => col.name === "productIds")) {
+      await tenantDb.prepare("ALTER TABLE collections ADD COLUMN productIds TEXT").run();
+    }
   } catch (e) {}
 
   await tenantDb
