@@ -61,20 +61,22 @@ export default function DashboardHome() {
   useEffect(() => {
     async function loadData() {
       try {
+        const storedToken = typeof window !== "undefined" ? localStorage.getItem("basecart_admin_token") : null;
+        const headers: Record<string, string> = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+
         const [metricsRes, logsRes] = await Promise.all([
-          fetch(`${API_URL}/admin/metrics`, { credentials: "include" }),
-          fetch(`${API_URL}/admin/audit-logs`, { credentials: "include" }),
+          fetch(`${API_URL}/admin/metrics`, { headers, credentials: "include" }),
+          fetch(`${API_URL}/admin/audit-logs`, { headers, credentials: "include" }),
         ]);
 
-        if (!metricsRes.ok || !logsRes.ok) {
-          throw new Error("Failed to load metrics or audit logs");
+        if (metricsRes.ok) {
+          const metricsData = await metricsRes.json();
+          setMetrics(metricsData);
         }
-
-        const metricsData = await metricsRes.json();
-        const logsData = await logsRes.json();
-
-        setMetrics(metricsData);
-        setLogs(logsData);
+        if (logsRes.ok) {
+          const logsData = await logsRes.json();
+          setLogs(logsData);
+        }
       } catch (err: any) {
         console.error(err);
         setError("Error loading system metrics.");
