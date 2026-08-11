@@ -6,6 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "deploy": "wrangler deploy --config wrangler.toml",
+    "deploy:versions": "wrangler versions upload --config wrangler.toml",
     "dev": "wrangler d1 migrations apply basecart-control-prod --local && wrangler dev --port 3001 --ip 0.0.0.0",
     "bootstrap": "ts-node src/scripts/bootstrap.ts",
     "test": "vitest run",

@@ -15,6 +15,7 @@
     "dev:admin": "npm run dev --workspace=packages/admin-panel",
     "dev:status": "npm run dev --workspace=packages/status-page",
     "build:backend": "npm run build --workspace=packages/backend",
+    "deploy:backend": "npm run deploy --workspace=packages/backend",
     "build:storefront": "npm run build:shared && npx @cloudflare/next-on-pages --cwd packages/storefront",
     "build:shared": "npm run build --workspace=packages/shared && npm run build --workspace=packages/theme-sdk && npm run build --workspace=packages/theme-engine && npm run build --workspace=packages/emails",
     "build:emails": "npm run build --workspace=packages/emails",
