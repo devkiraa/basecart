@@ -1349,4 +1349,79 @@ app.post("/auth/customer/reset-password", resolveStorefrontTenant, async (c) => 
   return c.json({ message: "Password has been successfully reset" });
 });
 
+/**
+ * GET /merchant/notifications
+ */
+app.get("/merchant/notifications", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+
+  try {
+    await controlDb.prepare(
+      `CREATE TABLE IF NOT EXISTS merchant_notifications (
+        id TEXT PRIMARY KEY,
+        tenantId TEXT NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        type TEXT NOT NULL DEFAULT 'info',
+        read INTEGER NOT NULL DEFAULT 0,
+        createdAt TEXT NOT NULL
+      )`
+    ).run();
+
+    const result = await controlDb
+      .prepare("SELECT * FROM merchant_notifications WHERE tenantId = ? ORDER BY createdAt DESC LIMIT 20")
+      .bind(tenantId)
+      .all<any>();
+
+    const notifications = (result.results || []).map((row: any) => ({
+      id: row.id,
+      title: row.title,
+      message: row.message,
+      type: row.type,
+      read: Boolean(row.read),
+      createdAt: row.createdAt,
+    }));
+
+    return c.json({ notifications });
+  } catch (e) {
+    return c.json({ notifications: [] });
+  }
+});
+
+/**
+ * POST /merchant/notifications/read-all
+ */
+app.post("/merchant/notifications/read-all", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const controlDb = getControlDb(c.env);
+
+  try {
+    await controlDb
+      .prepare("UPDATE merchant_notifications SET read = 1 WHERE tenantId = ?")
+      .bind(tenantId)
+      .run();
+  } catch (e) {}
+
+  return c.json({ success: true });
+});
+
+/**
+ * POST /merchant/notifications/:id/read
+ */
+app.post("/merchant/notifications/:id/read", authenticateMerchant, async (c) => {
+  const tenantId = c.get("tenantId")!;
+  const id = c.req.param("id");
+  const controlDb = getControlDb(c.env);
+
+  try {
+    await controlDb
+      .prepare("UPDATE merchant_notifications SET read = 1 WHERE tenantId = ? AND id = ?")
+      .bind(tenantId, id)
+      .run();
+  } catch (e) {}
+
+  return c.json({ success: true });
+});
+
 export default app;
