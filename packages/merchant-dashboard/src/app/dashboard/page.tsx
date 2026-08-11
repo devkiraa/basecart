@@ -5180,40 +5180,144 @@ export default function MerchantDashboard() {
                           <span className="text-xs text-slate-400">Up to 2 option dimensions</span>
                         </div>
 
-                        {/* Options Input Block */}
-                        <div className="space-y-4">
-                          {optionInputs.map((opt, i) => (
-                            <div key={i} className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end border-b pb-3 border-slate-50">
-                              <div className="sm:col-span-1">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Option Name</label>
-                                <input
-                                  type="text"
-                                  placeholder={i === 0 ? "e.g. Size" : "e.g. Color"}
-                                  value={opt.name}
-                                  onChange={(e) => {
-                                    const next = [...optionInputs];
-                                    next[i].name = e.target.value;
-                                    setOptionInputs(next);
-                                  }}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                                />
+                        {/* Options Input Block (Preset Selectable Pills + Tag Chips + Custom Input) */}
+                        <div className="space-y-5">
+                          {optionInputs.map((opt, i) => {
+                            const isSizeOption = (opt.name || (i === 0 ? "Size" : "")).toLowerCase().includes("size");
+                            const isColorOption = (opt.name || (i === 1 ? "Color" : "")).toLowerCase().includes("color");
+
+                            const sizePresets = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
+                            const colorPresets = ["Black", "White", "Red", "Blue", "Navy", "Green", "Yellow", "Pink", "Purple", "Grey", "Beige"];
+
+                            const presetsToDisplay = isSizeOption ? sizePresets : isColorOption ? colorPresets : [];
+
+                            return (
+                              <div key={i} className="p-4 bg-slate-50/70 border border-slate-200/80 rounded-2xl space-y-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+                                  <div className="sm:col-span-1">
+                                    <label className="block text-xs font-extrabold text-slate-700 mb-1">Option Name</label>
+                                    <input
+                                      type="text"
+                                      placeholder={i === 0 ? "Size" : "Color"}
+                                      value={opt.name}
+                                      onChange={(e) => {
+                                        const next = [...optionInputs];
+                                        next[i].name = e.target.value;
+                                        setOptionInputs(next);
+                                      }}
+                                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-950 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                  </div>
+
+                                  <div className="sm:col-span-2">
+                                    <label className="block text-xs font-extrabold text-slate-700 mb-1">Add Custom Option Value</label>
+                                    <div className="flex gap-2">
+                                      <input
+                                        type="text"
+                                        placeholder={i === 0 ? "e.g. Medium, 42, Oversized" : "e.g. Crimson, Emerald"}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            const val = e.currentTarget.value.trim();
+                                            if (val && !opt.values.includes(val)) {
+                                              const next = [...optionInputs];
+                                              next[i].values = [...next[i].values, val];
+                                              setOptionInputs(next);
+                                              e.currentTarget.value = "";
+                                            }
+                                          }
+                                        }}
+                                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-950 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                                          const val = input?.value?.trim();
+                                          if (val && !opt.values.includes(val)) {
+                                            const next = [...optionInputs];
+                                            next[i].values = [...next[i].values, val];
+                                            setOptionInputs(next);
+                                            input.value = "";
+                                          }
+                                        }}
+                                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-2xs transition-colors shrink-0 cursor-pointer"
+                                      >
+                                        + Add
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Preset Quick Selection Pills */}
+                                {presetsToDisplay.length > 0 && (
+                                  <div className="space-y-1.5 pt-1">
+                                    <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                                      Quick Select {isSizeOption ? "Sizes" : "Colors"} (Click to Toggle)
+                                    </span>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {presetsToDisplay.map((preset) => {
+                                        const isSelected = opt.values.includes(preset);
+                                        return (
+                                          <button
+                                            key={preset}
+                                            type="button"
+                                            onClick={() => {
+                                              const next = [...optionInputs];
+                                              if (isSelected) {
+                                                next[i].values = next[i].values.filter((v) => v !== preset);
+                                              } else {
+                                                next[i].values = [...next[i].values, preset];
+                                              }
+                                              setOptionInputs(next);
+                                            }}
+                                            className={`px-3 py-1.5 text-xs font-extrabold rounded-xl border transition-all cursor-pointer ${
+                                              isSelected
+                                                ? "bg-indigo-600 text-white border-indigo-600 shadow-sm scale-105"
+                                                : "bg-white text-slate-700 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/50"
+                                            }`}
+                                          >
+                                            {isSelected ? `✓ ${preset}` : `+ ${preset}`}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Selected Values Tag Chips */}
+                                {opt.values.length > 0 ? (
+                                  <div className="pt-2 flex flex-wrap items-center gap-1.5 border-t border-slate-200/60">
+                                    <span className="text-[10px] font-bold text-slate-500 mr-1">Selected Values ({opt.values.length}):</span>
+                                    {opt.values.map((val) => (
+                                      <span
+                                        key={val}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-indigo-200 rounded-full text-xs font-bold text-indigo-700 shadow-2xs"
+                                      >
+                                        <span>{val}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const next = [...optionInputs];
+                                            next[i].values = next[i].values.filter((v) => v !== val);
+                                            setOptionInputs(next);
+                                          }}
+                                          className="text-indigo-400 hover:text-rose-600 font-black text-xs cursor-pointer leading-none"
+                                          title="Remove value"
+                                        >
+                                          ×
+                                        </button>
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="pt-1 text-[11px] text-amber-800 font-medium italic">
+                                    No values selected yet. Click quick-select pills above or type custom values.
+                                  </div>
+                                )}
                               </div>
-                              <div className="sm:col-span-2">
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">Option Values (Comma separated)</label>
-                                <input
-                                  type="text"
-                                  placeholder={i === 0 ? "M, L, XL" : "Red, Blue"}
-                                  value={opt.values.join(", ")}
-                                  onChange={(e) => {
-                                    const next = [...optionInputs];
-                                    next[i].values = e.target.value.split(",").map(v => v.trim()).filter(Boolean);
-                                    setOptionInputs(next);
-                                  }}
-                                  className="w-full px-3 py-2 border border-slate-300 rounded-button text-slate-950 text-sm focus:outline-none"
-                                />
-                              </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
 
                         <button
