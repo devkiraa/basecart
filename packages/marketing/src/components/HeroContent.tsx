@@ -63,7 +63,7 @@ export default function HeroContent() {
           whileTap={{ scale: 0.97 }}
           className="px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer"
         >
-          <span>Start 60-day free trial</span>
+          <span>Start 3-month free trial</span>
           <ArrowUpRight className="w-4 h-4" />
         </motion.a>
         <BookDemoButton />

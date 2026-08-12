@@ -14,7 +14,7 @@ function renderPricingMd(): string {
   lines.push(`# Basecart Pricing — Plans & Free Trial`);
   lines.push("");
   lines.push(
-    `Basecart is an e-commerce platform for Indian sellers with 0% platform transaction fees, native WhatsApp checkout, UPI/COD payments (Razorpay), Shiprocket shipping automation and a 60-day free trial.`
+    `Basecart is an e-commerce platform for Indian sellers with 0% platform transaction fees, native WhatsApp checkout, UPI/COD payments (Razorpay), Shiprocket shipping automation and a 3-month free trial.`
   );
   lines.push("");
   lines.push(`> Last updated: ${PRICING_LAST_UPDATED}. All prices in INR (₹), billed monthly.`);
@@ -25,7 +25,7 @@ function renderPricingMd(): string {
   lines.push(`## Free Trial`);
   lines.push("");
   lines.push(`- Price: ₹0/month`);
-  lines.push(`- Duration: 60 days, or your first 100 orders / ₹25,000 in sales — whichever comes first`);
+  lines.push(`- Duration: 3 months, or your first 1,000 orders / ₹25,000 in sales — whichever comes first`);
   lines.push(`- What's included: ${TRIAL.label}`);
   lines.push(`- No credit card required. Cancel anytime.`);
   lines.push("");

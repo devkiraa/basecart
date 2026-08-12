@@ -144,13 +144,13 @@ export default function VsHubPage() {
             Stop comparing — start selling
           </h2>
           <p className="text-sm sm:text-base text-blue-100 font-medium max-w-xl mx-auto relative">
-            Full Growth-plan features for 60 days. No credit card required. Set up in under 2 minutes.
+            Full Growth-plan features for 3 months. No credit card required. Set up in under 2 minutes.
           </p>
           <a
             href="/signup"
             className="inline-flex items-center gap-1.5 px-6 py-3 bg-white text-blue-600 font-extrabold text-sm rounded-lg hover:bg-slate-50 transition-all shadow-md active:scale-95 relative"
           >
-            Start your 60-day free trial <ArrowRight className="h-4 w-4" />
+            Start your 3-month free trial <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </section>

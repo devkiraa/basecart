@@ -25,9 +25,9 @@ export interface Plan {
 
 export const TRIAL = {
   price: 0,
-  label: "60-Day Free Trial (Growth features)",
+  label: "3-month free trial (Growth features)",
   description:
-    "Full Growth-plan features for 60 days, or your first 100 orders / ₹25,000 in sales — whichever comes first. No credit card required.",
+    "Full Growth-plan features for 3 months, or your first 1,000 orders / ₹25,000 in sales — whichever comes first. No credit card required.",
 };
 
 export const PLANS: Plan[] = [
@@ -109,7 +109,7 @@ export const PLANS: Plan[] = [
 export const FAQS = [
   {
     q: "Is there a free trial and do I need a credit card?",
-    a: "Yes — every new store gets full Growth-plan features free for 60 days, or your first 100 orders / ₹25,000 in sales (whichever comes first). No credit card is required to start.",
+    a: "Yes — every new store gets full Growth-plan features free for 3 months, or your first 1,000 orders / ₹25,000 in sales (whichever comes first). No credit card is required to start.",
   },
   {
     q: "Does Basecart charge transaction fees?",
@@ -117,7 +117,7 @@ export const FAQS = [
   },
   {
     q: "What happens when my free trial ends?",
-    a: "When the trial ends (60 days, 100 orders, or ₹25,000 GMV — whichever comes first), you choose a plan to continue. Your storefront pauses until you upgrade, and your dashboard stays accessible so you can export your data.",
+    a: "When the trial ends (3 months, 1,000 orders, or ₹25,000 GMV — whichever comes first), you choose a plan to continue. Your storefront pauses until you upgrade, and your dashboard stays accessible so you can export your data.",
   },
   {
     q: "Can I upgrade or cancel anytime?",

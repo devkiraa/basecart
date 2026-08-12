@@ -9,7 +9,7 @@ import { PLANS, FAQS, TRIAL, PRICING_LAST_UPDATED } from "../../data/plans";
 export const metadata: Metadata = {
   title: "Pricing & Plans for Indian Sellers (2026) | Basecart",
   description:
-    "Basecart pricing starts at ₹99/month with 0% platform transaction fees. Try full Growth-plan features free for 60 days or your first 100 orders / ₹25,000 in sales — no credit card required.",
+    "Basecart pricing starts at ₹99/month with 0% platform transaction fees. Try full Growth-plan features free for 3 months or your first 1,000 orders / ₹25,000 in sales — no credit card required.",
   alternates: {
     canonical: "/pricing",
   },
@@ -134,7 +134,7 @@ export default function PricingPage() {
         <div className="max-w-4xl mx-auto space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-amber-500 fill-amber-400" />
-            <span>60-Day Free Trial — full Growth features</span>
+            <span>3-month free trial — full Growth features</span>
           </div>
 
           <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
@@ -144,8 +144,8 @@ export default function PricingPage() {
           <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
             <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full{" "}
             <span className="text-indigo-600 font-bold">Growth-tier features</span> for{" "}
-            <strong className="text-slate-900 font-bold">60 days</strong>, or your{" "}
-            <strong className="text-slate-900 font-bold">first 100 orders / ₹25,000 in sales</strong>{" "}
+            <strong className="text-slate-900 font-bold">3 months</strong>, or your{" "}
+            <strong className="text-slate-900 font-bold">first 1,000 orders / ₹25,000 in sales</strong>{" "}
             (whichever comes first). No credit card required.
           </p>
 
@@ -393,7 +393,7 @@ export default function PricingPage() {
             Start free. Keep every rupee when you scale.
           </h2>
           <p className="text-sm sm:text-base text-blue-100 font-medium max-w-xl mx-auto relative">
-            60 days of full Growth-plan features. No credit card required. Set up in under 2 minutes.
+            3 months of full Growth-plan features. No credit card required. Set up in under 2 minutes.
           </p>
           <a
             href="https://dashboard.basecart.app/signup"

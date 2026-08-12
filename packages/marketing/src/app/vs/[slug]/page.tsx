@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!competitor) return {};
 
   const title = `Basecart vs ${competitor.name} (2026): Honest Comparison for Indian Sellers`;
-  const description = `Comparing Basecart vs ${competitor.name} for Indian e-commerce? We break down pricing, transaction fees, UPI/COD support, WhatsApp ordering, shipping automation and who each platform is really for. Start your 60-day free trial.`;
+  const description = `Comparing Basecart vs ${competitor.name} for Indian e-commerce? We break down pricing, transaction fees, UPI/COD support, WhatsApp ordering, shipping automation and who each platform is really for. Start your 3-month free trial.`;
 
   return {
     title,
@@ -191,7 +191,7 @@ export default function VsPage({ params }: Props) {
               href="/signup"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md shadow-blue-500/10 transition-all text-sm active:scale-95 inline-flex items-center gap-2"
             >
-              Start 60-day free trial <ArrowRight className="w-4 h-4" />
+            Start 3-month free trial <ArrowRight className="w-4 h-4" />
             </a>
             <a
               href={`/vs/${competitor.slug}#comparison`}
@@ -285,7 +285,7 @@ export default function VsPage({ params }: Props) {
                 </p>
                 <p className="flex items-start gap-2">
                   <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5 text-amber-300" />
-                  <span>60-day free trial — no credit card required</span>
+                  <span>3-month free trial — no credit card required</span>
                 </p>
               </div>
             </div>
@@ -465,7 +465,7 @@ export default function VsPage({ params }: Props) {
             See for yourself why sellers switch from {competitor.name} to Basecart
           </h2>
           <p className="text-sm sm:text-base text-blue-100 font-medium max-w-xl mx-auto relative">
-            Full Growth-plan features for 60 days. No credit card required. Set up in under 2 minutes.
+            Full Growth-plan features for 3 months. No credit card required. Set up in under 2 minutes.
           </p>
           <a
             href="/signup"

@@ -33,7 +33,7 @@ export const metadata: Metadata = {
   robots: "index, follow",
   openGraph: {
     title: "Basecart — The Shopify Alternative Built for Indian Brands",
-    description: "Accept instant UPI payments, automate WhatsApp orders, and ship across India with zero transaction fees. Start your 60-day free trial.",
+    description: "Accept instant UPI payments, automate WhatsApp orders, and ship across India with zero transaction fees. Start your 3-month free trial.",
     url: "https://basecart.app",
     siteName: "Basecart",
     images: [
@@ -182,7 +182,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-slate-500 font-medium max-w-2xl mx-auto">
-              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for 60 days, or your first 100 orders / ₹25,000 in sales (whichever comes first). No credit card required.
+              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for 3 months, or your first 1,000 orders / ₹25,000 in sales (whichever comes first). No credit card required.
             </p>
           </AnimatedSection>
 
@@ -357,7 +357,7 @@ export default function LandingPage() {
             ?
           </h2>
           <p className="text-base sm:text-lg text-slate-500 font-medium max-w-xl mx-auto">
-            Start your 60-day free trial today. No credit card required. Set up in under 2 minutes.
+            Start your 3-month free trial today. No credit card required. Set up in under 2 minutes.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
@@ -365,7 +365,7 @@ export default function LandingPage() {
               href="/signup"
               className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Start 60-day free trial</span>
+              <span>Start 3-month free trial</span>
               <ArrowUpRight className="w-4 h-4" />
             </a>
           </div>

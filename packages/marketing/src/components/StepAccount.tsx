@@ -45,7 +45,7 @@ export default function StepAccount({ data, onChange, onNext, loading }: StepAcc
     <form onSubmit={handleSubmit} className="space-y-6 text-left font-sans animate-fade-in">
       <div className="space-y-1">
         <h2 className="text-xl font-bold text-slate-900 tracking-tight">Create your account</h2>
-        <p className="text-xs text-slate-500">Start your 60-day free trial. No credit card required.</p>
+        <p className="text-xs text-slate-500">Start your 3-month free trial. No credit card required.</p>
       </div>
 
       {localError && (

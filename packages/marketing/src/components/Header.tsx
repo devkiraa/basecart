@@ -42,7 +42,7 @@ export default function Header() {
           href="/signup"
           className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-sm shadow-blue-500/10 transition-all hover:shadow-md active:scale-95 flex items-center gap-1.5 cursor-pointer"
         >
-          <span>Start 60-day free trial</span>
+          <span>Start 3-month free trial</span>
           <ArrowUpRight className="w-4 h-4" />
         </a>
       </div>
@@ -76,7 +76,7 @@ export default function Header() {
             href="/signup"
             className="text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white text-center py-2.5 rounded-lg shadow-sm"
           >
-            Start 60-day free trial
+            Start 3-month free trial
           </a>
         </div>
       )}

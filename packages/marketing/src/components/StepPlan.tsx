@@ -97,8 +97,8 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
         <p className="text-xs text-slate-300 leading-relaxed">
           <strong className="text-white font-bold">Zero risk upfront.</strong> Experience full{" "}
           <span className="text-amber-300 font-bold">Growth-tier features</span> for{" "}
-          <strong className="text-white font-bold">60 days</strong>, or your{" "}
-          <strong className="text-white font-bold">first 100 orders / ₹25,000 in sales</strong>{" "}
+          <strong className="text-white font-bold">3 months</strong>, or your{" "}
+          <strong className="text-white font-bold">first 1,000 orders / ₹25,000 in sales</strong>{" "}
           (whichever comes first). No credit card required today.
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
           type="submit"
           className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
         >
-          Start 60-Day Free Trial
+          Start 3-month free trial
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

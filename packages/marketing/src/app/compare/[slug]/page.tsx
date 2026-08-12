@@ -244,7 +244,7 @@ export default function ComparePage({ params }: Props) {
               href="/signup"
               className="inline-flex items-center gap-1.5 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm rounded-lg shadow-md transition-all active:scale-95"
             >
-              Start your 60-day free trial <ArrowRight className="h-4 w-4" />
+              Start your 3-month free trial <ArrowRight className="h-4 w-4" />
             </a>
           </div>
         </div>
@@ -326,13 +326,13 @@ export default function ComparePage({ params }: Props) {
             Torn between {a.name} and {b.name}? Try the third option.
           </h2>
           <p className="text-sm sm:text-base text-blue-100 font-medium max-w-xl mx-auto relative">
-            Full Growth-plan features for 60 days. No credit card required. Set up in under 2 minutes.
+            Full Growth-plan features for 3 months. No credit card required. Set up in under 2 minutes.
           </p>
           <a
             href="/signup"
             className="inline-flex items-center gap-1.5 px-6 py-3 bg-white text-blue-600 font-extrabold text-sm rounded-lg hover:bg-slate-50 transition-all shadow-md active:scale-95 relative"
           >
-            Start your 60-day free trial <ArrowRight className="h-4 w-4" />
+            Start your 3-month free trial <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </section>

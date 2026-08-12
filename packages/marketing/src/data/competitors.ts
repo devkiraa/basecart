@@ -69,7 +69,7 @@ export const BASECART = {
   easeNote:
     "No hosting, plugins, security patches or themes to maintain. Storefronts render at the edge for sub-100ms loads. Everything lives in one clean dashboard.",
   supportNote:
-    "India-based support with priority 24/7 on Business plan. Setup help, migration support and a 60-day trial to evaluate risk-free.",
+    "India-based support with priority 24/7 on Business plan. Setup help, migration support and a 3-month trial to evaluate risk-free.",
 };
 
 // ── Shopify ──────────────────────────────────────────────────

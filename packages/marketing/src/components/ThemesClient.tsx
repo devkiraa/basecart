@@ -471,7 +471,7 @@ export default function ThemesClient() {
             Ready to launch your store?
           </h2>
           <p className="text-base text-slate-500 font-medium max-w-xl mx-auto">
-            Start your 60-day free trial today with any theme. No credit card required.
+            Start your 3-month free trial today with any theme. No credit card required.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
@@ -479,7 +479,7 @@ export default function ThemesClient() {
               href="/signup"
               className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Start 60-day free trial</span>
+              <span>Start 3-month free trial</span>
               <ArrowUpRight className="w-4 h-4" />
             </a>
             <BookDemoButton />

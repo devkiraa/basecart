@@ -27,12 +27,12 @@ export default function FAQPage() {
       a: "We support Stripe and Razorpay out of the box. This allows you to collect payments globally and inside India via UPI, Cards, Netbanking, and Wallets."
     },
     {
-      q: "How does the 60-Day Free Trial work?",
-      a: "Every new merchant automatically receives a 60-Day Free Trial with full Growth Plan features (unlimited products, AI tools, custom domain, Razorpay payments). No credit card is required to sign up."
+      q: "How does the 3-month free trial work?",
+      a: "Every new merchant automatically receives a 3-month free trial with full Growth Plan features (unlimited products, AI tools, custom domain, Razorpay payments). No credit card is required to sign up."
     },
     {
-      q: "What happens when the 60-day trial expires?",
-      a: "If you do not choose a plan after 60 days, your customer-facing storefront is paused, but your merchant dashboard, catalog data, and orders remain safe. You can log in and upgrade anytime to reactivate your store."
+      q: "What happens when the 3-month trial expires?",
+      a: "If you do not choose a plan after 3 months, your customer-facing storefront is paused, but your merchant dashboard, catalog data, and orders remain safe. You can log in and upgrade anytime to reactivate your store."
     }
   ];
 
