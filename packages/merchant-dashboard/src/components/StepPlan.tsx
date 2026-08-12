@@ -93,20 +93,20 @@ export default function StepPlan({ data, onChange, onNext, onBack, loading }: St
           <span className="p-1.5 bg-blue-500/20 rounded-lg text-amber-300">
             <Sparkles className="w-4 h-4 fill-amber-300" />
           </span>
-          <h3 className="text-sm font-extrabold text-white">Start Free. Pay Only When You Scale.</h3>
+          <h3 className="text-sm font-extrabold text-white">3 Months Free. Pay Only When You Scale.</h3>
         </div>
         <p className="text-xs text-slate-300 leading-relaxed">
-          <strong className="text-white font-bold">Zero risk upfront.</strong> Experience full{" "}
-          <span className="text-amber-300 font-bold">Growth-tier features</span> for your{" "}
-          <strong className="text-white font-bold">first 100 orders</strong> or{" "}
-          <strong className="text-white font-bold">₹25,000 in sales</strong> (whichever comes first). No credit card required today.
+          <strong className="text-white font-bold">Zero risk upfront.</strong> Process your{" "}
+          <strong className="text-amber-300 font-bold">first 1,000 orders</strong> or reach{" "}
+          <strong className="text-amber-300 font-bold">₹25,000 in order value</strong> — completely free for{" "}
+          <strong className="text-white font-bold">3 full months</strong>. No credit card required. No hidden fees.
         </p>
       </div>
 
       <div className="space-y-1">
-        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight uppercase">Select Your Post-Trial Plan Anchor</h2>
+        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight uppercase">Pick your plan for after the free period</h2>
         <p className="text-xs text-slate-500">
-          Choose which subscription plan tier you wish to unlock after your 100-order free trial expires.
+          After your 3-month free trial (1,000 orders or ₹25,000 GMV), pick the plan that fits your growth.
         </p>
       </div>
 
@@ -171,7 +171,7 @@ export default function StepPlan({ data, onChange, onNext, onBack, loading }: St
           disabled={loading}
           className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start 60-Day Free Trial"}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start My 3-Month Free Trial"}
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
