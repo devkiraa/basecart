@@ -1042,6 +1042,14 @@ app.get("/store/:subdomain/info", resolveStorefrontTenant, async (c) => {
     return c.json({ error: "Store not found" }, 404);
   }
 
+  // Check if the merchant owner has verified their email
+  const owner = await controlDb
+    .prepare("SELECT emailVerified FROM merchant_users WHERE tenantId = ? AND role = 'owner' LIMIT 1")
+    .bind(tenantId)
+    .first<{ emailVerified: number }>();
+
+  const emailVerified = owner?.emailVerified === 1;
+
   // Query published theme for the tenant
   const tenantDb = await getTenantDb(tenantId, c.env);
   const theme = await tenantDb
@@ -1055,6 +1063,7 @@ app.get("/store/:subdomain/info", resolveStorefrontTenant, async (c) => {
     subdomain: store.subdomain,
     plan: store.plan,
     branding,
+    emailVerified,
     theme: theme ? formatTheme(theme) : null,
     termsOfService: store.termsOfService || "",
     privacyPolicy: store.privacyPolicy || "",

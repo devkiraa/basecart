@@ -326,7 +326,7 @@ app.post("/auth/merchant/signup", async (c) => {
     .prepare(
       "INSERT INTO merchant_users (email, tenantId, userId, hashedPassword, role, emailVerified, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
-    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 0, createdAt);
+    .bind(lowerEmail, tenantId, userId, hashedPassword, "owner", 1, createdAt);
 
   await controlDb.batch([tStmt, uStmt]);
 
@@ -343,31 +343,15 @@ app.post("/auth/merchant/signup", async (c) => {
   // 6. Run migrations & seed default configuration inside the tenant database
   await provisionTenantDatabase(tenantId, storeName, c.env);
 
-  // 7. Create email verification token & 6-digit OTP code
-  const verificationToken = crypto.randomUUID();
-  const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-  const verificationExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-  const verificationTtl = Math.floor(Date.now() / 1000) + 24 * 60 * 60;
-
-  const insertToken = controlDb
-    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
-    .bind(verificationToken, lowerEmail, tenantId, verificationExpiry, verificationTtl);
-
-  const insertOtp = controlDb
-    .prepare("INSERT INTO verification_tokens (token, email, tenantId, expiresAt, ttl) VALUES (?, ?, ?, ?, ?)")
-    .bind(otpCode, lowerEmail, tenantId, verificationExpiry, verificationTtl);
-
-  await controlDb.batch([insertToken, insertOtp]);
-
-  const verifyLink = `${c.env.MERCHANT_DASHBOARD_URL}/verify?token=${verificationToken}`;
+  // 7. Send welcome email (email is auto-verified at signup — no OTP step)
   await sendEmailSafely(
     {
       type: "welcome",
       to: lowerEmail,
       data: {
         userName: storeName,
-        verifyLink,
-        otpCode,
+        verifyLink: `${c.env.MERCHANT_DASHBOARD_URL}/dashboard`,
+        otpCode: "",
         storeName: "Basecart",
       },
     },
@@ -807,13 +791,36 @@ app.get("/auth/merchant/verify-email", async (c) => {
   }
 
   const controlDb = getControlDb(c.env);
-  const tokenItem = await controlDb
+  let tokenItem = await controlDb
     .prepare("SELECT * FROM verification_tokens WHERE token = ?")
     .bind(token)
     .first<any>();
 
+  // If token is a 6-digit OTP code and user is logged in, attempt lookup by OTP + merchant email
+  if (!tokenItem && /^\d{6}$/.test(token)) {
+    const authHeader = c.req.header("Authorization");
+    const cookieToken = getCookie(c, "merchant_token");
+    let bearerToken = cookieToken;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      bearerToken = authHeader.substring(7);
+    }
+    if (bearerToken) {
+      try {
+        const payload = await authService.verifyAccessToken(bearerToken, c.env);
+        if (payload && payload.email) {
+          tokenItem = await controlDb
+            .prepare("SELECT * FROM verification_tokens WHERE token = ? AND email = ?")
+            .bind(token, payload.email.toLowerCase())
+            .first<any>();
+        }
+      } catch (e) {
+        // Token invalid or unauthenticated
+      }
+    }
+  }
+
   if (!tokenItem) {
-    if (isJson) return c.json({ error: "Invalid or expired token" }, 400);
+    if (isJson) return c.json({ error: "Invalid or expired verification code" }, 400);
     return c.redirect(`${c.env.MERCHANT_DASHBOARD_URL}/verify?error=Invalid or expired token`);
   }
 
@@ -829,7 +836,7 @@ app.get("/auth/merchant/verify-email", async (c) => {
 
   const deleteToken = controlDb
     .prepare("DELETE FROM verification_tokens WHERE token = ?")
-    .bind(token);
+    .bind(tokenItem.token);
 
   await controlDb.batch([updateVerify, deleteToken]);
 

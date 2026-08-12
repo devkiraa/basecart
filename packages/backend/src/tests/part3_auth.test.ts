@@ -152,4 +152,25 @@ describe("Part 3: Auth Routes (Merchant & Customer)", () => {
     const loginBody = (await loginRes.json()) as any;
     expect(loginBody.customerId).toBe(signupBody.customerId);
   });
+
+
+  it("should have email auto-verified immediately after merchant signup", async () => {
+    // Email is auto-verified at signup — no OTP or verification_tokens row is needed
+    const userRecord = await controlDb
+      .prepare("SELECT emailVerified FROM merchant_users WHERE email = ?")
+      .bind("owner@mystore.com")
+      .first<{ emailVerified: number }>();
+
+    expect(userRecord).not.toBeNull();
+    expect(userRecord?.emailVerified).toBe(1);
+
+    // No verification_tokens row should exist for this email (OTP flow removed)
+    const tokenRecord = await controlDb
+      .prepare("SELECT token FROM verification_tokens WHERE email = ?")
+      .bind("owner@mystore.com")
+      .first<{ token: string }>();
+
+    expect(tokenRecord).toBeNull();
+  });
 });
+

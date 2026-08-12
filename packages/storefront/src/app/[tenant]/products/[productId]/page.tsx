@@ -58,6 +58,12 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
   const product = await getProductData(params.productId, params.tenant);
   const store = await getTenantStoreData(params.tenant);
 
+  // Gate: unverified store → redirect to home
+  if (!store.emailVerified) {
+    const { redirect } = await import("next/navigation");
+    redirect("/");
+  }
+
   if (!product) {
     notFound();
   }
@@ -212,9 +218,8 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           <ProductInteractiveSection product={{ ...product, inStock: product.inStock ?? true }} />
 
           <div className="space-y-1.5 text-xs text-slate-400 font-bold select-none pt-2 border-t border-slate-100">
-            <div className="flex items-center gap-1.5">⚡ Instant UPI Checkout via Razorpay</div>
-            <div className="flex items-center gap-1.5">📦 Local Kerala Courier Doorstep Logistics</div>
-            <div className="flex items-center gap-1.5">💵 Cash on Delivery (COD) Options Available</div>
+            <div className="flex items-center gap-1.5">🔒 Secure verified merchant store</div>
+            <div className="flex items-center gap-1.5">📦 Contact store for delivery details</div>
           </div>
         </div>
 

@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,10 +23,17 @@ export async function generateMetadata({ params }: CatalogPageProps) {
 
 export default async function CatalogPage({ params, searchParams }: CatalogPageProps) {
   const store = await getTenantStoreData(params.tenant);
+
+  // Gate: unverified store → redirect to home which shows "coming soon" 
+  if (!store.emailVerified) {
+    redirect("/");
+  }
+
   const products = await getTenantProducts(store.id);
 
   const sort = searchParams.sort || "newest";
   const categoryFilter = searchParams.category || "";
+
 
   const categories = Array.from(new Set(products.map((p) => (p as any).category || "General")));
 

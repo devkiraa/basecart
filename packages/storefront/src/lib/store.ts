@@ -31,6 +31,7 @@ export async function getTenantStoreData(tenant: string) {
         customDomain: data.customDomain || "",
         description: data.description || "Welcome to our Basecart automated checkout storefront.",
         logoUrl: data.logoUrl || data.branding?.logoUrl || "https://basecart.app/icon.svg",
+        emailVerified: data.emailVerified === true,
       };
     }
   } catch (err) {
@@ -42,6 +43,7 @@ export async function getTenantStoreData(tenant: string) {
     name: `${tenant.charAt(0).toUpperCase() + tenant.slice(1)} Store`,
     description: "Welcome to our Basecart automated checkout storefront.",
     logoUrl: "https://basecart.app/icon.svg",
+    emailVerified: false,
   };
 }
 

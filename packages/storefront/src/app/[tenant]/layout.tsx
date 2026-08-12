@@ -1,8 +1,6 @@
 import React from "react";
 import { Metadata } from "next";
 import { getTenantStoreData } from "../../lib/store";
-import { CartBadge } from "./cart-badge";
-import { MobileMenu } from "./mobile-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -15,7 +13,7 @@ interface LayoutProps {
 export async function generateMetadata({ params }: { params: { tenant: string } }): Promise<Metadata> {
   const store = await getTenantStoreData(params.tenant);
   
-  // Rule: Canonical must point to the custom domain if mapped, fallback to default subdomain
+  // Canonical points to the custom domain if mapped, fallback to default subdomain
   const canonicalBase = store.customDomain 
     ? `https://${store.customDomain}` 
     : `https://${store.id}.basecart.app`;
@@ -23,26 +21,17 @@ export async function generateMetadata({ params }: { params: { tenant: string } 
   return {
     metadataBase: new URL(canonicalBase),
     title: {
-      default: `${store.name} | Social Commerce Storefront`,
+      default: `${store.name} | Online Store`,
       template: `%s | ${store.name}`,
     },
     description: store.description,
-    alternates: {
-      canonical: "/", // Evaluates to canonicalBase
-    },
+    alternates: { canonical: "/" },
     openGraph: {
       title: store.name,
       description: store.description,
       url: canonicalBase,
       siteName: store.name,
-      images: [
-        {
-          url: store.logoUrl,
-          width: 500,
-          height: 500,
-          alt: `${store.name} logo preview`,
-        }
-      ],
+      images: [{ url: store.logoUrl, width: 500, height: 500, alt: `${store.name} logo` }],
       type: "website",
     },
     twitter: {
@@ -50,7 +39,7 @@ export async function generateMetadata({ params }: { params: { tenant: string } 
       title: store.name,
       description: store.description,
       images: [store.logoUrl],
-    }
+    },
   };
 }
 
@@ -59,33 +48,25 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-700 antialiased font-sans">
-      {/* Visual Header / Navigation Bar for Storefront */}
+      {/* Header */}
       <header className="sticky top-0 bg-white/95 backdrop-blur z-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center text-white font-extrabold shadow-sm">
               {store.name.charAt(0)}
             </div>
-            <a href={`/`} className="text-lg font-black text-slate-900 tracking-tight">{store.name}</a>
+            <a href="/" className="text-lg font-black text-slate-900 tracking-tight">{store.name}</a>
           </div>
-          
-          {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-500">
-            <a href={`/`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Home</a>
-            <a href={`/catalog`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Catalog</a>
-            <a href={`/account`} className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Account</a>
-            <a href={`/cart`} className="relative px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors flex items-center gap-1">
-              Cart
-              <CartBadge tenantId={store.id} />
-            </a>
-          </nav>
 
-          {/* Mobile Menu */}
-          <MobileMenu tenantId={store.id} />
+          {/* Desktop Nav — catalog only, no cart */}
+          <nav className="hidden md:flex items-center gap-1 text-xs font-bold text-slate-500">
+            <a href="/" className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Home</a>
+            <a href="/catalog" className="px-3 py-2 rounded-lg hover:bg-slate-50 hover:text-slate-950 transition-colors">Catalog</a>
+          </nav>
         </div>
       </header>
 
-      {/* Main Tenant Page Content */}
+      {/* Main content */}
       <main className="max-w-7xl mx-auto px-6 py-10 min-h-[calc(100vh-140px)]">
         {children}
       </main>
@@ -103,14 +84,14 @@ export default async function TenantLayout({ children, params }: LayoutProps) {
               className="inline-flex items-center gap-1 font-bold text-slate-700 hover:text-indigo-600 transition-colors"
             >
               <span>Powered by</span>
-              <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-tight shadow-2xs">
+              <span className="bg-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded tracking-tight">
                 Basecart
               </span>
             </a>
           </div>
           <div className="flex justify-center gap-4 select-none">
-            <a href="#privacy" className="hover:text-slate-650 transition-colors">Privacy Policy</a>
-            <a href="#terms" className="hover:text-slate-650 transition-colors">Terms of Service</a>
+            <a href="#privacy" className="hover:text-slate-600 transition-colors">Privacy Policy</a>
+            <a href="#terms" className="hover:text-slate-600 transition-colors">Terms of Service</a>
           </div>
         </div>
       </footer>

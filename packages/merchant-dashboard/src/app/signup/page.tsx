@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import {
   ShoppingBag,
   Package,
-  CreditCard,
   Grid,
   Info,
   AlertCircle,
@@ -13,7 +12,6 @@ import {
 import StepAccount from "../../components/StepAccount";
 import StepStore from "../../components/StepStore";
 import StepBusiness from "../../components/StepBusiness";
-import StepPlan from "../../components/StepPlan";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STOREFRONT_DOMAIN = (process.env.NEXT_PUBLIC_STOREFRONT_DOMAIN || "basecart.app").replace(/^(https?:\/\/)/, "");
@@ -40,8 +38,6 @@ export default function SignupPage() {
     monthlyOrders: "0-50",
     currentPlatform: "None",
     hearAboutUs: "Google Search",
-    selectedPlan: "free",
-    otpCode: "",
   });
 
   useEffect(() => {
@@ -89,7 +85,7 @@ export default function SignupPage() {
           monthlyOrders: onboardingData.monthlyOrders,
           currentPlatform: onboardingData.currentPlatform,
           hearAboutUs: onboardingData.hearAboutUs,
-          selectedPlan: onboardingData.selectedPlan,
+          selectedPlan: "free",
           receiveUpdates: onboardingData.receiveUpdates,
         }),
         credentials: "include",
