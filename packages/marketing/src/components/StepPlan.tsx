@@ -1,5 +1,5 @@
 import React from "react";
-import { Check, Sparkles, ArrowRight } from "lucide-react";
+import { CheckCircle2, Sparkles, ArrowRight, Gift } from "lucide-react";
 
 interface StepPlanProps {
   data: any;
@@ -8,156 +8,73 @@ interface StepPlanProps {
   onBack: () => void;
 }
 
-const PLANS = [
-  {
-    id: "basic",
-    name: "BASIC",
-    price: "₹99",
-    period: "month",
-    tagline: "Ideal for Instagram sellers & WhatsApp order intake.",
-    features: [
-      "Up to 100 Product Listings",
-      "Direct WhatsApp Checkout",
-      "Razorpay & Stripe Payment Gateways",
-      "Manual UPI & COD Order Tracking",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "plus",
-    name: "PLUS",
-    price: "₹499",
-    period: "month",
-    tagline: "Full custom domain website for growing D2C stores.",
-    features: [
-      "Custom Domain Mapping (yourbrand.com)",
-      "Razorpay & Stripe Payment Gateways",
-      "Up to 500 Product Listings",
-      "Custom Storefront Themes",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "growth",
-    name: "GROWTH ⭐",
-    price: "₹1,499",
-    period: "month",
-    badge: "Recommended ⭐",
-    tagline: "Built for scaling D2C brands with automated shipping.",
-    features: [
-      "Custom Domain Mapping (yourbrand.com)",
-      "Razorpay & Stripe Payment Gateways",
-      "Unlimited Products & Orders",
-      "Shiprocket Automated Shipping & AWBs",
-      "Abandoned Cart Recovery (WhatsApp & Email)",
-      "AI Description Writer & Marketing Tools",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "business",
-    name: "BUSINESS",
-    price: "₹2,999",
-    period: "month",
-    tagline: "For high-volume brands and multi-member teams.",
-    features: [
-      "Multi-Staff Accounts (5 Team Seats)",
-      "Developer REST API & Custom Webhooks",
-      "Custom CSS / JS Code Injection",
-      "Automated GST Invoices & PDF Export",
-      "0% Platform Transaction Fees",
-    ],
-  },
+const GROWTH_FEATURES = [
+  "Unlimited Products & Orders",
+  "Custom Domain Mapping (yourbrand.com)",
+  "Razorpay & Stripe Payment Gateways",
+  "Shiprocket Automated Shipping & AWBs",
+  "Abandoned Cart Recovery (WhatsApp & Email)",
+  "AI Product Description Writer",
+  "Automated GST Invoices & PDF Export",
+  "0% Platform Transaction Fees",
 ];
 
 export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanProps) {
-  const selectedPlanId = data.selectedPlan || "free";
-  // Signup defaults to "free"/"trial" — highlight Growth as the trial anchor
-  const isTrialAnchor = selectedPlanId === "free" || selectedPlanId === "trial";
-
-  const handleSelectPlan = (id: string) => {
-    onChange({ selectedPlan: id });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    onChange({ selectedPlan: "free" });
     onNext();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 text-left font-sans animate-fade-in">
-      {/* Top Free Trial Hook Umbrella Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2">
+
+      {/* Hero value banner */}
+      <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-lg space-y-3">
         <div className="flex items-center gap-2">
-          <span className="p-1.5 bg-blue-500/20 rounded-lg text-amber-300">
-            <Sparkles className="w-4 h-4 fill-amber-300" />
+          <span className="p-1.5 bg-amber-400/20 rounded-lg">
+            <Gift className="w-4 h-4 text-amber-300" />
           </span>
-          <h3 className="text-sm font-extrabold text-white">Start Free. Pay Only When You Scale.</h3>
+          <h3 className="text-sm font-extrabold text-white">You're getting this — completely free.</h3>
         </div>
+
+        {/* Value pill */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-black text-white">₹1,499</span>
+          <span className="text-slate-400 text-sm font-semibold line-through">/month</span>
+          <span className="ml-1 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">FREE for 3 months</span>
+        </div>
+
         <p className="text-xs text-slate-300 leading-relaxed">
-          <strong className="text-white font-bold">Zero risk upfront.</strong> Experience full{" "}
-          <span className="text-amber-300 font-bold">Growth-tier features</span> for{" "}
-          <strong className="text-white font-bold">3 months</strong>, or your{" "}
-          <strong className="text-white font-bold">first 1,000 orders / ₹25,000 in sales</strong>{" "}
-          (whichever comes first). No credit card required today.
+          Process your first <strong className="text-white">1,000 orders</strong> or reach{" "}
+          <strong className="text-white">₹25,000 in order value</strong> — on us.{" "}
+          No credit card. No strings. Cancel anytime.
         </p>
       </div>
 
-      <div className="space-y-1">
-        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight uppercase">Select Your Post-Trial Plan Anchor</h2>
-        <p className="text-xs text-slate-500">
-          Choose which subscription plan tier you wish to unlock after your free trial expires.
+      {/* What's included */}
+      <div className="space-y-2">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3" /> What's included in your free trial
         </p>
-      </div>
-
-      <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-        {PLANS.map((plan) => {
-          const active = selectedPlanId === plan.id || (isTrialAnchor && plan.id === "growth");
-          return (
-            <div
-              key={plan.id}
-              onClick={() => handleSelectPlan(plan.id)}
-              className={`p-4 border rounded-2xl cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all ${
-                active
-                  ? "border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600/20 shadow-sm"
-                  : "border-slate-200 hover:border-slate-350 bg-white"
-              }`}
-            >
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                      active ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-300 bg-white"
-                    }`}
-                  >
-                    {active && <Check className="h-2.5 w-2.5 stroke-[4]" />}
-                  </div>
-                  <h3 className="text-sm font-extrabold text-slate-900">{plan.name}</h3>
-                  {plan.badge && (
-                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md text-[10px] font-extrabold uppercase">
-                      {plan.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 font-medium">{plan.tagline}</p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                  {plan.features.slice(0, 4).map((f) => (
-                    <span key={f} className="flex items-center gap-1">
-                      • {f}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="text-right shrink-0 md:pl-4">
-                <div className="text-lg font-black text-slate-950">{plan.price}</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase">/ {plan.period}</div>
-              </div>
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5">
+          {GROWTH_FEATURES.map((f) => (
+            <div key={f} className="flex items-center gap-2.5 text-xs text-slate-700 font-semibold">
+              <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+              {f}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      <div className="pt-2 flex justify-between gap-3">
+      {/* Reassurance line */}
+      <p className="text-[10px] text-slate-400 font-medium text-center leading-relaxed">
+        After your free period, pick a plan starting at <strong className="text-slate-600">₹99/month</strong>.
+        Your store stays live and your data is always yours.
+      </p>
+
+      {/* Nav buttons */}
+      <div className="pt-1 flex justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
@@ -167,9 +84,9 @@ export default function StepPlan({ data, onChange, onNext, onBack }: StepPlanPro
         </button>
         <button
           type="submit"
-          className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-2 active:scale-[.99]"
         >
-          Start 3-month free trial
+          Claim my free trial
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>

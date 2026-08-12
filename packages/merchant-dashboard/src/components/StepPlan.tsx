@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Check, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import React from "react";
+import { CheckCircle2, Sparkles, ArrowRight, Gift, Loader2 } from "lucide-react";
 
 interface StepPlanProps {
   data: any;
@@ -9,155 +9,73 @@ interface StepPlanProps {
   loading?: boolean;
 }
 
-const DEFAULT_PLANS = [
-  {
-    id: "basic",
-    name: "BASIC",
-    price: "₹99",
-    period: "month",
-    tagline: "Ideal for Instagram sellers & WhatsApp order intake.",
-    features: [
-      "Up to 100 Product Listings",
-      "Direct WhatsApp Checkout",
-      "Razorpay & Stripe Payment Gateways",
-      "Manual UPI & COD Order Tracking",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "plus",
-    name: "PLUS",
-    price: "₹499",
-    period: "month",
-    tagline: "Full custom domain website for growing D2C stores.",
-    features: [
-      "Custom Domain Mapping (yourbrand.com)",
-      "Razorpay & Stripe Payment Gateways",
-      "Up to 500 Product Listings",
-      "Custom Storefront Themes",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "growth",
-    name: "GROWTH ⭐",
-    price: "₹1,499",
-    period: "month",
-    badge: "Recommended ⭐",
-    tagline: "Built for scaling D2C brands with automated shipping.",
-    features: [
-      "Custom Domain Mapping (yourbrand.com)",
-      "Razorpay & Stripe Payment Gateways",
-      "Unlimited Products & Orders",
-      "Shiprocket Automated Shipping & AWBs",
-      "Abandoned Cart Recovery (WhatsApp & Email)",
-      "AI Description Writer & Marketing Tools",
-      "0% Platform Transaction Fees",
-    ],
-  },
-  {
-    id: "business",
-    name: "BUSINESS",
-    price: "₹2,999",
-    period: "month",
-    tagline: "For high-volume brands and multi-member teams.",
-    features: [
-      "Multi-Staff Accounts (5 Team Seats)",
-      "Developer REST API & Custom Webhooks",
-      "Custom CSS / JS Code Injection",
-      "Automated GST Invoices & PDF Export",
-      "0% Platform Transaction Fees",
-    ],
-  },
+const GROWTH_FEATURES = [
+  "Unlimited Products & Orders",
+  "Custom Domain Mapping (yourbrand.com)",
+  "Razorpay & Stripe Payment Gateways",
+  "Shiprocket Automated Shipping & AWBs",
+  "Abandoned Cart Recovery (WhatsApp & Email)",
+  "AI Product Description Writer",
+  "Automated GST Invoices & PDF Export",
+  "0% Platform Transaction Fees",
 ];
 
 export default function StepPlan({ data, onChange, onNext, onBack, loading }: StepPlanProps) {
-  const selectedPlanId = data.selectedPlan || "free";
-  // Signup defaults to "free"/"trial" — highlight Growth as the trial anchor
-  const isTrialAnchor = selectedPlanId === "free" || selectedPlanId === "trial";
-
-  const handleSelectPlan = (id: string) => {
-    onChange({ selectedPlan: id });
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    onChange({ selectedPlan: "free" });
     onNext();
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5 text-left font-sans animate-fade-in">
-      {/* Top Free Trial Hook Umbrella Banner */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2">
+
+      {/* Hero value banner */}
+      <div className="bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-lg space-y-3">
         <div className="flex items-center gap-2">
-          <span className="p-1.5 bg-blue-500/20 rounded-lg text-amber-300">
-            <Sparkles className="w-4 h-4 fill-amber-300" />
+          <span className="p-1.5 bg-amber-400/20 rounded-lg">
+            <Gift className="w-4 h-4 text-amber-300" />
           </span>
-          <h3 className="text-sm font-extrabold text-white">3 Months Free. Pay Only When You Scale.</h3>
+          <h3 className="text-sm font-extrabold text-white">You're getting this — completely free.</h3>
         </div>
+
+        {/* Value pill */}
+        <div className="flex items-baseline gap-2">
+          <span className="text-3xl font-black text-white">₹1,499</span>
+          <span className="text-slate-400 text-sm font-semibold line-through">/month</span>
+          <span className="ml-1 bg-amber-400 text-amber-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wide">FREE for 3 months</span>
+        </div>
+
         <p className="text-xs text-slate-300 leading-relaxed">
-          <strong className="text-white font-bold">Zero risk upfront.</strong> Process your{" "}
-          <strong className="text-amber-300 font-bold">first 1,000 orders</strong> or reach{" "}
-          <strong className="text-amber-300 font-bold">₹25,000 in order value</strong> — completely free for{" "}
-          <strong className="text-white font-bold">3 full months</strong>. No credit card required. No hidden fees.
+          Process your first <strong className="text-white">1,000 orders</strong> or reach{" "}
+          <strong className="text-white">₹25,000 in order value</strong> — on us.{" "}
+          No credit card. No strings. Cancel anytime.
         </p>
       </div>
 
-      <div className="space-y-1">
-        <h2 className="text-sm font-extrabold text-slate-900 tracking-tight uppercase">Pick your plan for after the free period</h2>
-        <p className="text-xs text-slate-500">
-          After your 3-month free trial (1,000 orders or ₹25,000 GMV), pick the plan that fits your growth.
+      {/* What's included */}
+      <div className="space-y-2">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3" /> What's included in your free trial
         </p>
-      </div>
-
-      <div className="space-y-3 max-h-[340px] overflow-y-auto pr-1">
-        {DEFAULT_PLANS.map((plan) => {
-          const active = selectedPlanId === plan.id || (isTrialAnchor && plan.id === "growth");
-          return (
-            <div
-              key={plan.id}
-              onClick={() => !loading && handleSelectPlan(plan.id)}
-              className={`p-4 border rounded-2xl cursor-pointer flex flex-col md:flex-row justify-between items-start md:items-center gap-4 transition-all ${
-                active
-                  ? "border-indigo-600 bg-indigo-50/60 ring-2 ring-indigo-600/20 shadow-sm"
-                  : "border-slate-200 hover:border-slate-350 bg-white"
-              } ${loading ? "pointer-events-none opacity-80" : ""}`}
-            >
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={`h-4 w-4 rounded-full border flex items-center justify-center ${
-                      active ? "border-indigo-600 bg-indigo-600 text-white" : "border-slate-300 bg-white"
-                    }`}
-                  >
-                    {active && <Check className="h-2.5 w-2.5 stroke-[4]" />}
-                  </div>
-                  <h3 className="text-sm font-extrabold text-slate-900">{plan.name}</h3>
-                  {plan.badge && (
-                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md text-[10px] font-extrabold uppercase">
-                      {plan.badge}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-slate-500 font-medium">{plan.tagline}</p>
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-600">
-                  {plan.features.slice(0, 4).map((f) => (
-                    <span key={f} className="flex items-center gap-1">
-                      • {f}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="text-right shrink-0 md:pl-4">
-                <div className="text-lg font-black text-slate-950">{plan.price}</div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase">/ {plan.period}</div>
-              </div>
+        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 space-y-2.5">
+          {GROWTH_FEATURES.map((f) => (
+            <div key={f} className="flex items-center gap-2.5 text-xs text-slate-700 font-semibold">
+              <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+              {f}
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      <div className="pt-2 flex justify-between gap-3">
+      {/* Reassurance */}
+      <p className="text-[10px] text-slate-400 font-medium text-center leading-relaxed">
+        After your free period, pick a plan starting at <strong className="text-slate-600">₹99/month</strong>.
+        Your store stays live and your data is always yours.
+      </p>
+
+      {/* Nav buttons */}
+      <div className="pt-1 flex justify-between gap-3">
         <button
           type="button"
           onClick={onBack}
@@ -169,10 +87,11 @@ export default function StepPlan({ data, onChange, onNext, onBack, loading }: St
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2"
+          className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-extrabold text-xs rounded-xl shadow-sm shadow-blue-500/20 transition-all flex items-center justify-center gap-2 active:scale-[.99]"
         >
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Start My 3-Month Free Trial"}
-          <ArrowRight className="w-4 h-4" />
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+            <>Claim my free trial <ArrowRight className="w-4 h-4" /></>
+          )}
         </button>
       </div>
     </form>
