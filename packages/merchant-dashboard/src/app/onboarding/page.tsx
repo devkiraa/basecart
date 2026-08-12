@@ -144,12 +144,16 @@ function toSubdomain(s: string) {
 /* ─────────────────────────────────────────────
    Main Component
 ───────────────────────────────────────────── */
+const STORAGE_KEY = "basecart_onboarding_progress";
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [direction, setDirection] = useState<"forward" | "back">("forward");
   const [visible, setVisible] = useState(true);
+  const [resumed, setResumed] = useState(false);
+  const [resumeBannerVisible, setResumeBannerVisible] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [data, setData] = useState({
@@ -169,15 +173,41 @@ export default function OnboardingPage() {
       .catch(() => { window.location.href = "/signup"; });
   }, []);
 
+  // Restore progress from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const { step: savedStep, data: savedData } = JSON.parse(saved);
+        if (typeof savedStep === "number" && savedStep > 0 && savedData) {
+          setData((d) => ({ ...d, ...savedData }));
+          setStep(savedStep);
+          setResumed(true);
+          setResumeBannerVisible(true);
+          // Auto-hide banner after 4s
+          setTimeout(() => setResumeBannerVisible(false), 4000);
+        }
+      }
+    } catch (_) {}
+  }, []);
+
+  // Persist progress to localStorage whenever step or data changes
+  useEffect(() => {
+    if (step === 0 && !data.storeName) return; // don't persist blank initial state
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ step, data }));
+    } catch (_) {}
+  }, [step, data]);
+
   // Auto-focus input on step change
   useEffect(() => {
     const t = setTimeout(() => inputRef.current?.focus(), 350);
     return () => clearTimeout(t);
   }, [step]);
 
-  // Auto-fill subdomain from storeName
+  // Auto-fill subdomain from storeName (only if subdomain is still empty)
   useEffect(() => {
-    if (data.storeName && step === 0) {
+    if (data.storeName && step === 0 && !data.subdomain) {
       setData((d) => ({ ...d, subdomain: toSubdomain(data.storeName) }));
     }
   }, [data.storeName]);
@@ -225,6 +255,8 @@ export default function OnboardingPage() {
           }),
         });
       } catch (_) {}
+      // Clear saved progress — onboarding complete
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
       window.location.href = "/dashboard";
       return;
     }
@@ -276,6 +308,24 @@ export default function OnboardingPage() {
           className="h-full bg-blue-600 transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
+      </div>
+
+      {/* Resume banner */}
+      <div
+        className={`overflow-hidden transition-all duration-500 ease-out ${
+          resumeBannerVisible ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="bg-blue-600 text-white text-xs font-semibold text-center py-2.5 px-4 flex items-center justify-center gap-2">
+          <span>👋</span>
+          <span>Welcome back! Picked up right where you left off.</span>
+          <button
+            onClick={() => setResumeBannerVisible(false)}
+            className="ml-2 text-blue-200 hover:text-white font-bold text-sm leading-none"
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       {/* Header */}

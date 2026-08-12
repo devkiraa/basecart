@@ -24,7 +24,20 @@ export default function SignupPage() {
     fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
       .then((r) => { if (r.ok) window.location.href = "/dashboard"; })
       .catch(() => {});
+    // Restore email from previous session
+    try {
+      const saved = localStorage.getItem("basecart_signup_email");
+      if (saved) setEmail(saved);
+    } catch (_) {}
   }, []);
+
+  // Persist email as user types (never store password)
+  useEffect(() => {
+    try {
+      if (email) localStorage.setItem("basecart_signup_email", email);
+      else localStorage.removeItem("basecart_signup_email");
+    } catch (_) {}
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +67,8 @@ export default function SignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
+      // Clear saved email — account created
+      try { localStorage.removeItem("basecart_signup_email"); } catch (_) {}
       // Account created — go to onboarding to personalise the store
       window.location.href = "/onboarding";
     } catch (err: any) {
