@@ -67,6 +67,8 @@ export default function SignupPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
+      // Mark that we just signed up — tells /onboarding to trust the session
+      try { localStorage.setItem("basecart_just_signed_up", "1"); } catch (_) {}
       // Clear saved email — account created
       try { localStorage.removeItem("basecart_signup_email"); } catch (_) {}
       // Account created — go to onboarding to personalise the store

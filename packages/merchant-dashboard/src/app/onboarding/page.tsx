@@ -166,11 +166,29 @@ export default function OnboardingPage() {
     phone: "",
   });
 
-  // Auth guard — bounce if not logged in
+  // Auth guard — only hard-redirect on explicit 401/403, never on network errors
   useEffect(() => {
+    // If we have saved progress, trust the session and don't eagerly redirect on hiccups
+    const hasSavedProgress = !!localStorage.getItem(STORAGE_KEY);
+    const justSignedUp = !!localStorage.getItem("basecart_just_signed_up");
+
     fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
-      .then((r) => { if (!r.ok) window.location.href = "/signup"; })
-      .catch(() => { window.location.href = "/signup"; });
+      .then((r) => {
+        if (r.status === 401 || r.status === 403) {
+          // Only redirect if there's no saved progress to protect
+          if (!hasSavedProgress && !justSignedUp) {
+            window.location.href = "/signup";
+          }
+        }
+        // Clear the just-signed-up flag once we've confirmed auth
+        if (r.ok) {
+          try { localStorage.removeItem("basecart_just_signed_up"); } catch (_) {}
+        }
+      })
+      .catch(() => {
+        // Network error — backend might be starting up, don't boot the user
+        // They'll get an error when they try to save at the end
+      });
   }, []);
 
   // Restore progress from localStorage on mount
@@ -179,13 +197,15 @@ export default function OnboardingPage() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const { step: savedStep, data: savedData } = JSON.parse(saved);
-        if (typeof savedStep === "number" && savedStep > 0 && savedData) {
+        if (typeof savedStep === "number" && savedData) {
           setData((d) => ({ ...d, ...savedData }));
           setStep(savedStep);
-          setResumed(true);
-          setResumeBannerVisible(true);
-          // Auto-hide banner after 4s
-          setTimeout(() => setResumeBannerVisible(false), 4000);
+          if (savedStep > 0) {
+            // Only show "welcome back" banner if they've progressed past step 0
+            setResumed(true);
+            setResumeBannerVisible(true);
+            setTimeout(() => setResumeBannerVisible(false), 4000);
+          }
         }
       }
     } catch (_) {}
@@ -193,7 +213,9 @@ export default function OnboardingPage() {
 
   // Persist progress to localStorage whenever step or data changes
   useEffect(() => {
-    if (step === 0 && !data.storeName) return; // don't persist blank initial state
+    const justSignedUp = !!localStorage.getItem("basecart_just_signed_up");
+    // Always persist once the user has just signed up or has any data entered
+    if (step === 0 && !data.storeName && !justSignedUp) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ step, data }));
     } catch (_) {}
