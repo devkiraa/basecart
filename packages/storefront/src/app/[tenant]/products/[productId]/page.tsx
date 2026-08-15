@@ -174,8 +174,7 @@ export default async function ProductDetailPage({ params }: ProductPageProps) {
           __html: JSON.stringify([breadcrumbSchema, productSchema])
             .replace(/</g, "\\u003c")
             .replace(/>/g, "\\u003e")
-            .replace(/&/g, "\\u0026")
-            .replace(/"/g, "\\\""),
+            .replace(/&/g, "\\u0026"),
         }}
       />
 
