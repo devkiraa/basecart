@@ -69,4 +69,9 @@ max_batch_size = 10
 max_batch_timeout = 5
 max_retries = 3
 
+[[analytics_engine_datasets]]
+binding = "STORE_ANALYTICS"
+dataset = "basecart_events_prod"
+
+
 
