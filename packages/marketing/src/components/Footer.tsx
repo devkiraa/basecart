@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { ShoppingBag, Github, Twitter, MessageSquare, Youtube } from "lucide-react";
 
 export default function Footer() {
@@ -9,7 +10,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2 space-y-4">
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Basecart Logo" className="h-[56px] w-auto object-contain shrink-0" />
+            <Image src="/logo.svg" alt="Basecart Logo" width={180} height={56} className="h-[56px] w-auto object-contain shrink-0" />
           </div>
           <p className="text-xs text-slate-500 font-semibold max-w-xs leading-relaxed">
             The all-in-one e-commerce platform to build, launch and grow your online business. Build in a weekend, scale to millions.
@@ -17,16 +18,16 @@ export default function Footer() {
 
           {/* Social Icons */}
           <div className="flex items-center gap-4 text-slate-400 pt-2">
-            <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors">
+            <a href="https://github.com" target="_blank" rel="noreferrer" aria-label="GitHub" className="hover:text-blue-600 transition-colors">
               <Github className="w-4.5 h-4.5" />
             </a>
-            <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors">
+            <a href="https://twitter.com" target="_blank" rel="noreferrer" aria-label="Twitter" className="hover:text-blue-600 transition-colors">
               <Twitter className="w-4.5 h-4.5" />
             </a>
-            <a href="https://discord.com" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors">
+            <a href="https://discord.com" target="_blank" rel="noreferrer" aria-label="Discord" className="hover:text-blue-600 transition-colors">
               <MessageSquare className="w-4.5 h-4.5" />
             </a>
-            <a href="https://youtube.com" target="_blank" rel="noreferrer" className="hover:text-blue-600 transition-colors">
+            <a href="https://youtube.com" target="_blank" rel="noreferrer" aria-label="YouTube" className="hover:text-blue-600 transition-colors">
               <Youtube className="w-4.5 h-4.5" />
             </a>
           </div>

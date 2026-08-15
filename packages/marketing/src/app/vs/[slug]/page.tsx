@@ -471,7 +471,7 @@ export default function VsPage({ params }: Props) {
             href="/signup"
             className="inline-flex items-center gap-1.5 px-6 py-3 bg-white text-blue-600 font-extrabold text-sm rounded-lg hover:bg-slate-50 transition-all shadow-md active:scale-95 relative"
           >
-            Start your 60-day free trial <ArrowRight className="h-4 w-4" />
+            Start your 3-month free trial <ArrowRight className="h-4 w-4" />
           </a>
         </div>
       </section>

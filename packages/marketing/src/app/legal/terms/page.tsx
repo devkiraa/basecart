@@ -1,7 +1,15 @@
-"use client";
-
 import React from "react";
+import { Metadata } from "next";
+import Link from "next/link";
 import { ShoppingBag, ArrowLeft } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Terms of Service — Basecart",
+  description: "Terms of Service governing the use of Basecart's headless e-commerce SaaS platform, merchant dashboards, and customer storefronts.",
+  alternates: {
+    canonical: "https://basecart.app/legal/terms",
+  },
+};
 
 export default function TermsOfServicePage() {
   return (
@@ -9,22 +17,22 @@ export default function TermsOfServicePage() {
       
       {/* Header */}
       <header className="bg-white border-b border-slate-200/80 sticky top-0 z-40 px-6 py-4 flex items-center justify-between">
-        <div 
-          onClick={() => { window.location.href = "/"; }}
-          className="flex items-center gap-2.5 cursor-pointer select-none"
+        <Link 
+          href="/"
+          className="flex items-center gap-2.5 select-none"
         >
           <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20">
             <ShoppingBag className="h-4.5 w-4.5" />
           </div>
           <span className="text-lg font-black text-slate-900 tracking-tight">basecart</span>
           <span className="text-xs bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">Legal</span>
-        </div>
-        <button
-          onClick={() => { window.history.back(); }}
+        </Link>
+        <Link
+          href="/"
           className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors select-none"
         >
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
+          <ArrowLeft className="h-4 w-4" /> Home
+        </Link>
       </header>
 
       {/* Main Content Area */}

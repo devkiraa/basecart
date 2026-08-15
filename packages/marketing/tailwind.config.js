@@ -27,7 +27,7 @@ module.exports = {
         card: "var(--shadow-card)",
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "sans-serif"],
+        sans: ["var(--font-plus-jakarta)", "var(--font-sans)", "sans-serif"],
       },
     },
   },

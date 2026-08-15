@@ -19,26 +19,6 @@ import {
   Settings as SettingsIcon,
   Globe,
 } from "lucide-react";
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip,
-} from "chart.js";
-import { Line } from "react-chartjs-2";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Filler,
-  Tooltip
-);
-
 type Timeframe = "7D" | "30D" | "12M";
 
 interface DashboardData {
@@ -98,91 +78,44 @@ const LIVE_NOTIFS = [
 ];
 
 function RevenueChart({ data, timeframe }: { data: DashboardData; timeframe: Timeframe }) {
-  const chartRef = useRef<ChartJS<"line">>(null);
+  const width = 300;
+  const height = 60;
+  const vals = data.chartData;
+  const maxVal = Math.max(...vals, 1);
+  const minVal = Math.min(...vals, 0);
+  const range = maxVal - minVal || 1;
 
-  const chartData = {
-    labels: data.chartLabels,
-    datasets: [
-      {
-        data: data.chartData,
-        fill: true,
-        borderColor: "#2563EB",
-        backgroundColor: (context: { chart: ChartJS }) => {
-          const ctx = context.chart.ctx;
-          const gradient = ctx.createLinearGradient(0, 0, 0, context.chart.height);
-          gradient.addColorStop(0, "rgba(37, 99, 235, 0.22)");
-          gradient.addColorStop(1, "rgba(37, 99, 235, 0.0)");
-          return gradient;
-        },
-        borderWidth: 2.5,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: "#2563EB",
-        pointHoverBorderColor: "#fff",
-        pointHoverBorderWidth: 2,
-        tension: 0.4,
-      },
-    ],
-  };
+  const points = vals.map((v, i) => {
+    const x = (i / (vals.length - 1)) * width;
+    const y = height - ((v - minVal) / range) * (height - 12) - 6;
+    return { x, y };
+  });
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: {
-      intersect: false,
-      mode: "index" as const,
-    },
-    plugins: {
-      tooltip: {
-        backgroundColor: "#0f172a",
-        titleColor: "#e2e8f0",
-        bodyColor: "#fff",
-        titleFont: { size: 10, weight: "bold" as const },
-        bodyFont: { size: 11, weight: "bold" as const },
-        padding: 8,
-        cornerRadius: 8,
-        displayColors: false,
-        callbacks: {
-          label: (context: { parsed: { y: number | null } }) => {
-            const val = context.parsed.y ?? 0;
-            if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
-            if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
-            return `₹${val}`;
-          },
-        },
-      },
-    },
-    scales: {
-      x: {
-        display: true,
-        grid: { display: false },
-        ticks: {
-          font: { size: 8, weight: "bold" as const },
-          color: "#94a3b8",
-          maxRotation: 0,
-        },
-        border: { display: false },
-      },
-      y: {
-        display: false,
-        grid: { display: false },
-        beginAtZero: true,
-      },
-    },
-    animation: {
-      duration: 800,
-      easing: "easeInOutQuart" as const,
-    },
-  };
+  const pathD = points.reduce((acc, p, i) => (i === 0 ? `M ${p.x},${p.y}` : `${acc} L ${p.x},${p.y}`), "");
+  const areaD = `${pathD} L ${width},${height} L 0,${height} Z`;
 
   return (
-    <div className="h-[82px] w-full">
-      <Line
-        ref={chartRef}
-        key={timeframe}
-        data={chartData}
-        options={chartOptions}
-      />
+    <div className="h-[82px] w-full flex flex-col justify-between">
+      <div className="relative w-full h-[60px]">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-full overflow-visible" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id={`grad-${timeframe}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2563EB" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#2563EB" stopOpacity="0.0" />
+            </linearGradient>
+          </defs>
+          <path d={areaD} fill={`url(#grad-${timeframe})`} />
+          <path d={pathD} fill="none" stroke="#2563EB" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          {points.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y} r="3" fill="#2563EB" className="opacity-80 hover:opacity-100 transition-opacity" />
+          ))}
+        </svg>
+      </div>
+      <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 px-0.5 pt-1">
+        {data.chartLabels.map((lbl, idx) => (
+          <span key={idx}>{lbl}</span>
+        ))}
+      </div>
     </div>
   );
 }

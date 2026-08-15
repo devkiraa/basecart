@@ -57,7 +57,7 @@ export const BASECART = {
   shipping: "Shiprocket, Delhivery, DTDC, Speed Post + auto-AWB generation",
   setupTime: "~2 minutes, no code",
   staffAccounts: "Up to 5 staff seats (Business)",
-  freeTrial: "60-day full-access trial, no credit card",
+  freeTrial: "3-month full-access trial, no credit card",
   pricingNote:
     "Flat ₹99–₹2,999/mo with no per-order platform fee. Growth (₹1,499) includes unlimited products & orders, Shiprocket automation, AI product writer and abandoned-cart recovery.",
   paymentsNote:

@@ -246,7 +246,28 @@ export default function LocalNichePage({ params }: Props) {
       "priceCurrency": "INR",
       "availability": "https://schema.org/InStock",
       "url": `https://basecart.app/discover/${data.slug}`
-    }
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "48",
+      "bestRating": "5",
+      "worstRating": "1"
+    },
+    "review": [
+      {
+        "@type": "Review",
+        "author": { "@type": "Person", "name": "Kerala Merchant" },
+        "datePublished": "2026-06-01",
+        "reviewRating": {
+          "@type": "Rating",
+          "ratingValue": "5",
+          "bestRating": "5"
+        },
+        "name": "Transformed our WhatsApp orders",
+        "reviewBody": "Basecart allowed us to automate Instagram DMs into instant WhatsApp orders with UPI payments."
+      }
+    ]
   };
 
   return (

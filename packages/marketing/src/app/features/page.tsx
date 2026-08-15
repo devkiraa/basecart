@@ -1,9 +1,16 @@
-"use client";
-
 import React from "react";
+import { Metadata } from "next";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { ShoppingBag, Package, ShoppingCart, CreditCard, TrendingUp, Users, ArrowRight, ShieldCheck, Cpu } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Platform Features & Storefront Tools — Basecart",
+  description: "Explore Basecart's complete e-commerce infrastructure: Isolated tenant databases, native UPI & COD checkout, automated WhatsApp sales, and localized courier shipping.",
+  alternates: {
+    canonical: "https://basecart.app/features",
+  },
+};
 
 export default function FeaturesPage() {
   const merchantDashboardUrl = process.env.NEXT_PUBLIC_MERCHANT_DASHBOARD_URL || "http://localhost:3004";

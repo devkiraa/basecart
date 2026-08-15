@@ -1,9 +1,16 @@
-"use client";
-
 import React from "react";
+import { Metadata } from "next";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { ArrowRight, Briefcase } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Careers — Join the Basecart Team",
+  description: "Help build the future of Indian e-commerce infrastructure. Explore open roles in full-stack engineering, cloud architecture, and product design.",
+  alternates: {
+    canonical: "https://basecart.app/careers",
+  },
+};
 
 export default function CareersPage() {
   const jobs = [
@@ -50,10 +57,10 @@ export default function CareersPage() {
         
         <div className="space-y-4">
           {jobs.map((job, idx) => (
-            <div 
+            <a 
               key={idx} 
-              className="bg-white border border-slate-150 p-6 rounded-xl hover:shadow-md hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
-              onClick={() => alert(`Application process initiated for ${job.title}. Contact careers@basecart.app`)}
+              href={`mailto:careers@basecart.app?subject=Application%20for%20${encodeURIComponent(job.title)}`}
+              className="bg-white border border-slate-150 p-6 rounded-xl hover:shadow-md hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div className="flex gap-4 items-start sm:items-center">
                 <div className="h-10 w-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -70,10 +77,10 @@ export default function CareersPage() {
                   </div>
                 </div>
               </div>
-              <button className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 shrink-0 self-start sm:self-center select-none">
+              <span className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 shrink-0 self-start sm:self-center select-none">
                 Apply now <ArrowRight className="h-3.5 w-3.5" />
-              </button>
-            </div>
+              </span>
+            </a>
           ))}
         </div>
       </section>

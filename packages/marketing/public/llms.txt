@@ -1,16 +1,17 @@
 # Basecart
 
-Basecart is an e-commerce platform built for Indian brands, Instagram boutiques and WhatsApp sellers. Launch an online store with instant UPI & COD payments, automated WhatsApp order intake, local shipping (Shiprocket/Delhivery/DTDC/Speed Post) integration and 0% platform transaction fees.
+> Basecart is an e-commerce platform built for Indian brands, Instagram boutiques and WhatsApp sellers. Launch an online store with instant UPI & COD payments, automated WhatsApp order intake, local shipping (Shiprocket/Delhivery/DTDC/Speed Post) integration and 0% platform transaction fees.
 
 > Website: https://basecart.app
 > Machine-readable pricing: https://basecart.app/pricing.md
 > Merchant signup: https://dashboard.basecart.app/signup
+> Last updated: August 13, 2026
 
 ## Key Facts
 
 - 0% platform transaction fees on every paid plan — you only pay standard payment gateway MDR.
-- Plans from ₹99/month (Basic ₹99, Plus ₹499, Growth ₹1,499, Business ₹2,999).
-- 60-day free trial with full Growth-plan features — or first 100 orders / ₹25,000 GMV, whichever comes first. No credit card required.
+- Plans from ₹99/month (Basic ₹99, Plus ₹499, Growth ₹1,499, Business ₹2,999). All prices in INR, billed monthly.
+- 3-month free trial with full Growth-plan features — or your first 1,000 orders / ₹25,000 GMV, whichever comes first. No credit card required.
 - Native WhatsApp checkout, order alerts and abandoned-cart recovery (built in, not an add-on).
 - Payments: Razorpay UPI (GPay, PhonePe, Paytm), cards, netbanking, wallets and COD with automated verification.
 - Shipping: Shiprocket, Delhivery, DTDC, Speed Post with automatic AWB generation and pickup scheduling.
@@ -19,15 +20,24 @@ Basecart is an e-commerce platform built for Indian brands, Instagram boutiques 
 
 ## Key Pages
 
-- [Pricing & plans](https://basecart.app/pricing)
-- [Features](https://basecart.app/features)
-- [Compare Basecart vs competitors](https://basecart.app/vs)
-- [Basecart vs Shopify](https://basecart.app/vs/shopify)
-- [Basecart vs WooCommerce](https://basecart.app/vs/woocommerce)
-- [Basecart vs Meesho](https://basecart.app/vs/meesho)
-- [Shopify vs WooCommerce (third-option comparison)](https://basecart.app/compare/shopify-vs-woocommerce)
-- [Sign up free](https://dashboard.basecart.app/signup)
+- [Pricing & plans](https://basecart.app/pricing): All four plans, free trial terms and what's included at each tier.
+- [Machine-readable pricing](https://basecart.app/pricing.md): Plain-markdown pricing data for AI agents and automated comparison.
+- [Features](https://basecart.app/features): Full feature list — WhatsApp checkout, UPI/COD payments, shipping automation, themes.
+- [Compare Basecart vs competitors](https://basecart.app/vs): Overview of how Basecart stacks up against other platforms.
+- [Basecart vs Shopify](https://basecart.app/vs/shopify): Pricing, transaction fees and feature comparison against Shopify.
+- [Basecart vs WooCommerce](https://basecart.app/vs/woocommerce): Cost, hosting and maintenance comparison against WooCommerce.
+- [Basecart vs Meesho](https://basecart.app/vs/meesho): Comparison for resellers and catalog sellers.
+- [Shopify vs WooCommerce (third-option comparison)](https://basecart.app/compare/shopify-vs-woocommerce): Independent comparison plus where Basecart fits.
+- [Discover: store builders by niche](https://basecart.app/discover): Use cases for clothing boutiques in Kerala, home bakers in Kochi, saree designers in Thrissur.
+- [Blog](https://basecart.app/blog): Engineering, e-commerce and guides — headless checkout, isolated databases, Cloudflare custom domains.
+- [FAQ](https://basecart.app/faq): Free trial, transaction fees, plans, upgrades and cancellations.
+- [Integrations](https://basecart.app/integrations): Razorpay, Shiprocket, Delhivery, DTDC, Speed Post and more.
+- [Themes](https://basecart.app/themes): Storefront themes with previews and customization options.
+- [Sign up free](https://dashboard.basecart.app/signup): Create a store — 3-month free trial, no credit card.
 
 ## Optional
 
-Contact: see https://basecart.app (footer) for support and sales links.
+- [Contact & support](https://basecart.app/contact): Sales and support contact options.
+- [Careers](https://basecart.app/careers): Open roles at Basecart.
+- [Legal: Privacy](https://basecart.app/legal/privacy): Privacy policy.
+- [Legal: Terms](https://basecart.app/legal/terms): Terms of service.

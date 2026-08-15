@@ -3,6 +3,12 @@ import React from "react";
 import {
   ArrowUpRight,
   Check,
+  Sparkles,
+  Zap,
+  ShieldCheck,
+  Users,
+  Star,
+  CheckCircle,
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -11,10 +17,14 @@ import Footer from "../components/Footer";
 import DashboardRedirector from "../components/DashboardRedirector";
 import FaqAccordionItem from "../components/FaqAccordionItem";
 import HeroDashboardMockup from "../components/HeroDashboardMockup";
-import HeroContent from "../components/HeroContent";
 import AnimatedSection from "../components/AnimatedSection";
 import FeaturesGrid from "../components/FeaturesGrid";
 import TestimonialsSection from "../components/TestimonialsSection";
+import AlternatingFeatures from "../components/AlternatingFeatures";
+import CategorySolutions from "../components/CategorySolutions";
+import WhyChooseUs from "../components/WhyChooseUs";
+import IntegrationsGrid from "../components/IntegrationsGrid";
+import BookDemoButton from "../components/BookDemoButton";
 
 export const metadata: Metadata = {
   title: "Basecart — #1 Shopify Alternative for Indian Brands & WhatsApp Stores",
@@ -141,32 +151,108 @@ export default function LandingPage() {
       <Header />
 
       {/* ───────────────────────────────────────────────────
-          SECTION A: HERO — Full Viewport
+          SECTION 1: HERO (CENTERED TOP BANNER FLOW)
       ─────────────────────────────────────────────────── */}
-      <section className="px-6 lg:px-16 min-h-[calc(100vh-64px)] flex items-center justify-center bg-white border-b border-slate-100 relative overflow-hidden py-16 lg:py-0">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-10 w-full">
-          {/* Hero Left: Animated Content */}
-          <HeroContent />
+      <section className="px-6 lg:px-16 pt-16 pb-24 bg-gradient-to-b from-[#F8FAFC]/80 via-white to-white border-b border-slate-100 relative overflow-hidden">
+        <div className="max-w-6xl mx-auto text-center space-y-8 relative z-10">
+          
+          {/* Announcement Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold shadow-2xs hover:bg-blue-100/70 transition-colors">
+            <Sparkles className="w-4 h-4 text-blue-600 fill-blue-500/20" />
+            <span>Introducing Basecart 2.0 — Headless Edge Storefronts</span>
+          </div>
 
-          {/* Hero Right: Interactive Dashboard Mockup */}
-          <AnimatedSection direction="left" delay={0.3} className="w-full lg:w-1/2 flex justify-center lg:justify-end relative">
-            <HeroDashboardMockup />
-          </AnimatedSection>
+          {/* Centered H1 Headline & Subtitle */}
+          <div className="space-y-5 max-w-4xl mx-auto">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-slate-900 leading-[1.1] tracking-tight">
+              Scale Your Online Store with a{" "}
+              <span className="text-blue-600">
+                Smart Storefront
+              </span>
+            </h1>
+            <p className="text-base sm:text-lg text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto">
+              Launch your online store in 2 minutes. Accept instant UPI & COD payments, automate WhatsApp orders, and ship across Kerala & India with zero transaction fees.
+            </p>
+          </div>
+
+          {/* Centered Dual CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <a
+              href="/signup"
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/10 active:scale-95 cursor-pointer"
+            >
+              <span>Start 3-month free trial</span>
+              <ArrowUpRight className="w-4 h-4" />
+            </a>
+            <BookDemoButton />
+          </div>
+
+          {/* Social Proof Rating */}
+          <div className="flex items-center justify-center gap-2 text-xs text-slate-500 font-semibold pt-1">
+            <div className="flex items-center text-amber-400">
+              <Star className="w-4 h-4 fill-amber-400" />
+              <Star className="w-4 h-4 fill-amber-400" />
+              <Star className="w-4 h-4 fill-amber-400" />
+              <Star className="w-4 h-4 fill-amber-400" />
+              <Star className="w-4 h-4 fill-amber-400" />
+            </div>
+            <span className="font-bold text-slate-900">4.9/5 rating</span>
+            <span className="text-slate-300">•</span>
+            <span>Trusted by 500+ Indian Brands & Boutiques</span>
+          </div>
+
+          {/* Large Centered Dashboard Mockup Frame */}
+          <div className="pt-6 max-w-5xl mx-auto">
+            <div className="p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-slate-900/5 border border-slate-200/80 shadow-2xl backdrop-blur-xl">
+              <HeroDashboardMockup />
+            </div>
+          </div>
+
+          {/* 4-Stat Metric Bar */}
+          <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto text-left">
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="text-2xl font-black text-slate-900">99.9%</div>
+              <div className="text-xs text-slate-500 font-medium">Edge Network Uptime</div>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="text-2xl font-black text-blue-600">0%</div>
+              <div className="text-xs text-slate-500 font-medium">Platform Commission</div>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="text-2xl font-black text-slate-900">&lt; 1 ms</div>
+              <div className="text-xs text-slate-500 font-medium">SQLite Query Latency</div>
+            </div>
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <div className="text-2xl font-black text-slate-900">500+</div>
+              <div className="text-xs text-slate-500 font-medium">Active Merchants</div>
+            </div>
+          </div>
+
         </div>
       </section>
 
       {/* ───────────────────────────────────────────────────
-          SECTION B: FEATURES GRID
+          SECTION 2: 3-COLUMN FEATURES GRID
       ─────────────────────────────────────────────────── */}
       <FeaturesGrid />
 
       {/* ───────────────────────────────────────────────────
-          SECTION C: TESTIMONIALS
+          SECTION 3: 5-ROW ALTERNATING FEATURE DEEP-DIVES (Z-PATTERN)
       ─────────────────────────────────────────────────── */}
-      <TestimonialsSection />
+      <AlternatingFeatures />
 
       {/* ───────────────────────────────────────────────────
-          SECTION D: PRICING
+          SECTION 4: 3-COLUMN CATEGORY SOLUTIONS
+      ─────────────────────────────────────────────────── */}
+      <CategorySolutions />
+
+      {/* ───────────────────────────────────────────────────
+          SECTION 5: WHY CHOOSE US (SPLIT FEATURE GRID)
+      ─────────────────────────────────────────────────── */}
+      <WhyChooseUs />
+
+      {/* ───────────────────────────────────────────────────
+          SECTION 6: PRICING (4 TIER CARDS)
       ─────────────────────────────────────────────────── */}
       <section id="pricing" className="py-28 px-6 lg:px-16 bg-gradient-to-b from-white via-slate-50/40 to-white border-b border-slate-100 relative overflow-hidden">
         <div className="max-w-7xl mx-auto space-y-14">
@@ -182,7 +268,7 @@ export default function LandingPage() {
               </span>
             </h2>
             <p className="text-sm sm:text-base text-slate-500 font-medium max-w-2xl mx-auto">
-              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for 3 months, or your first 1,000 orders / ₹25,000 in sales (whichever comes first). No credit card required.
+              <strong className="text-slate-900 font-bold">Zero risk upfront.</strong> Experience full <span className="text-blue-600 font-bold">Growth-tier features</span> for 3 months, or your first 1,000 orders / ₹25,000 in sales. No credit card required.
             </p>
           </AnimatedSection>
 
@@ -209,7 +295,7 @@ export default function LandingPage() {
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="https://dashboard.basecart.app/signup?plan=basic" className="w-full py-2.5 border border-slate-200 hover:border-slate-350 text-slate-800 font-bold rounded-xl text-xs text-center transition-all block">
+                <a href="/signup?plan=basic" className="w-full py-2.5 border border-slate-200 hover:border-slate-350 text-slate-800 font-bold rounded-xl text-xs text-center transition-all block">
                   Choose Basic
                 </a>
               </div>
@@ -235,7 +321,7 @@ export default function LandingPage() {
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-blue-600 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="https://dashboard.basecart.app/signup?plan=plus" className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs text-center transition-all block">
+                <a href="/signup?plan=plus" className="w-full py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl text-xs text-center transition-all block">
                   Choose Plus
                 </a>
               </div>
@@ -266,7 +352,7 @@ export default function LandingPage() {
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-indigo-600 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="https://dashboard.basecart.app/signup?plan=growth" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs text-center transition-all shadow-md block">
+                <a href="/signup?plan=growth" className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs text-center transition-all shadow-md block">
                   Choose Growth
                 </a>
               </div>
@@ -293,7 +379,7 @@ export default function LandingPage() {
                     <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-600 shrink-0" /><span>0% Platform Fees</span></li>
                   </ul>
                 </div>
-                <a href="https://dashboard.basecart.app/signup?plan=business" className="w-full py-2.5 border border-purple-200 hover:border-purple-300 text-purple-900 font-bold rounded-xl text-xs text-center transition-all block">
+                <a href="/signup?plan=business" className="w-full py-2.5 border border-purple-200 hover:border-purple-300 text-purple-900 font-bold rounded-xl text-xs text-center transition-all block">
                   Choose Business
                 </a>
               </div>
@@ -305,7 +391,12 @@ export default function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────
-          SECTION E: FAQ
+          SECTION 7: INTEGRATIONS ECOSYSTEM
+      ─────────────────────────────────────────────────── */}
+      <IntegrationsGrid />
+
+      {/* ───────────────────────────────────────────────────
+          SECTION 8: FAQ ACCORDION
       ─────────────────────────────────────────────────── */}
       <section className="py-28 px-6 lg:px-16 bg-white border-b border-slate-100">
         <div className="max-w-4xl mx-auto space-y-12">
@@ -345,11 +436,16 @@ export default function LandingPage() {
       </section>
 
       {/* ───────────────────────────────────────────────────
-          SECTION F: BOTTOM CTA
+          SECTION 9: TESTIMONIALS GRID (3x3 REVIEWS)
+      ─────────────────────────────────────────────────── */}
+      <TestimonialsSection />
+
+      {/* ───────────────────────────────────────────────────
+          SECTION 10: BOTTOM CTA BANNER
       ─────────────────────────────────────────────────── */}
       <section className="py-28 px-6 lg:px-16 bg-white relative overflow-hidden">
-        <AnimatedSection className="max-w-4xl mx-auto text-center space-y-8 relative z-10">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
+        <AnimatedSection className="max-w-5xl mx-auto text-center space-y-8 p-12 lg:p-16 rounded-3xl bg-gradient-to-br from-blue-50 via-white to-blue-50/80 border border-blue-100 shadow-xl relative z-10">
+          <h2 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight">
             Ready to grow your{" "}
             <span className="text-blue-600">
               online business
@@ -363,7 +459,7 @@ export default function LandingPage() {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
             <a 
               href="/signup"
-              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm active:scale-95 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/10"
             >
               <span>Start 3-month free trial</span>
               <ArrowUpRight className="w-4 h-4" />

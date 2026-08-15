@@ -1,9 +1,16 @@
-"use client";
-
 import React from "react";
+import { Metadata } from "next";
 import Header from "../../components/Header";
 import Footer from "../../components/Footer";
 import { ArrowRight, Puzzle, Check } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "E-commerce Integrations & Partners — Basecart",
+  description: "Connect your Basecart store with Razorpay, Stripe, Shiprocket, Delhivery, WhatsApp Business API, and Resend for automated payments and shipping.",
+  alternates: {
+    canonical: "https://basecart.app/integrations",
+  },
+};
 
 export default function IntegrationsPage() {
   return (
