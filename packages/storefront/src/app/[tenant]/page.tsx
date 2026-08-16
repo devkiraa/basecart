@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { getTenantStoreData, getTenantProducts } from "../../lib/store";
-import { Clock, ShoppingBag } from "lucide-react";
+import { Clock, ShoppingBag, ArrowRight } from "lucide-react";
 
 export const runtime = "edge";
 
@@ -41,7 +41,7 @@ export default async function TenantHomePage({ params }: PageProps) {
 
   return (
     <div className="space-y-16">
-      
+
       {/* Store Banner Hero */}
       <section className="text-center py-16 px-6 bg-gradient-to-b from-[#F8FAFC]/60 to-white border border-slate-100 rounded-2xl max-w-5xl mx-auto space-y-6">
         <div className="h-16 w-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl mx-auto shadow-md shadow-blue-200">
@@ -53,6 +53,19 @@ export default async function TenantHomePage({ params }: PageProps) {
         <p className="text-base text-slate-500 font-semibold max-w-xl mx-auto leading-relaxed">
           {store.description}
         </p>
+      </section>
+
+      {/* Promotion Banner */}
+      <section className="bg-blue-50 border-l-4 border-blue-600 px-6 py-4 max-w-5xl mx-auto my-8 text-center space-y-2">
+        <p className="text-sm font-medium text-blue-800">
+          🎉 Special Offer: Start your 3-month free trial today! Plans begin at just ₹99/month with zero platform fees.
+        </p>
+        <Link
+          href="/signup"
+          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-sm rounded-md transition-colors"
+        >
+          Claim Your Free Trial <ArrowRight className="ml-2 h-4 w-4" />
+        </Link>
       </section>
 
       {/* Catalog Grid */}
