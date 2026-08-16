@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add to Project Board
-        uses: actions/add-to-project@v0.5.0
+        uses: actions/add-to-project@v2.0.0
         with:
           project-url: 'https://github.com/users/devkiraa/projects/1'
           github-token: ${{ secrets.ADD_TO_PROJECT_PAT }}
