@@ -69,9 +69,10 @@ max_batch_size = 10
 max_batch_timeout = 5
 max_retries = 3
 
-[[analytics_engine_datasets]]
-binding = "STORE_ANALYTICS"
-dataset = "basecart_events_prod"
+# [[analytics_engine_datasets]]
+# binding = "STORE_ANALYTICS"
+# dataset = "basecart_events_prod"
+# Enable in Cloudflare Dashboard first: https://dash.cloudflare.com/ff223a90e4492d20d0c087e3a10cd2a7/workers/analytics-engine
 
 
 
