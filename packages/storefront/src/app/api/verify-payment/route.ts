@@ -1,5 +1,26 @@
 import { NextResponse } from "next/server";
-import crypto from "crypto";
+
+export const runtime = "edge";
+
+async function verifyHmacSha256(secret: string, data: string, signature: string): Promise<boolean> {
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+    const sigBuf = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+    const expectedHex = Array.from(new Uint8Array(sigBuf))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return expectedHex.toLowerCase() === signature.toLowerCase();
+  } catch (err) {
+    return false;
+  }
+}
 
 /**
  * Next.js API Route: POST /api/verify-payment
@@ -34,13 +55,8 @@ export async function POST(req: Request) {
 
     // Verify HMAC-SHA256 signature: HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
     const text = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expectedSignature = crypto
-      .createHmac("sha256", keySecret)
-      .update(text)
-      .digest("hex");
-
-    if (expectedSignature !== razorpay_signature) {
-      console.warn(`Signature mismatch for order: ${razorpay_order_id}`);
+    const isValid = await verifyHmacSha256(keySecret, text, razorpay_signature);
+    if (!isValid) {
       return NextResponse.json(
         {
           success: false,

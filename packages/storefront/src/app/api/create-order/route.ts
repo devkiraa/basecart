@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 /**
  * Next.js API Route: POST /api/create-order
  * Processes Razorpay order creation
