@@ -14,8 +14,8 @@ export default function WhyChooseUs() {
       icon: <Zap className="w-5 h-5 text-blue-600" />,
     },
     {
-      title: "Isolated Tenant Security",
-      desc: "Every store runs inside its own private Cloudflare SQLite database isolate with AES-256 encryption.",
+      title: "Bank-Grade Store Security",
+      desc: "Every store gets dedicated data isolation and end-to-end encryption for maximum customer privacy.",
       icon: <ShieldCheck className="w-5 h-5 text-blue-600" />,
     },
     {

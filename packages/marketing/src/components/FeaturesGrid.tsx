@@ -30,7 +30,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Real-time Analytics",
-    desc: "Track revenue, orders, and customer behavior with live D1-powered analytics. Make data-driven decisions instantly.",
+    desc: "Track revenue, orders, and customer behavior with live real-time analytics. Make data-driven decisions instantly.",
   },
   {
     icon: Globe,

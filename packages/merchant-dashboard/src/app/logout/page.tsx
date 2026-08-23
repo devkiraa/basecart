@@ -19,7 +19,7 @@ export default function LogoutPage() {
         localStorage.removeItem("basecart_token");
         localStorage.removeItem("basecart_refresh_token");
         localStorage.removeItem("basecart_tenant_id");
-        
+
         // Redirect to login
         window.location.href = "/login";
       }

@@ -9,7 +9,7 @@ import {
   Activity
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 const SERVICES = [
   { name: "Cloudflare Edge Workers", status: "operational", uptime: "99.99%", latency: "24ms" },

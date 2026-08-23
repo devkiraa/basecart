@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Settings, Save, Shield, Database, Activity, RefreshCw, CheckCircle, AlertTriangle } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 interface ConfigState {
   starterPrice: string;

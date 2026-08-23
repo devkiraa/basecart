@@ -23,12 +23,12 @@ export default function SignupPage() {
   useEffect(() => {
     fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
       .then((r) => { if (r.ok) window.location.href = "/dashboard"; })
-      .catch(() => {});
+      .catch(() => { });
     // Restore email from previous session
     try {
       const saved = localStorage.getItem("basecart_signup_email");
       if (saved) setEmail(saved);
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   // Persist email as user types (never store password)
@@ -36,7 +36,7 @@ export default function SignupPage() {
     try {
       if (email) localStorage.setItem("basecart_signup_email", email);
       else localStorage.removeItem("basecart_signup_email");
-    } catch (_) {}
+    } catch (_) { }
   }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,9 +68,9 @@ export default function SignupPage() {
       if (!res.ok) throw new Error(data.error || "Signup failed");
 
       // Mark that we just signed up — tells /onboarding to trust the session
-      try { localStorage.setItem("basecart_just_signed_up", "1"); } catch (_) {}
+      try { localStorage.setItem("basecart_just_signed_up", "1"); } catch (_) { }
       // Clear saved email — account created
-      try { localStorage.removeItem("basecart_signup_email"); } catch (_) {}
+      try { localStorage.removeItem("basecart_signup_email"); } catch (_) { }
       // Account created — go to onboarding to personalise the store
       window.location.href = "/onboarding";
     } catch (err: any) {
@@ -254,9 +254,8 @@ export default function SignupPage() {
               <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <div
                   onClick={() => setAgreed((a) => !a)}
-                  className={`mt-0.5 h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
-                    agreed ? "bg-blue-600 border-blue-600" : "border-slate-300 bg-white hover:border-blue-400"
-                  }`}
+                  className={`mt-0.5 h-4 w-4 shrink-0 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${agreed ? "bg-blue-600 border-blue-600" : "border-slate-300 bg-white hover:border-blue-400"
+                    }`}
                 >
                   {agreed && <CheckCircle2 className="h-3 w-3 text-white" />}
                 </div>

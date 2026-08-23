@@ -137,44 +137,48 @@ export default function HeroDashboardMockup() {
   }, []);
 
   return (
-    <div className="w-full max-w-[640px] relative select-none font-sans">
-      {/* Main Light Dashboard Container */}
-      <div className="relative bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="w-full relative select-none font-sans">
+      {/* Main Light Dashboard Container with 16:9 Aspect Ratio */}
+      <div className="relative bg-white border border-slate-200 rounded-none shadow-sm overflow-hidden aspect-[16/9] flex flex-col">
         
         {/* Top Window Navigation Bar (Browser Frame Style) */}
-        <div className="h-10 bg-slate-100/90 border-b border-slate-200/80 px-3.5 flex items-center justify-between">
+        <div className="h-10 bg-slate-100/90 border-b border-slate-200/80 px-3.5 flex items-center justify-between shrink-0">
           {/* Window controls */}
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
-            <span className="w-2.5 h-2.5 rounded-full bg-slate-300"></span>
+            <span className="w-2.5 h-2.5 bg-slate-300"></span>
+            <span className="w-2.5 h-2.5 bg-slate-300"></span>
+            <span className="w-2.5 h-2.5 bg-slate-300"></span>
           </div>
 
           {/* Real Dashboard Address Bar */}
-          <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-mono text-slate-500 shadow-2xs">
+          <div className="flex items-center gap-1.5 px-3 py-0.5 rounded-none bg-white border border-slate-200 text-[10px] font-mono text-slate-500 shadow-2xs">
             <Globe className="w-3 h-3 text-blue-600" />
             <span className="text-slate-800 font-bold">dashboard.basecart.app</span>
-            <span className="text-slate-400">/overview</span>
+            <span className="text-slate-400">
+              {activeTab === "summary" ? "/overview" :
+               activeTab === "orders" ? "/orders" :
+               activeTab === "products" ? "/products" :
+               activeTab === "customers" ? "/customers" :
+               activeTab === "finances" ? "/analytics" :
+               "/settings"}
+            </span>
           </div>
 
           {/* Live Sync Status Tag */}
-          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/60">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
-            <span>LIVE D1 SYNC</span>
+          <div className="flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-none border border-emerald-200/60">
+            <span className="h-1.5 w-1.5 bg-emerald-500"></span>
+            <span>REAL-TIME SYNC</span>
           </div>
         </div>
 
         {/* Real Merchant Dashboard Body */}
-        <div className="flex h-[370px] sm:h-[410px]">
+        <div className="flex flex-1 min-h-0">
           
           {/* Left Mini Sidebar */}
           <aside className="w-44 sm:w-48 bg-white border-r border-slate-200/80 flex flex-col shrink-0">
             {/* Store Branding Logo */}
-            <div className="h-12 flex items-center px-3.5 gap-2.5 border-b border-slate-100 shrink-0">
-              <div className="h-7 w-7 bg-blue-600 rounded-lg flex items-center justify-center text-white font-black text-xs">
-                <ShoppingBag className="h-4 w-4" />
-              </div>
-              <span className="text-sm font-black text-slate-900 tracking-tight">basecart</span>
+            <div className="h-12 flex items-center px-3.5 border-b border-slate-100 shrink-0">
+              <img src="/logo.svg" alt="Basecart Logo" className="h-6 w-auto object-contain shrink-0" />
             </div>
 
             {/* Navigation Menu */}
@@ -192,7 +196,7 @@ export default function HeroDashboardMockup() {
                   <button
                     key={item.id}
                     onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-none text-xs font-semibold transition-all cursor-pointer ${
                       isActive
                         ? "bg-blue-50 text-blue-700 font-extrabold shadow-2xs"
                         : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
@@ -201,7 +205,7 @@ export default function HeroDashboardMockup() {
                     <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-blue-600" : "text-slate-400"}`} />
                     <span className="truncate">{item.name}</span>
                     {item.badge && (
-                      <span className="ml-auto bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0.2 rounded-full font-bold">
+                      <span className="ml-auto bg-blue-100 text-blue-700 text-[9px] px-1.5 py-0.2 rounded-none font-bold">
                         {item.badge}
                       </span>
                     )}
@@ -212,8 +216,15 @@ export default function HeroDashboardMockup() {
 
             {/* Bottom Settings Link */}
             <div className="p-2 border-t border-slate-100 shrink-0">
-              <button className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-50">
-                <SettingsIcon className="h-4 w-4 text-slate-400" />
+              <button
+                onClick={() => setActiveTab("settings")}
+                className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-none text-xs font-semibold cursor-pointer transition-all ${
+                  activeTab === "settings"
+                    ? "bg-blue-50 text-blue-700 font-extrabold shadow-2xs"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <SettingsIcon className={`h-4 w-4 ${activeTab === "settings" ? "text-blue-600" : "text-slate-400"}`} />
                 <span>Store Settings</span>
               </button>
             </div>
@@ -225,8 +236,8 @@ export default function HeroDashboardMockup() {
             {/* Top Store Header Bar */}
             <header className="h-12 bg-white border-b border-slate-200/80 px-3.5 flex items-center justify-between shrink-0 shadow-2xs">
               {/* Store Switcher Pill */}
-              <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition-colors">
-                <div className="h-5 w-5 bg-blue-600 rounded-md flex items-center justify-center text-white font-bold text-[9px]">
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-none bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100 transition-colors">
+                <div className="h-5 w-5 bg-blue-600 rounded-none flex items-center justify-center text-white font-bold text-[9px]">
                   KS
                 </div>
                 <span className="text-xs font-bold text-slate-900 truncate max-w-[90px] sm:max-w-[120px]">
@@ -237,15 +248,15 @@ export default function HeroDashboardMockup() {
 
               {/* Top Controls */}
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/60 px-2.5 py-1 rounded-lg text-[10px] text-slate-400">
+                <div className="hidden sm:flex items-center gap-1.5 bg-slate-100/80 border border-slate-200/60 px-2.5 py-1 rounded-none text-[10px] text-slate-400">
                   <Search className="h-3 w-3 text-slate-400" />
                   <span>Search... (Ctrl+K)</span>
                 </div>
-                <div className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg relative cursor-pointer">
+                <div className="p-1.5 text-slate-400 hover:text-slate-700 rounded-none relative cursor-pointer">
                   <Bell className="h-4 w-4" />
-                  <span className="absolute top-1 right-1 h-1.5 w-1.5 bg-rose-500 rounded-full"></span>
+                  <span className="absolute top-1 right-1 h-1.5 w-1.5 bg-rose-500"></span>
                 </div>
-                <div className="h-7 w-7 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">
+                <div className="h-7 w-7 rounded-none bg-blue-600 flex items-center justify-center text-white font-bold text-[10px]">
                   KM
                 </div>
               </div>
@@ -254,166 +265,342 @@ export default function HeroDashboardMockup() {
             {/* Dashboard Scrollable Canvas */}
             <main className="flex-1 p-3.5 space-y-3 overflow-y-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               
-              {/* Controls Bar: Timeframe Selector */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xs font-black text-slate-900 tracking-tight">Analytics Overview</h2>
-                  <p className="text-[10px] text-slate-400 font-medium">Real-time revenue telemetry</p>
-                </div>
+              {/* Dynamic View rendering based on activeTab */}
+              {(activeTab === "summary" || activeTab === "finances") && (
+                <>
+                  {/* Controls Bar: Timeframe Selector */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xs font-black text-slate-900 tracking-tight">
+                        {activeTab === "finances" ? "Sales & Analytics Summary" : "Analytics Overview"}
+                      </h2>
+                      <p className="text-[10px] text-slate-400 font-medium">Real-time revenue overview</p>
+                    </div>
 
-                {/* Timeframe Selector Tabs */}
-                <div className="flex items-center bg-slate-200/70 p-0.5 rounded-lg border border-slate-200/80 gap-0.5">
-                  {(["7D", "30D", "12M"] as Timeframe[]).map((tf) => (
-                    <button
-                      key={tf}
-                      onClick={() => setTimeframe(tf)}
-                      className={`relative px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer ${
-                        timeframe === tf ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      {timeframe === tf && (
-                        <motion.div
-                          layoutId="lightTabBg"
-                          className="absolute inset-0 bg-white rounded-md shadow-2xs border border-slate-200/80"
-                          transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                        />
-                      )}
-                      <span className="relative z-10">{tf}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3 Metric Cards */}
-              <div className="grid grid-cols-3 gap-2">
-                {/* Sales Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-xl transition-all shadow-2xs"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
-                    <span>Sales</span>
-                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-200/60 flex items-center">
-                      <TrendingUp className="w-2 h-2 mr-0.5" /> {data.salesChange}
-                    </span>
+                    {/* Timeframe Selector Tabs */}
+                    <div className="flex items-center bg-slate-200/70 p-0.5 rounded-none border border-slate-200/80 gap-0.5">
+                      {(["7D", "30D", "12M"] as Timeframe[]).map((tf) => (
+                        <button
+                          key={tf}
+                          onClick={() => setTimeframe(tf)}
+                          className={`relative px-2 py-0.5 text-[10px] font-bold rounded-none transition-all cursor-pointer ${
+                            timeframe === tf ? "text-blue-600" : "text-slate-500 hover:text-slate-800"
+                          }`}
+                        >
+                          {timeframe === tf && (
+                            <motion.div
+                              layoutId="lightTabBg"
+                              className="absolute inset-0 bg-white rounded-none shadow-2xs border border-slate-200/80"
+                              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                            />
+                          )}
+                          <span className="relative z-10">{tf}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <AnimatePresence mode="wait">
+
+                  {/* 3 Metric Cards */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {/* Sales Card */}
                     <motion.div
-                      key={timeframe + "-sales"}
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -3 }}
-                      className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 tracking-tight"
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-none transition-all shadow-2xs"
                     >
-                      {data.sales}
-                    </motion.div>
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Orders Card */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-xl transition-all shadow-2xs"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
-                    <span>Orders</span>
-                    <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded border border-blue-200/60 flex items-center">
-                      <ShoppingBag className="w-2 h-2 mr-0.5" /> {data.ordersChange}
-                    </span>
-                  </div>
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={timeframe + "-orders"}
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -3 }}
-                      className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 tracking-tight"
-                    >
-                      {data.orders} <span className="text-[9px] font-semibold text-slate-400">qty</span>
-                    </motion.div>
-                  </AnimatePresence>
-                </motion.div>
-
-                {/* Live Store Visitors */}
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-xl transition-all shadow-2xs"
-                >
-                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
-                    <span>Store</span>
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                    </span>
-                  </div>
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={timeframe + "-visitors"}
-                      initial={{ opacity: 0, y: 3 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -3 }}
-                      className="text-xs sm:text-sm font-black text-emerald-600 mt-0.5 tracking-tight flex items-center gap-0.5"
-                    >
-                      {data.visitors} <span className="text-[9px] font-semibold text-slate-400">online</span>
-                    </motion.div>
-                  </AnimatePresence>
-                </motion.div>
-              </div>
-
-              {/* Chart.js Revenue Growth Trend */}
-              <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 space-y-1 shadow-2xs">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="font-bold text-slate-800 flex items-center gap-1">
-                    <Activity className="w-3 h-3 text-blue-600" /> Revenue Growth Trend
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-semibold text-slate-400">Razorpay + COD</span>
-                    <motion.div
-                      key={timeframe + "-badge"}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="bg-slate-900 text-white text-[8px] font-black px-2 py-0.5 rounded-full shadow-md flex items-center gap-1 border border-slate-700"
-                    >
-                      <Sparkles className="w-2 h-2 text-amber-400" />
-                      {data.peakVal}
-                    </motion.div>
-                  </div>
-                </div>
-
-                {/* Chart.js Line Chart */}
-                <RevenueChart data={data} timeframe={timeframe} />
-              </div>
-
-              {/* Recent Live Orders Table */}
-              <div className="bg-white border border-slate-200/80 rounded-xl p-2.5 space-y-1.5 shadow-2xs">
-                <div className="flex items-center justify-between text-[10px]">
-                  <span className="font-extrabold text-slate-900">Recent Live Orders</span>
-                  <span className="text-[9px] font-bold text-blue-600 hover:underline cursor-pointer">View All ↗</span>
-                </div>
-                <div className="space-y-1 divide-y divide-slate-100">
-                  {RECENT_ORDERS.map((ord) => (
-                    <div key={ord.id} className="pt-1 flex items-center justify-between text-[10px] font-medium text-slate-600">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-slate-900">{ord.id}</span>
-                        <span>{ord.customer}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-900">{ord.amount}</span>
-                        <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1 py-0.2 rounded">
-                          {ord.status}
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                        <span>Sales</span>
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded-none border border-emerald-200/60 flex items-center">
+                          <TrendingUp className="w-2 h-2 mr-0.5" /> {data.salesChange}
                         </span>
                       </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={timeframe + "-sales"}
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -3 }}
+                          className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 tracking-tight"
+                        >
+                          {data.sales}
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.div>
+
+                    {/* Orders Card */}
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-none transition-all shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                        <span>Orders</span>
+                        <span className="text-[9px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2 rounded-none border border-blue-200/60 flex items-center">
+                          <ShoppingBag className="w-2 h-2 mr-0.5" /> {data.ordersChange}
+                        </span>
+                      </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={timeframe + "-orders"}
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -3 }}
+                          className="text-xs sm:text-sm font-black text-slate-900 mt-0.5 tracking-tight"
+                        >
+                          {data.orders} <span className="text-[9px] font-semibold text-slate-400">qty</span>
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.div>
+
+                    {/* Live Store Visitors */}
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      className="bg-white border border-slate-200/80 hover:border-blue-500/40 p-2.5 rounded-none transition-all shadow-2xs"
+                    >
+                      <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+                        <span>Store</span>
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex h-1.5 w-1.5 bg-emerald-500"></span>
+                        </span>
+                      </div>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={timeframe + "-visitors"}
+                          initial={{ opacity: 0, y: 3 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -3 }}
+                          className="text-xs sm:text-sm font-black text-emerald-600 mt-0.5 tracking-tight flex items-center gap-0.5"
+                        >
+                          {data.visitors} <span className="text-[9px] font-semibold text-slate-400">online</span>
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.div>
+                  </div>
+
+                  {/* Chart.js Revenue Growth Trend */}
+                  <div className="bg-white border border-slate-200/80 rounded-none p-2.5 space-y-1 shadow-2xs">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-bold text-slate-800 flex items-center gap-1">
+                        <Activity className="w-3 h-3 text-blue-600" /> Revenue Growth Trend
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-semibold text-slate-400">Razorpay + COD</span>
+                        <motion.div
+                          key={timeframe + "-badge"}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className="bg-slate-900 text-white text-[8px] font-black px-2 py-0.5 rounded-none shadow-md flex items-center gap-1 border border-slate-700"
+                        >
+                          <Sparkles className="w-2 h-2 text-amber-400" />
+                          {data.peakVal}
+                        </motion.div>
+                      </div>
                     </div>
-                  ))}
+
+                    {/* Chart.js Line Chart */}
+                    <RevenueChart data={data} timeframe={timeframe} />
+                  </div>
+
+                  {/* Recent Live Orders Table */}
+                  <div className="bg-white border border-slate-200/80 rounded-none p-2.5 space-y-1.5 shadow-2xs">
+                    <div className="flex items-center justify-between text-[10px]">
+                      <span className="font-extrabold text-slate-900">Recent Live Orders</span>
+                      <span className="text-[9px] font-bold text-blue-600 hover:underline cursor-pointer">View All ↗</span>
+                    </div>
+                    <div className="space-y-1 divide-y divide-slate-100">
+                      {RECENT_ORDERS.map((ord) => (
+                        <div key={ord.id} className="pt-1 flex items-center justify-between text-[10px] font-medium text-slate-600">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono font-bold text-slate-900">{ord.id}</span>
+                            <span>{ord.customer}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-slate-900">{ord.amount}</span>
+                            <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1 py-0.2 rounded-none">
+                              {ord.status}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ORDERS TAB VIEW */}
+              {activeTab === "orders" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xs font-black text-slate-900 tracking-tight">Orders & Sales Management</h2>
+                      <p className="text-[10px] text-slate-400 font-medium">Live Order Stream & Shiprocket Sync</p>
+                    </div>
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 p-0.5 text-[9px] font-bold text-slate-600">
+                      <span className="bg-blue-50 text-blue-700 px-1.5 py-0.5">All (184)</span>
+                      <span className="px-1.5 py-0.5 hover:bg-slate-50">Paid (162)</span>
+                      <span className="px-1.5 py-0.5 hover:bg-slate-50">Unfulfilled (18)</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200/80 rounded-none shadow-2xs divide-y divide-slate-100 text-[10px]">
+                    {[
+                      { id: "ORD-2084", name: "Ananya N.", city: "Kochi, KL", item: "Kerala Handloom Saree (x1)", total: "₹1,499", status: "Paid", shipping: "Shiprocket AWB #92841" },
+                      { id: "ORD-2083", name: "Rahul M.", city: "Bengaluru, KA", item: "Arabica Coffee Beans 500g (x2)", total: "₹2,890", status: "Paid", shipping: "Shipped via Delhivery" },
+                      { id: "ORD-2082", name: "Priya S.", city: "Mumbai, MH", item: "Spices Combo Box (x1)", total: "₹999", status: "COD Verified", shipping: "Delivered" },
+                      { id: "ORD-2081", name: "Vikram R.", city: "Chennai, TN", item: "Handicraft Boat (x1)", total: "₹4,250", status: "Paid", shipping: "Processing" },
+                      { id: "ORD-2080", name: "Deepa K.", city: "Trivandrum, KL", item: "Organic Honey 1kg (x2)", total: "₹1,200", status: "Paid", shipping: "Delivered" },
+                    ].map((order) => (
+                      <div key={order.id} className="p-2.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-black text-slate-900">{order.id}</span>
+                            <span className="font-bold text-slate-800">{order.name}</span>
+                            <span className="text-[9px] text-slate-400">({order.city})</span>
+                          </div>
+                          <p className="text-[9px] text-slate-500 font-medium">{order.item}</p>
+                        </div>
+                        <div className="text-right space-y-0.5">
+                          <span className="font-black text-slate-900 block">{order.total}</span>
+                          <div className="flex items-center gap-1 justify-end">
+                            <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-1 py-0.2">
+                              {order.status}
+                            </span>
+                            <span className="text-[8px] font-semibold text-slate-400 bg-slate-100 px-1 py-0.2">
+                              {order.shipping}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* PRODUCTS TAB VIEW */}
+              {activeTab === "products" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xs font-black text-slate-900 tracking-tight">Catalog & Items</h2>
+                      <p className="text-[10px] text-slate-400 font-medium">Product Inventory & Price Rules</p>
+                    </div>
+                    <button className="bg-blue-600 text-white font-bold text-[9px] px-2.5 py-1 flex items-center gap-1 cursor-pointer">
+                      <span>+ Add Product</span>
+                    </button>
+                  </div>
+
+                  <div className="bg-white border border-slate-200/80 rounded-none shadow-2xs divide-y divide-slate-100 text-[10px]">
+                    {[
+                      { name: "Kerala Handloom Cotton Saree", sku: "KHL-SAR-01", price: "₹1,499", stock: "42 in stock", cat: "Apparel" },
+                      { name: "Wayanad Organic Arabica Beans 500g", sku: "WAY-COF-500", price: "₹1,445", stock: "128 in stock", cat: "Food & Beverage" },
+                      { name: "Cardamom & Pepper Gift Box", sku: "SP-GFT-03", price: "₹999", stock: "5 in stock", cat: "Gourmet Spices" },
+                      { name: "Handcrafted Teak Kathakali Mask", sku: "DEC-KTH-02", price: "₹4,250", stock: "14 in stock", cat: "Home Decor" },
+                      { name: "Pure Coir Door Mat", sku: "COIR-MAT-08", price: "₹499", stock: "86 in stock", cat: "Furnishings" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="p-2.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center font-black text-xs">
+                            {item.name[0]}
+                          </div>
+                          <div>
+                            <span className="font-bold text-slate-900 block">{item.name}</span>
+                            <span className="text-[9px] font-mono text-slate-400">SKU: {item.sku} • {item.cat}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-black text-slate-900 block">{item.price}</span>
+                          <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2">
+                            {item.stock}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CUSTOMERS TAB VIEW */}
+              {activeTab === "customers" && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xs font-black text-slate-900 tracking-tight">Customer CRM & Lifetime Value</h2>
+                      <p className="text-[10px] text-slate-400 font-medium">542 Total Customers • 34.2% Repeat Rate</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200/80 rounded-none shadow-2xs divide-y divide-slate-100 text-[10px]">
+                    {[
+                      { name: "Ananya N.", email: "ananya@example.com", loc: "Kochi, KL", orders: "4 orders", ltv: "₹6,800 LTV", badge: "VIP Customer" },
+                      { name: "Rahul M.", email: "rahul.m@example.com", loc: "Bengaluru, KA", orders: "7 orders", ltv: "₹18,400 LTV", badge: "VIP Customer" },
+                      { name: "Priya S.", email: "priya.s@example.com", loc: "Mumbai, MH", orders: "2 orders", ltv: "₹2,498 LTV", badge: "Regular" },
+                      { name: "Vikram R.", email: "vikram.r@example.com", loc: "Chennai, TN", orders: "5 orders", ltv: "₹14,250 LTV", badge: "VIP Customer" },
+                      { name: "Deepa K.", email: "deepa.k@example.com", loc: "Trivandrum, KL", orders: "3 orders", ltv: "₹3,600 LTV", badge: "Regular" },
+                    ].map((c, i) => (
+                      <div key={i} className="p-2.5 flex items-center justify-between hover:bg-slate-50/80 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-[10px]">
+                            {c.name[0]}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-slate-900">{c.name}</span>
+                              <span className="text-[8px] font-bold text-blue-700 bg-blue-50 px-1 py-0.2">{c.badge}</span>
+                            </div>
+                            <span className="text-[9px] text-slate-400">{c.email} • {c.loc}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-black text-slate-900 block">{c.ltv}</span>
+                          <span className="text-[9px] text-slate-500 font-medium">{c.orders}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SETTINGS TAB VIEW */}
+              {activeTab === "settings" && (
+                <div className="space-y-3">
+                  <div>
+                    <h2 className="text-xs font-black text-slate-900 tracking-tight">Store Configuration & Integrations</h2>
+                    <p className="text-[10px] text-slate-400 font-medium">Bank-Grade Encryption & Store Privacy</p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-white border border-slate-200/80 p-2.5 space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">Subdomain & Storefront</span>
+                      <p className="font-bold text-slate-900">kirans-store.basecart.app</p>
+                      <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 inline-block">SSL Active ✓</span>
+                    </div>
+
+                    <div className="bg-white border border-slate-200/80 p-2.5 space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">Razorpay Payments</span>
+                      <p className="font-bold text-slate-900">Encrypted Key Storage</p>
+                      <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 inline-block">UPI & COD Ready ✓</span>
+                    </div>
+
+                    <div className="bg-white border border-slate-200/80 p-2.5 space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">Shiprocket Logistics</span>
+                      <p className="font-bold text-slate-900">Auto-AWB Generation</p>
+                      <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 inline-block">24,000+ Pincodes ✓</span>
+                    </div>
+
+                    <div className="bg-white border border-slate-200/80 p-2.5 space-y-1">
+                      <span className="text-[9px] font-black text-slate-400 uppercase">WhatsApp Checkout</span>
+                      <p className="font-bold text-slate-900">Direct Order API</p>
+                      <span className="text-[8px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 inline-block">Instant Alerts ✓</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </main>
           </div>
         </div>
 
         {/* FLOATING OVERLAY CARDS */}
-        <div className="p-2.5 pt-0 sm:px-4 sm:pb-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80">
+        <div className="p-2.5 pt-0 sm:px-4 sm:pb-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 border-t border-slate-100 bg-slate-50/80 shrink-0">
           {/* 1. Live Order Notification Card */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -422,17 +609,17 @@ export default function HeroDashboardMockup() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.96 }}
               transition={{ duration: 0.3 }}
-              className="flex-1 bg-white border border-blue-200/90 p-2 rounded-xl shadow-sm flex items-center gap-2 hover:scale-[1.01] transition-transform cursor-pointer"
+              className="flex-1 bg-white border border-blue-200/90 p-2 rounded-none shadow-sm flex items-center gap-2 hover:scale-[1.01] transition-transform cursor-pointer"
             >
-              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
+              <div className="w-7 h-7 rounded-none bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-2xs">
                 <Zap className="w-3.5 h-3.5 fill-white" />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-extrabold text-slate-900 truncate">
-                    ⚡ New Order #{currentNotif.id}
+                    New Order #{currentNotif.id}
                   </span>
-                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-100">
+                  <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded-none border border-emerald-100">
                     ₹{currentNotif.amount}
                   </span>
                 </div>
@@ -448,7 +635,7 @@ export default function HeroDashboardMockup() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.4, delay: 0.3 }}
-            className="bg-emerald-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-lg shadow-md flex items-center justify-center gap-1 shrink-0 hover:bg-emerald-700 transition-colors cursor-pointer"
+            className="bg-emerald-600 text-white text-[9px] font-black px-2.5 py-1.5 rounded-none shadow-md flex items-center justify-center gap-1 shrink-0 hover:bg-emerald-700 transition-colors cursor-pointer"
           >
             <Truck className="w-3 h-3" />
             <span>Shiprocket AWB Generated ✓</span>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Activity, Server, HeartPulse, RefreshCw, Cpu, Database, Layers, Cloud } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 interface DeploymentItem {
   id: string;

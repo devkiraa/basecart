@@ -286,9 +286,8 @@ export default function AccountPage() {
                     </p>
                   </div>
                   <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${
-                      STATUS_STYLES[order.status] || "bg-slate-50 text-slate-500 border-slate-100"
-                    }`}
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${STATUS_STYLES[order.status] || "bg-slate-50 text-slate-500 border-slate-100"
+                      }`}
                   >
                     {order.status}
                   </span>

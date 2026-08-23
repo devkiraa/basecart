@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { GmvChart, MerchantSignupsChart } from "@/components/AdminCharts";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 interface AnalyticsData {
   mrr: number;

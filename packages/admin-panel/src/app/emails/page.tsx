@@ -6,7 +6,7 @@ import {
   RefreshCw, CheckCircle2, XCircle, Edit2, Save, X
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 const DEFAULT_MOCKS: Record<string, Record<string, any>> = {
   otp: { code: "887722", expiresMinutes: 15, storeName: "Basecart" },

@@ -212,7 +212,7 @@ export default function AlternatingFeatures() {
                 <span className="text-[10px] bg-emerald-800/80 text-emerald-200 px-2 py-0.5 rounded font-mono">Instant</span>
               </div>
               <div className="bg-emerald-900/60 p-4 rounded-xl border border-emerald-700/50 space-y-2 text-xs leading-relaxed font-sans">
-                <div className="font-bold text-emerald-300">🛍️ Basecart Store Order #2084</div>
+                <div className="font-bold text-emerald-300">Basecart Store Order #2084</div>
                 <p>Hello Ananya! Your order for <strong>Handloom Silk Saree (Royal Blue)</strong> is confirmed.</p>
                 <div className="text-[11px] text-emerald-200/80 pt-1 font-mono">
                   Total Paid: ₹2,890 (UPI Instant)<br />
@@ -223,7 +223,7 @@ export default function AlternatingFeatures() {
           </div>
         </div>
 
-        {/* ── ROW 4: Isolated Tenant SQLite Security (UI Left, Text Right) ── */}
+        {/* ── ROW 4: Dedicated Store Security & Speed (UI Left, Text Right) ── */}
         <div className="flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-16">
           {/* UI Card Mockup */}
           <div className="w-full lg:w-1/2">
@@ -231,22 +231,22 @@ export default function AlternatingFeatures() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-blue-400" />
-                  <span className="text-xs font-bold text-white">Cloudflare Durable Object Isolate</span>
+                  <span className="text-xs font-bold text-white">Dedicated Store Environment</span>
                 </div>
-                <span className="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded font-mono">Isolated SQLite</span>
+                <span className="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded font-mono">100% Uptime</span>
               </div>
               <div className="space-y-2.5 text-xs font-mono">
                 <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center">
-                  <span className="text-slate-400">Database Binding:</span>
-                  <span className="text-emerald-400 font-bold">tenant_do_782a (Active)</span>
+                  <span className="text-slate-400">Store Isolation:</span>
+                  <span className="text-emerald-400 font-bold">Protected & Private</span>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center">
-                  <span className="text-slate-400">Query Latency:</span>
-                  <span className="text-blue-400 font-bold">&lt; 0.8 ms</span>
+                  <span className="text-slate-400">Checkout Speed:</span>
+                  <span className="text-blue-400 font-bold">&lt; 0.5 sec Instant</span>
                 </div>
                 <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex justify-between items-center">
-                  <span className="text-slate-400">Data Isolation:</span>
-                  <span className="text-purple-400 font-bold">Physical Edge Barrier</span>
+                  <span className="text-slate-400">Customer Data Encryption:</span>
+                  <span className="text-purple-400 font-bold">Bank-Grade Active</span>
                 </div>
               </div>
             </div>
@@ -257,28 +257,28 @@ export default function AlternatingFeatures() {
               04
             </span>
             <h3 className="text-2xl sm:text-4xl font-extrabold text-slate-900 tracking-tight leading-tight">
-              Isolated SQLite Database Per Merchant
+              Dedicated Store Security & Ultra-Fast Loading
             </h3>
             <p className="text-sm sm:text-base text-slate-500 font-medium leading-relaxed">
-              Basecart gives every merchant their own isolated SQLite database powered by Cloudflare Durable Objects. Zero shared database tables, maximum query speeds, and complete data privacy.
+              Basecart provides dedicated store performance and bank-grade data security. Your customer lists and catalog are completely private, with instant checkout load times even during peak holiday sales.
             </p>
             <ul className="space-y-2.5 text-xs sm:text-sm font-semibold text-slate-700">
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>No noisy-neighbor database slowdowns during high traffic sales</span>
+                <span>Zero store slowdowns during festival sales & traffic spikes</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Automatic edge replication across Cloudflare global network</span>
+                <span>Bank-grade encryption for merchant payment credentials & customer records</span>
               </li>
               <li className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                <span>Sub-millisecond query execution speeds</span>
+                <span>Instant page load speeds across mobile devices</span>
               </li>
             </ul>
             <div className="pt-2">
-              <a href="/features" className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
-                <span>Learn Architecture</span>
+              <a href="/signup" className="inline-flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                <span>Explore Store Features</span>
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>

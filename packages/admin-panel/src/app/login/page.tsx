@@ -16,7 +16,7 @@ import {
   Info
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -170,10 +170,7 @@ export default function LoginPage() {
         <div className="max-w-[440px] w-full mx-auto space-y-6">
           {/* Mobile Logo */}
           <div className="flex lg:hidden items-center gap-2 mb-4 select-none cursor-pointer" onClick={() => { window.location.href = "/"; }}>
-            <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-              <ShieldCheck className="h-4.5 w-4.5" />
-            </div>
-            <span className="text-lg font-black text-slate-900">basecart admin</span>
+            <img src="/logo.svg" alt="Basecart Logo" className="h-[36px] w-auto object-contain shrink-0" />
           </div>
 
           {authError && (

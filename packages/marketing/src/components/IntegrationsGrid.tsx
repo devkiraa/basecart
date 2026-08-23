@@ -1,15 +1,17 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, Puzzle, ShieldCheck, Zap } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Zap, MessageCircle, Cloud, Truck, Mail } from "lucide-react";
 
 export default function IntegrationsGrid() {
   const partners = [
-    { name: "Razorpay", category: "UPI & Payments", color: "bg-blue-50 text-blue-600 border-blue-100" },
-    { name: "Shiprocket", category: "Logistics & AWBs", color: "bg-purple-50 text-purple-600 border-purple-100" },
-    { name: "WhatsApp", category: "Orders & Alerts", color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
-    { name: "Cloudflare", category: "Edge & Isolation", color: "bg-amber-50 text-amber-600 border-amber-100" },
-    { name: "Delhivery", category: "Pan-India Courier", color: "bg-red-50 text-red-600 border-red-100" },
-    { name: "Resend", category: "PDF Invoices & Mail", color: "bg-slate-100 text-slate-800 border-slate-200" },
+    { name: "UPI", category: "Instant Payments", color: "bg-blue-50 text-blue-600 border-blue-100", logo: "/logos/upi.svg" },
+    { name: "Razorpay", category: "UPI & Payments", color: "bg-indigo-50 text-indigo-600 border-indigo-100", logo: "/logos/razorpay.svg" },
+    { name: "Shiprocket", category: "Logistics & AWBs", color: "bg-orange-50 text-orange-600 border-orange-100", logo: "/logos/shiprocket.svg" },
+    { name: "WhatsApp", category: "Orders & Alerts", color: "bg-emerald-50 text-emerald-600 border-emerald-100", icon: MessageCircle },
+    { name: "Speed Post & DTDC", category: "Regional Courier", color: "bg-amber-50 text-amber-600 border-amber-100", icon: Truck },
+    { name: "Delhivery", category: "Pan-India Courier", color: "bg-red-50 text-red-600 border-red-100", icon: Truck },
+    { name: "Resend", category: "PDF Invoices & Mail", color: "bg-slate-100 text-slate-800 border-slate-200", icon: Mail },
   ];
 
   return (
@@ -22,8 +24,20 @@ export default function IntegrationsGrid() {
               key={idx}
               className={`p-5 rounded-2xl border ${p.color} flex flex-col justify-between space-y-3 shadow-sm hover:shadow-md transition-all`}
             >
-              <div className="w-8 h-8 rounded-lg bg-white/80 shadow-sm flex items-center justify-center font-black text-xs">
-                <Puzzle className="w-4 h-4" />
+              <div className="w-12 h-12 rounded-lg bg-white/80 shadow-sm flex items-center justify-center">
+                {p.logo ? (
+                  <Image
+                    src={p.logo}
+                    alt={`${p.name} logo`}
+                    width={32}
+                    height={32}
+                    className="object-contain"
+                  />
+                ) : p.icon ? (
+                  <p.icon className="w-5 h-5 text-current" />
+                ) : (
+                  <div className="w-5 h-5" />
+                )}
               </div>
               <div>
                 <h4 className="text-sm font-bold text-slate-900">{p.name}</h4>

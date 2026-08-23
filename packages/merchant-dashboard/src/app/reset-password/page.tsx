@@ -92,9 +92,9 @@ export default function ResetPasswordPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-card border border-slate-200 shadow-card select-none">
-        
+
         {/* Logo */}
-        <div 
+        <div
           onClick={() => { window.location.href = MARKETING_URL; }}
           className="flex items-center justify-center gap-2.5 cursor-pointer mb-6"
         >

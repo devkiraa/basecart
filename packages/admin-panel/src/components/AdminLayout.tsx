@@ -36,7 +36,7 @@ import {
   Link2,
 } from "lucide-react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
 interface AdminProfile {
   email: string;
@@ -259,13 +259,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         className="hidden lg:flex bg-white border-r border-slate-200/80 flex-col fixed h-full transition-[width] duration-300 ease-in-out z-30"
       >
         {/* Header branding */}
-        <div className="h-14 border-b border-slate-100 px-4 flex items-center gap-3 shrink-0">
-          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-[18px] h-[18px] text-white" />
-          </div>
+        <div className="h-14 border-b border-slate-100 px-4 flex items-center gap-2.5 shrink-0 select-none">
+          <img src="/logo.svg" alt="Basecart Logo" className="h-[32px] w-auto object-contain shrink-0" />
           {!collapsed && (
-            <span className="font-bold text-slate-800 text-[15px] whitespace-nowrap">
-              Basecart Admin
+            <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-1.5 py-0.5 border border-slate-200 uppercase tracking-widest">
+              Admin
             </span>
           )}
         </div>

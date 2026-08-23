@@ -159,7 +159,7 @@ export default function LandingPage() {
           {/* Announcement Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-xs font-bold shadow-2xs hover:bg-blue-100/70 transition-colors">
             <Sparkles className="w-4 h-4 text-blue-600 fill-blue-500/20" />
-            <span>Introducing Basecart 2.0 — Headless Edge Storefronts</span>
+            <span>Introducing Basecart 2.0 — Complete Online Store Builder</span>
           </div>
 
           {/* Centered H1 Headline & Subtitle */}
@@ -202,8 +202,8 @@ export default function LandingPage() {
           </div>
 
           {/* Large Centered Dashboard Mockup Frame */}
-          <div className="pt-6 max-w-5xl mx-auto">
-            <div className="p-2 sm:p-3 rounded-2xl sm:rounded-3xl bg-slate-900/5 border border-slate-200/80 shadow-2xl backdrop-blur-xl">
+          <div className="pt-6 max-w-5xl mx-auto w-full">
+            <div className="p-0 rounded-none bg-white border border-slate-200 shadow-2xl">
               <HeroDashboardMockup />
             </div>
           </div>
@@ -212,19 +212,19 @@ export default function LandingPage() {
           <div className="pt-10 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto text-left">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="text-2xl font-black text-slate-900">99.9%</div>
-              <div className="text-xs text-slate-500 font-medium">Edge Network Uptime</div>
+              <div className="text-xs text-slate-500 font-medium">Store Uptime</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="text-2xl font-black text-blue-600">0%</div>
-              <div className="text-xs text-slate-500 font-medium">Platform Commission</div>
+              <div className="text-xs text-slate-500 font-medium">Platform Fees</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
-              <div className="text-2xl font-black text-slate-900">&lt; 1 ms</div>
-              <div className="text-xs text-slate-500 font-medium">SQLite Query Latency</div>
+              <div className="text-2xl font-black text-slate-900">&lt; 0.5s</div>
+              <div className="text-xs text-slate-500 font-medium">Fast Page Speed</div>
             </div>
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
               <div className="text-2xl font-black text-slate-900">500+</div>
-              <div className="text-xs text-slate-500 font-medium">Active Merchants</div>
+              <div className="text-xs text-slate-500 font-medium">Active Stores</div>
             </div>
           </div>
 
@@ -413,7 +413,7 @@ export default function LandingPage() {
           </AnimatedSection>
 
           <AnimatedSection delay={0.15}>
-            <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-2xl overflow-hidden bg-white shadow-sm">
+            <div className="divide-y divide-slate-100 border border-slate-200/80 rounded-none overflow-hidden bg-white shadow-sm">
               <FaqAccordionItem
                 question="How does Basecart automate Instagram DM and WhatsApp orders?"
                 answer="Basecart links your online storefront directly to WhatsApp. When a customer checks out on your store, an instant, pre-filled WhatsApp message containing order items, payment status, and delivery address is generated—eliminating manual DM management."

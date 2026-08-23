@@ -182,7 +182,7 @@ export default function OnboardingPage() {
         }
         // Clear the just-signed-up flag once we've confirmed auth
         if (r.ok) {
-          try { localStorage.removeItem("basecart_just_signed_up"); } catch (_) {}
+          try { localStorage.removeItem("basecart_just_signed_up"); } catch (_) { }
         }
       })
       .catch(() => {
@@ -208,7 +208,7 @@ export default function OnboardingPage() {
           }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   // Persist progress to localStorage whenever step or data changes
@@ -218,7 +218,7 @@ export default function OnboardingPage() {
     if (step === 0 && !data.storeName && !justSignedUp) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ step, data }));
-    } catch (_) {}
+    } catch (_) { }
   }, [step, data]);
 
   // Auto-focus input on step change
@@ -276,9 +276,9 @@ export default function OnboardingPage() {
             businessType: data.businessType || undefined,
           }),
         });
-      } catch (_) {}
+      } catch (_) { }
       // Clear saved progress — onboarding complete
-      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) { }
       window.location.href = "/dashboard";
       return;
     }
@@ -293,7 +293,7 @@ export default function OnboardingPage() {
           credentials: "include",
           body: JSON.stringify({ storeName: data.storeName }),
         });
-      } catch (_) {}
+      } catch (_) { }
       setSaving(false);
     }
 
@@ -334,9 +334,8 @@ export default function OnboardingPage() {
 
       {/* Resume banner */}
       <div
-        className={`overflow-hidden transition-all duration-500 ease-out ${
-          resumeBannerVisible ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`overflow-hidden transition-all duration-500 ease-out ${resumeBannerVisible ? "max-h-12 opacity-100" : "max-h-0 opacity-0"
+          }`}
       >
         <div className="bg-blue-600 text-white text-xs font-semibold text-center py-2.5 px-4 flex items-center justify-center gap-2">
           <span>👋</span>
@@ -434,11 +433,10 @@ export default function OnboardingPage() {
                     key={c.label}
                     type="button"
                     onClick={() => handleChoiceSelect(c.label)}
-                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 font-semibold text-sm active:scale-[.98] ${
-                      selected
+                    className={`p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-3 font-semibold text-sm active:scale-[.98] ${selected
                         ? "border-blue-600 bg-blue-50 text-blue-900 ring-2 ring-blue-500/10"
                         : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50"
-                    }`}
+                      }`}
                   >
                     {c.emoji && <span className="text-xl">{c.emoji}</span>}
                     <span className="leading-snug">{c.label}</span>
@@ -514,11 +512,10 @@ export default function OnboardingPage() {
                 type="button"
                 onClick={handleNext}
                 disabled={!canAdvance() || saving || finishing}
-                className={`flex items-center gap-2 px-7 py-3 rounded-2xl font-extrabold text-sm transition-all active:scale-[.98] shadow-sm ${
-                  canAdvance() && !saving && !finishing
+                className={`flex items-center gap-2 px-7 py-3 rounded-2xl font-extrabold text-sm transition-all active:scale-[.98] shadow-sm ${canAdvance() && !saving && !finishing
                     ? "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20"
                     : "bg-slate-100 text-slate-400 cursor-not-allowed"
-                }`}
+                  }`}
               >
                 {saving || finishing ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

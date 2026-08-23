@@ -61,7 +61,7 @@ export async function getTenantProducts(tenantId: string): Promise<StorefrontPro
           } else if (typeof prod.images === "string" && prod.images) {
             try {
               imgs = JSON.parse(prod.images);
-            } catch (e) {}
+            } catch (e) { }
           }
 
           const primaryImage = imgs && imgs.length > 0 ? imgs[0] : "/basecart_storefront_mockup.png";
@@ -106,7 +106,7 @@ export async function getProductData(productId: string, tenantId: string = "stor
         } else if (typeof prod.images === "string" && prod.images) {
           try {
             imgs = JSON.parse(prod.images);
-          } catch (e) {}
+          } catch (e) { }
         }
         const primaryImage = imgs && imgs.length > 0 ? imgs[0] : "/basecart_storefront_mockup.png";
 
@@ -139,7 +139,7 @@ export async function getProductData(productId: string, tenantId: string = "stor
     const allProds = await getTenantProducts(tenantId);
     const found = allProds.find((p) => p.id === productId || p.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === productId);
     if (found) return found;
-  } catch (e) {}
+  } catch (e) { }
 
   return null;
 }

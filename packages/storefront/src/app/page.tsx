@@ -181,7 +181,7 @@ export default function Storefront() {
     try {
       const saved = localStorage.getItem("basecart_wishlist");
       if (saved) setWishlist(JSON.parse(saved));
-    } catch (e) {}
+    } catch (e) { }
   }, []);
 
   const toggleWishlist = (id: string) => {
@@ -189,7 +189,7 @@ export default function Storefront() {
       const updated = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
       try {
         localStorage.setItem("basecart_wishlist", JSON.stringify(updated));
-      } catch (e) {}
+      } catch (e) { }
       return updated;
     });
   };
@@ -579,15 +579,13 @@ export default function Storefront() {
                             setActiveCategory(cat);
                             document.getElementById("featured-products")?.scrollIntoView({ behavior: "smooth" });
                           }}
-                          className={`p-4 rounded-2xl border text-center transition-all duration-300 group flex flex-col items-center justify-between gap-3 cursor-pointer ${
-                            isSelected
+                          className={`p-4 rounded-2xl border text-center transition-all duration-300 group flex flex-col items-center justify-between gap-3 cursor-pointer ${isSelected
                               ? "bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-500/25 -translate-y-1"
                               : "bg-white border-slate-200/90 text-slate-900 hover:border-indigo-300 hover:shadow-md hover:-translate-y-1"
-                          }`}
+                            }`}
                         >
-                          <div className={`h-16 w-16 rounded-xl border p-2 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 ${
-                            isSelected ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100"
-                          }`}>
+                          <div className={`h-16 w-16 rounded-xl border p-2 flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 ${isSelected ? "bg-white/10 border-white/20" : "bg-slate-50 border-slate-100"
+                            }`}>
                             {firstCatImg ? (
                               <img src={firstCatImg} alt={cat} className="w-full h-full object-contain" />
                             ) : (

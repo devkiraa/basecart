@@ -51,7 +51,7 @@ export default function SignupPage() {
     // If already logged in via httpOnly cookie, go to dashboard on merchant domain
     fetch(`${API_URL}/auth/merchant/me`, { credentials: "include" })
       .then(res => { if (res.ok) window.location.href = `${merchantDashboardUrl}/dashboard`; })
-      .catch(() => {});
+      .catch(() => { });
   }, [merchantDashboardUrl]);
 
   const handleUpdateOnboarding = (fields: Partial<typeof onboardingData>) => {
@@ -139,7 +139,7 @@ export default function SignupPage() {
         <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         {/* Logo */}
-        <div 
+        <div
           onClick={() => { window.location.href = "/"; }}
           className="flex items-center gap-2.5 cursor-pointer"
         >
@@ -200,7 +200,7 @@ export default function SignupPage() {
       <div className="flex-1 flex flex-col justify-center py-6 px-6 sm:px-16 lg:px-24 bg-white relative min-h-screen lg:h-full overflow-y-auto">
         <div className="absolute top-8 right-8 sm:right-16 text-xs text-slate-500 font-semibold flex items-center gap-1.5 select-none">
           Already have an account?{" "}
-          <button 
+          <button
             onClick={() => { window.location.href = `${merchantDashboardUrl}/login`; }}
             className="text-blue-600 font-bold hover:underline"
           >
@@ -220,11 +220,11 @@ export default function SignupPage() {
             {/* Progress Indicators */}
             <div className="flex justify-between items-center relative select-none py-2">
               <div className="absolute top-[18px] left-[5%] right-[5%] h-0.5 bg-slate-100 -z-10"></div>
-              <div 
+              <div
                 className="absolute top-[18px] left-[5%] h-0.5 bg-blue-600 transition-all duration-300 -z-10"
                 style={{ width: `${((wizardStep - 1) / 4) * 90}%` }}
               ></div>
-              
+
               {[
                 { step: 1, label: "Account" },
                 { step: 2, label: "Store" },
@@ -236,18 +236,16 @@ export default function SignupPage() {
                 const isActive = s.step === wizardStep;
                 return (
                   <div key={s.step} className="flex flex-col items-center gap-1.5 z-10 font-sans">
-                    <div className={`h-8 w-8 shrink-0 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all ${
-                      isCompleted 
-                        ? "bg-blue-600 border-blue-600 text-white" 
-                        : isActive 
-                          ? "bg-white border-blue-600 text-blue-700 font-extrabold ring-4 ring-blue-50" 
+                    <div className={`h-8 w-8 shrink-0 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all ${isCompleted
+                        ? "bg-blue-600 border-blue-600 text-white"
+                        : isActive
+                          ? "bg-white border-blue-600 text-blue-700 font-extrabold ring-4 ring-blue-50"
                           : "bg-white border-slate-200 text-slate-400"
-                    }`}>
+                      }`}>
                       {s.step}
                     </div>
-                    <span className={`text-[9px] uppercase tracking-wider font-extrabold transition-colors ${
-                      isActive ? "text-blue-700" : isCompleted ? "text-slate-700" : "text-slate-400"
-                    }`}>
+                    <span className={`text-[9px] uppercase tracking-wider font-extrabold transition-colors ${isActive ? "text-blue-700" : isCompleted ? "text-slate-700" : "text-slate-400"
+                      }`}>
                       {s.label}
                     </span>
                   </div>
@@ -265,41 +263,41 @@ export default function SignupPage() {
 
             {/* Active Step Component */}
             {wizardStep === 1 && (
-              <StepAccount 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
-                onNext={() => handleStepNext(2)} 
+              <StepAccount
+                data={onboardingData}
+                onChange={handleUpdateOnboarding}
+                onNext={() => handleStepNext(2)}
                 loading={loading}
               />
             )}
             {wizardStep === 2 && (
-              <StepStore 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
+              <StepStore
+                data={onboardingData}
+                onChange={handleUpdateOnboarding}
                 onBack={() => setWizardStep(1)}
-                onNext={() => handleStepNext(3)} 
+                onNext={() => handleStepNext(3)}
               />
             )}
             {wizardStep === 3 && (
-              <StepBusiness 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
+              <StepBusiness
+                data={onboardingData}
+                onChange={handleUpdateOnboarding}
                 onBack={() => setWizardStep(2)}
-                onNext={() => handleStepNext(4)} 
+                onNext={() => handleStepNext(4)}
               />
             )}
             {wizardStep === 4 && (
-              <StepPlan 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
+              <StepPlan
+                data={onboardingData}
+                onChange={handleUpdateOnboarding}
                 onBack={() => setWizardStep(3)}
-                onNext={() => handleStepNext(5)} 
+                onNext={() => handleStepNext(5)}
               />
             )}
             {wizardStep === 5 && (
-              <StepVerification 
-                data={onboardingData} 
-                onChange={handleUpdateOnboarding} 
+              <StepVerification
+                data={onboardingData}
+                onChange={handleUpdateOnboarding}
                 onBack={() => setWizardStep(4)}
                 onSubmit={handleSignupComplete}
                 loading={loading}

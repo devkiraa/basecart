@@ -23,7 +23,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [backendReady, setBackendReady] = useState(true);
-  
+
   // Forgot password flow
   const [showForgotView, setShowForgotView] = useState(false);
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState("");
@@ -38,7 +38,7 @@ export default function LoginPage() {
           window.location.href = "/dashboard";
           return;
         }
-        
+
         // Fallback: check localStorage token if present
         const storedToken = localStorage.getItem("basecart_merchant_token") || localStorage.getItem("basecart_token");
         if (storedToken && !cancelled) {
@@ -204,7 +204,7 @@ export default function LoginPage() {
         <div className="absolute bottom-[-10%] left-[-20%] w-[400px] h-[400px] rounded-full bg-indigo-50/50 filter blur-3xl opacity-70 -z-10"></div>
 
         {/* Logo */}
-        <div 
+        <div
           onClick={() => { window.location.href = process.env.NEXT_PUBLIC_MARKETING_URL || "http://localhost:3000"; }}
           className="flex items-center gap-2.5 cursor-pointer"
         >
@@ -263,7 +263,7 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center py-6 px-6 sm:px-16 lg:px-24 bg-white relative min-h-screen lg:h-full overflow-y-auto">
         <div className="absolute top-8 right-8 sm:right-16 text-xs text-slate-500 font-semibold flex items-center gap-1.5 select-none">
           Don't have an account?{" "}
-          <button 
+          <button
             onClick={() => { window.location.href = "/signup"; }}
             className="text-blue-600 font-bold hover:underline"
           >

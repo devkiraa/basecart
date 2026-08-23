@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="rzpGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#02042B;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0D47A1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1565C0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="rzpAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64B5F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E88E5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <!-- Background rounded rect -->
+  <rect x="10" y="10" width="180" height="180" rx="24" fill="url(#rzpGradient)" />
+  <!-- Razorpay icon - stylized 'R' with payment symbol -->
+  <g transform="translate(100, 100)">
+    <!-- Outer ring -->
+    <circle r="65" fill="none" stroke="url(#rzpAccent)" stroke-width="3" opacity="0.3"/>
+    <!-- Inner icon - payment/lightning symbol -->
+    <path d="M-18 -25 L0 15 L-8 15 L10 45 L-2 -15 L-12 -15 Z" fill="white" />
+    <!-- Small dot for the lightning -->
+    <circle cx="8" cy="30" r="3" fill="url(#rzpAccent)" />
+  </g>
+  <!-- Razorpay text -->
+  <text x="100" y="170" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="bold" fill="white" text-anchor="middle" opacity="0.9">RAZORPAY</text>
+</svg>

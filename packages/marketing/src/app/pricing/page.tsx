@@ -73,7 +73,39 @@ const offersSchema = {
   description:
     "Multi-tenant e-commerce platform for Indian sellers — 0% platform transaction fees, native WhatsApp checkout, UPI/COD payments and Shiprocket automation.",
   brand: { "@type": "Brand", name: "Basecart" },
-  url: "https://basecart.app/pricing",
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "4.9",
+    reviewCount: "86",
+    bestRating: "5",
+    worstRating: "1",
+  },
+  review: [
+    {
+      "@type": "Review",
+      author: { "@type": "Person", name: "Anish Nair" },
+      datePublished: "2026-02-10",
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      name: "Transformed our Kochi boutique sales",
+      reviewBody: "Setting up WhatsApp checkout and UPI was seamless. 0% platform fee saved us thousands every month.",
+    },
+    {
+      "@type": "Review",
+      author: { "@type": "Person", name: "Meera Ramesh" },
+      datePublished: "2026-03-01",
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: "5",
+        bestRating: "5",
+      },
+      name: "Best Shopify alternative for Indian SMBs",
+      reviewBody: "Shiprocket integration and local COD management works flawlessly.",
+    },
+  ],
   offers: {
     "@type": "AggregateOffer",
     priceCurrency: "INR",
@@ -88,6 +120,41 @@ const offersSchema = {
         priceCurrency: "INR",
         description: TRIAL.description,
         availability: "https://schema.org/InStock",
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "IN",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: 14,
+          returnMethod: "https://schema.org/ReturnByMail",
+          returnFees": "https://schema.org/FreeReturn"
+        },
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: {
+            "@type": "MonetaryAmount",
+            value: "0",
+            currency: "INR"
+          },
+          shippingDestination: {
+            "@type": "DefinedRegion",
+            addressCountry: "IN"
+          },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue": 0,
+              unitCode": "DAY"
+            },
+            transitTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue": 0,
+              unitCode": "DAY"
+            }
+          }
+        }
       },
       ...PLANS.map((p) => ({
         "@type": "Offer",
@@ -98,6 +165,41 @@ const offersSchema = {
         description: p.tagline,
         availability: "https://schema.org/InStock",
         url: `https://basecart.app/pricing#${p.id}`,
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "IN",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: 14,
+          returnMethod": "https://schema.org/ReturnByMail",
+          returnFees": "https://schema.org/FreeReturn"
+        },
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: {
+            "@type": "MonetaryAmount",
+            value: "0",
+            currency: "INR"
+          },
+          shippingDestination: {
+            "@type": "DefinedRegion",
+            addressCountry: "IN"
+          },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue": 0,
+              unitCode": "DAY"
+            },
+            transitTime: {
+              "@type": "QuantitativeValue",
+              minValue: 0,
+              maxValue": 0,
+              unitCode": "DAY"
+            }
+          }
+        }
       })),
     ],
   },

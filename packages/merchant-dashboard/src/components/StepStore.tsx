@@ -28,11 +28,11 @@ const BUSINESS_TYPES = [
 ];
 
 const STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", 
-  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", 
-  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", 
-  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", 
-  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", 
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka",
+  "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram",
+  "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+  "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
   "Delhi", "Other"
 ];
 
@@ -48,11 +48,11 @@ export default function StepStore({ data, onChange, onNext, onBack }: StepStoreP
     if (checkingTimeout) {
       clearTimeout(checkingTimeout);
     }
-    
+
     setIsAvailable(null);
     setAlternates([]);
     setChecking(false);
-    
+
     const cleanSub = sub.trim();
     if (cleanSub.length < 2) {
       return;
@@ -183,18 +183,18 @@ export default function StepStore({ data, onChange, onNext, onBack }: StepStoreP
               .basecart.app
             </span>
           </div>
-          
+
           {checking && (
             <div className="flex items-center gap-1 mt-1 text-[10px] text-slate-400 font-medium">
               <Loader2 className="h-3 w-3 animate-spin text-indigo-650" />
               <span>Checking availability...</span>
             </div>
           )}
-          
+
           {isAvailable === true && (
             <span className="text-[10px] text-emerald-600 font-bold mt-1 block">✓ Subdomain is available!</span>
           )}
-          
+
           {isAvailable === false && alternates.length === 0 && (
             <span className="text-[10px] text-red-500 font-bold mt-1 block">✗ Subdomain is taken.</span>
           )}
