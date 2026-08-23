@@ -126,7 +126,7 @@ const offersSchema = {
           returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
           merchantReturnDays: 14,
           returnMethod: "https://schema.org/ReturnByMail",
-          returnFees": "https://schema.org/FreeReturn"
+          returnFees: "https://schema.org/FreeReturn"
         },
         shippingDetails: {
           "@type": "OfferShippingDetails",
@@ -144,14 +144,14 @@ const offersSchema = {
             handlingTime: {
               "@type": "QuantitativeValue",
               minValue: 0,
-              maxValue": 0,
-              unitCode": "DAY"
+              maxValue: 0,
+              unitCode: "DAY"
             },
             transitTime: {
               "@type": "QuantitativeValue",
               minValue: 0,
-              maxValue": 0,
-              unitCode": "DAY"
+              maxValue: 0,
+              unitCode: "DAY"
             }
           }
         }
@@ -170,8 +170,8 @@ const offersSchema = {
           applicableCountry: "IN",
           returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
           merchantReturnDays: 14,
-          returnMethod": "https://schema.org/ReturnByMail",
-          returnFees": "https://schema.org/FreeReturn"
+          returnMethod: "https://schema.org/ReturnByMail",
+          returnFees: "https://schema.org/FreeReturn"
         },
         shippingDetails: {
           "@type": "OfferShippingDetails",
@@ -189,14 +189,14 @@ const offersSchema = {
             handlingTime: {
               "@type": "QuantitativeValue",
               minValue: 0,
-              maxValue": 0,
-              unitCode": "DAY"
+              maxValue: 0,
+              unitCode: "DAY"
             },
             transitTime: {
               "@type": "QuantitativeValue",
               minValue: 0,
-              maxValue": 0,
-              unitCode": "DAY"
+              maxValue: 0,
+              unitCode: "DAY"
             }
           }
         }
