@@ -32,7 +32,7 @@
     "@basecart/theme-sdk": "*",
     "bcryptjs": "^2.4.3",
     "dotenv": "^16.4.5",
-    "hono": "^4.4.0",
+    "hono": "^4.12.34",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^9.0.3",
     "pdfkit": "^0.19.1",
