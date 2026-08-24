@@ -1,7 +1,7 @@
 "use client";
 
-import Dashboard from "@/app/dashboard/page";
+import DashboardView from "@/components/DashboardView";
 
 export default function DashboardSlugPage() {
-  return <Dashboard />;
+  return <DashboardView />;
 }
