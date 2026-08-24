@@ -1131,6 +1131,33 @@ export default function MerchantDashboard() {
   const [settingsSearchQuery, setSettingsSearchQuery] = useState("");
   const [isSettingsPortalOpen, setIsSettingsPortalOpen] = useState(false);
 
+  // Resources & Transfer Store Modals State (Matching Screenshot)
+  const [isChangelogModalOpen, setIsChangelogModalOpen] = useState(false);
+  const [isHelpCenterModalOpen, setIsHelpCenterModalOpen] = useState(false);
+  const [helpSearchQuery, setHelpSearchQuery] = useState("");
+  const [isPartnerModalOpen, setIsPartnerModalOpen] = useState(false);
+  const [partnerFormSuccess, setPartnerFormSuccess] = useState("");
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isActivityLogModalOpen, setIsActivityLogModalOpen] = useState(false);
+  const [isTransferStoreModalOpen, setIsTransferStoreModalOpen] = useState(false);
+  const [transferEmail, setTransferEmail] = useState("");
+  const [transferReason, setTransferReason] = useState("ownership");
+  const [transferStatus, setTransferStatus] = useState("");
+
+  // Global Keyboard Shortcuts Listener ('?' key to toggle shortcuts modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = (document.activeElement?.tagName || "").toLowerCase();
+      if (activeTag === "input" || activeTag === "textarea" || activeTag === "select") return;
+      if (e.key === "?" || (e.shiftKey && e.key === "/")) {
+        e.preventDefault();
+        setIsShortcutsModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   const handleExportCustomersCSV = () => {
     const headers = [
       "First Name", "Last Name", "Email", "Accepts Email Marketing",
@@ -11678,31 +11705,31 @@ export default function MerchantDashboard() {
                           <h3 className="text-sm font-bold text-slate-900">Resources</h3>
 
                           <div className="space-y-3">
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between hover:border-slate-300 transition-colors">
                               <div className="flex items-center gap-3">
                                 <Code className="h-4 w-4 text-slate-500" />
                                 <span className="text-xs font-bold text-slate-900">Change log</span>
                               </div>
-                              <button onClick={() => alert("Showing Basecart Spring '26 release notes")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">View change log</button>
+                              <button onClick={() => setIsChangelogModalOpen(true)} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer">View change log</button>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between hover:border-slate-300 transition-colors">
                               <div className="flex items-center gap-3">
                                 <HelpCircle className="h-4 w-4 text-slate-500" />
                                 <span className="text-xs font-bold text-slate-900">Basecart Help Center</span>
                               </div>
-                              <button onClick={() => alert("Opening Basecart Help Documentation")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">Get help</button>
+                              <button onClick={() => setIsHelpCenterModalOpen(true)} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer">Get help</button>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between hover:border-slate-300 transition-colors">
                               <div className="flex items-center gap-3">
                                 <Users className="h-4 w-4 text-slate-500" />
                                 <span className="text-xs font-bold text-slate-900">Hire a Basecart Partner</span>
                               </div>
-                              <button onClick={() => alert("Connecting to Basecart Verified Designers & Developers")} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50">Hire a Partner</button>
+                              <button onClick={() => setIsPartnerModalOpen(true)} className="px-3 py-1 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all cursor-pointer">Hire a Partner</button>
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/60">
+                            <div onClick={() => setIsShortcutsModalOpen(true)} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/80 transition-colors">
                               <div className="flex items-center gap-3">
                                 <Layers className="h-4 w-4 text-slate-500" />
                                 <span className="text-xs font-bold text-slate-900">Keyboard shortcuts</span>
@@ -11710,7 +11737,7 @@ export default function MerchantDashboard() {
                               <ChevronRight className="h-4 w-4 text-slate-400" />
                             </div>
 
-                            <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/60">
+                            <div onClick={() => setIsActivityLogModalOpen(true)} className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-100/80 transition-colors">
                               <div className="flex items-center gap-3">
                                 <FileText className="h-4 w-4 text-slate-500" />
                                 <span className="text-xs font-bold text-slate-900">Store activity log</span>
@@ -11725,9 +11752,9 @@ export default function MerchantDashboard() {
                           <div className="flex items-center justify-between">
                             <div>
                               <h3 className="text-sm font-bold text-slate-900">Transfer store</h3>
-                              <p className="text-xs text-slate-500">Move this store into an organization or transfer to an external owner. <span className="text-indigo-600 underline font-medium cursor-pointer">Learn more</span></p>
+                              <p className="text-xs text-slate-500">Move this store into an organization or transfer to an external owner. <span onClick={() => setIsTransferStoreModalOpen(true)} className="text-indigo-600 underline font-medium cursor-pointer">Learn more</span></p>
                             </div>
-                            <button onClick={() => alert("Store transfer portal initialized.")} className="px-4 py-2 border border-slate-300 text-slate-800 text-xs font-bold rounded-xl hover:bg-slate-50">Manage</button>
+                            <button onClick={() => setIsTransferStoreModalOpen(true)} className="px-4 py-2 border border-slate-300 text-slate-800 text-xs font-bold rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all cursor-pointer">Manage</button>
                           </div>
                         </div>
                       </div>
@@ -13521,6 +13548,367 @@ export default function MerchantDashboard() {
               >
                 {verifyingOtp ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {verifyingOtp ? "Verifying..." : "Verify & Activate Store"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 1. CHANGELOG MODAL ── */}
+      {isChangelogModalOpen && (
+        <div onClick={() => setIsChangelogModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                  <Code className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Basecart Release Change Log</h3>
+                  <p className="text-xs text-slate-500 font-medium">Platform updates, features & engine improvements</p>
+                </div>
+              </div>
+              <button onClick={() => setIsChangelogModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-l-2 border-blue-600 pl-4 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md">v1.8.0 • Aug 2026 (Latest)</span>
+                  <span className="text-[10px] font-semibold text-slate-400">Current</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Cloudflare Durable Objects & Web Crypto Security</h4>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside font-medium">
+                  <li>Migrated tenant databases to physical per-tenant Durable Objects with embedded SQLite.</li>
+                  <li>AES-256-GCM Web Crypto encryption for merchant Razorpay API secrets at rest.</li>
+                  <li>Structured JSON logging and real-time request correlation tracing.</li>
+                </ul>
+              </div>
+
+              <div className="border-l-2 border-slate-200 pl-4 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">v1.7.2 • Jul 2026</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">WhatsApp Native Checkout & Localized Notifications</h4>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside font-medium">
+                  <li>Instant WhatsApp checkout flow with Malayalam, Tamil & English templates.</li>
+                  <li>Automated order confirmation alerts sent directly to merchant mobile.</li>
+                </ul>
+              </div>
+
+              <div className="border-l-2 border-slate-200 pl-4 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">v1.6.0 • Jun 2026</span>
+                </div>
+                <h4 className="text-sm font-bold text-slate-900">Shiprocket & Delhivery Auto-AWB Dispatch</h4>
+                <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside font-medium">
+                  <li>Doorstep pickup scheduling across Kerala & South India.</li>
+                  <li>Cash on Delivery (COD) verification & automated address validation.</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setIsChangelogModalOpen(false)} className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 2. HELP CENTER MODAL ── */}
+      {isHelpCenterModalOpen && (
+        <div onClick={() => setIsHelpCenterModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                  <HelpCircle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Basecart Help Center & Knowledge Base</h3>
+                  <p className="text-xs text-slate-500 font-medium">Guides, tutorials, API docs and merchant assistance</p>
+                </div>
+              </div>
+              <button onClick={() => setIsHelpCenterModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search help articles (e.g. Razorpay, custom domain, Shiprocket)..."
+                value={helpSearchQuery}
+                onChange={(e) => setHelpSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                { title: "Setting up Razorpay UPI & COD", cat: "Payments", desc: "Connect Key ID & Secret for 0% fee instant settlements." },
+                { title: "Configuring Custom Subdomain / Domain", cat: "Storefront", desc: "Link your custom domain or use your sub.basecart.app address." },
+                { title: "Automated Shiprocket AWB Pickups", cat: "Shipping", desc: "Generate AWBs and schedule doorstep pickups in Kochi & Kerala." },
+                { title: "Catalog Bulk Import via CSV & JSON", cat: "Products", desc: "Import product variants, prices, inventory, and images easily." },
+              ]
+                .filter((item) => !helpSearchQuery || item.title.toLowerCase().includes(helpSearchQuery.toLowerCase()) || item.desc.toLowerCase().includes(helpSearchQuery.toLowerCase()))
+                .map((art, idx) => (
+                  <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-blue-300 hover:bg-blue-50/40 transition-all cursor-pointer">
+                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">{art.cat}</span>
+                    <h4 className="text-xs font-bold text-slate-900 mt-0.5">{art.title}</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 font-medium leading-relaxed">{art.desc}</p>
+                  </div>
+                ))}
+            </div>
+
+            <div className="bg-slate-900 text-white p-4 rounded-xl flex items-center justify-between">
+              <div>
+                <h4 className="text-xs font-bold">Need direct support?</h4>
+                <p className="text-[11px] text-slate-300">Our Kerala merchant support team responds within 15 minutes.</p>
+              </div>
+              <button onClick={() => window.open("mailto:support@basecart.app", "_blank")} className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0">
+                Contact Support
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 3. HIRE A PARTNER MODAL ── */}
+      {isPartnerModalOpen && (
+        <div onClick={() => setIsPartnerModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Basecart Verified Partners & Agencies</h3>
+                  <p className="text-xs text-slate-500 font-medium">Hire vetted designers, developers & growth marketers in Kerala</p>
+                </div>
+              </div>
+              <button onClick={() => setIsPartnerModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {partnerFormSuccess && (
+              <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{partnerFormSuccess}</span>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {[
+                { name: "Kochi E-Com Studio", loc: "Kochi, Kerala", spec: "Custom Theme & Boutique Storefront Design", rating: "4.9 ★ (34 reviews)", price: "From ₹4,999" },
+                { name: "Malabar Digital Growth", loc: "Calicut, Kerala", spec: "Performance SEO & WhatsApp Order Automation", rating: "5.0 ★ (48 reviews)", price: "From ₹6,500" },
+                { name: "South India Logistics & Tech", loc: "Trivandrum, Kerala", spec: "Warehouse, Shiprocket & ERP Integration", rating: "4.8 ★ (22 reviews)", price: "From ₹8,000" },
+              ].map((p, idx) => (
+                <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between hover:border-slate-300 transition-all">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-900">{p.name}</h4>
+                      <span className="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded font-semibold">{p.loc}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-medium">{p.spec}</p>
+                    <div className="text-[10px] font-bold text-amber-600">{p.rating} • <span className="text-slate-700">{p.price}</span></div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setPartnerFormSuccess(`Partner request sent to ${p.name}! They will contact you via email shortly.`);
+                      setTimeout(() => setPartnerFormSuccess(""), 4000);
+                    }}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shrink-0"
+                  >
+                    Request Contact
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 4. KEYBOARD SHORTCUTS MODAL ── */}
+      {isShortcutsModalOpen && (
+        <div onClick={() => setIsShortcutsModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-purple-50 text-purple-600 rounded-xl">
+                  <Layers className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Dashboard Keyboard Shortcuts</h3>
+                  <p className="text-xs text-slate-500 font-medium">Press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-[10px] font-mono font-bold text-slate-700">?</kbd> anywhere to toggle this cheatsheet</p>
+                </div>
+              </div>
+              <button onClick={() => setIsShortcutsModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Navigation Shortcuts</div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { keys: ["g", "d"], label: "Go to Dashboard" },
+                  { keys: ["g", "p"], label: "Go to Products" },
+                  { keys: ["g", "o"], label: "Go to Orders" },
+                  { keys: ["g", "c"], label: "Go to Customers" },
+                  { keys: ["g", "s"], label: "Go to Settings" },
+                  { keys: ["n", "p"], label: "Create Product" },
+                  { keys: ["/"], label: "Focus Global Search" },
+                  { keys: ["?"], label: "Toggle Shortcuts" },
+                ].map((sc, i) => (
+                  <div key={i} className="p-2.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                    <span className="font-medium text-slate-700">{sc.label}</span>
+                    <div className="flex items-center gap-1">
+                      {sc.keys.map((k, idx) => (
+                        <kbd key={idx} className="px-2 py-0.5 bg-white border border-slate-300 rounded-md shadow-2xs font-mono text-[11px] font-bold text-slate-800">{k}</kbd>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <button onClick={() => setIsShortcutsModalOpen(false)} className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors">
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 5. STORE ACTIVITY LOG MODAL ── */}
+      {isActivityLogModalOpen && (
+        <div onClick={() => setIsActivityLogModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-50 text-blue-600 rounded-xl">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Store Activity Log</h3>
+                  <p className="text-xs text-slate-500 font-medium">Real-time audit trail of admin logins, product edits & order updates</p>
+                </div>
+              </div>
+              <button onClick={() => setIsActivityLogModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { time: "Today 14:08 IST", event: "Merchant Login", badge: "security", desc: "Authenticated successfully from Kochi, Kerala (IP 127.0.0.1)" },
+                { time: "Today 13:30 IST", event: "Schema Update", badge: "system", desc: "Updated JSON-LD product structured data for Google Search Console" },
+                { time: "Yesterday 18:45 IST", event: "Order Received", badge: "order", desc: "Received Order #ORD-8921 (₹1,499 via Razorpay UPI)" },
+                { time: "Yesterday 16:12 IST", event: "CSV Export", badge: "data", desc: "Exported customer database to CSV file (54 records)" },
+                { time: "May 27, 2026 IST", event: "Durable Object Init", badge: "system", desc: "Tenant database initialized on Cloudflare DO (basecart-control-prod)" },
+              ].map((log, idx) => (
+                <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-start gap-3">
+                  <div className="p-2 bg-white border border-slate-200 rounded-lg shrink-0 mt-0.5">
+                    <Clock className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-900">{log.event}</span>
+                        <span className="text-[10px] font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full uppercase">{log.badge}</span>
+                      </div>
+                      <span className="text-[10px] font-semibold text-slate-400">{log.time}</span>
+                    </div>
+                    <p className="text-xs text-slate-600 font-medium">{log.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 6. TRANSFER STORE MODAL ── */}
+      {isTransferStoreModalOpen && (
+        <div onClick={() => setIsTransferStoreModalOpen(false)} className="fixed inset-0 z-[99999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in cursor-pointer">
+          <div onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 space-y-5 cursor-default text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-amber-50 text-amber-600 rounded-xl">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Transfer Store Ownership</h3>
+                  <p className="text-xs text-slate-500 font-medium">Transfer store database and admin access to a new owner</p>
+                </div>
+              </div>
+              <button onClick={() => setIsTransferStoreModalOpen(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {transferStatus && (
+              <div className="bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{transferStatus}</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">Recipient Email Address</label>
+                <input
+                  type="email"
+                  placeholder="new-owner@example.com"
+                  value={transferEmail}
+                  onChange={(e) => setTransferEmail(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700">Transfer Purpose</label>
+                <select
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-medium bg-white"
+                >
+                  <option value="ownership">Full Ownership Transfer to Client</option>
+                  <option value="partner">Transfer to Verified Basecart Partner Agency</option>
+                  <option value="org">Move Store into Corporate Organization Account</option>
+                </select>
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-900 font-medium space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-950">
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" /> Important Notice
+                </div>
+                <p>Transferring ownership will grant full database permissions and billing responsibility to the recipient upon acceptance.</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+              <button onClick={() => setIsTransferStoreModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
+                Cancel
+              </button>
+              <button
+                disabled={!transferEmail.includes("@")}
+                onClick={() => {
+                  setTransferStatus(`Ownership transfer invitation sent to ${transferEmail}. Recipient must accept to finalize transfer.`);
+                  setTimeout(() => setTransferStatus(""), 4000);
+                }}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                Initiate Store Transfer
               </button>
             </div>
           </div>
