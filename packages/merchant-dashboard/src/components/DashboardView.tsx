@@ -4193,8 +4193,12 @@ export default function DashboardView() {
               return t >= prevStart && t <= prevEnd;
             });
 
-            // KPI aggregates
-            const isPaidStatus = (s: string) => ["paid", "shipped", "delivered"].includes(s);
+            // KPI aggregates — normalize status case and include processing & completed orders
+            const isPaidStatus = (s: string) => {
+              const status = (s || "").toLowerCase();
+              return ["paid", "shipped", "delivered", "processing", "completed", "settled"].includes(status);
+            };
+
             const curPaid = filteredOrders.filter(o => isPaidStatus(o.status));
             const prevPaid = prevOrders.filter(o => isPaidStatus(o.status));
 
@@ -4248,7 +4252,7 @@ export default function DashboardView() {
             // Compute Top Selling Products dynamically from the database
             const productSalesMap: Record<string, { name: string; sold: number; revenue: number }> = {};
             for (const order of orders) {
-              const isPaid = ["paid", "shipped", "delivered"].includes(order.status);
+              const isPaid = isPaidStatus(order.status);
               if (!isPaid) continue;
               const items = order.lineItems || [];
               for (const item of items) {
@@ -4280,14 +4284,11 @@ export default function DashboardView() {
               : selectedDateRange === "Last 30 Days" ? 30 : 7;
             const chartData = Array.from({ length: chartDays === 1 ? 24 : chartDays }).map((_, i) => {
               if (chartDays === 1) {
-                // hourly buckets for Today / Yesterday
+                // hourly buckets for Today / Yesterday (00:00 through 23:00)
                 const hour = i;
-                const base = new Date(rangeStart);
-                const bucketStart = base.getTime() + hour * 60 * 60 * 1000;
-                const bucketEnd = bucketStart + 60 * 60 * 1000 - 1;
                 const bucketOrders = filteredOrders.filter(o => {
-                  const t = new Date(o.createdAt).getTime();
-                  return t >= bucketStart && t <= bucketEnd;
+                  const d = new Date(o.createdAt);
+                  return d.getHours() === hour;
                 });
                 const paid = bucketOrders.filter(o => isPaidStatus(o.status));
                 return {
