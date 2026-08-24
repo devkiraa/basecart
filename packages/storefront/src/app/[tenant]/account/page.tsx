@@ -254,10 +254,9 @@ export default function AccountPage() {
         </h2>
 
         {loadingOrders ? (
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <div key={i} className="h-24 bg-white rounded-2xl border border-slate-100 animate-shimmer" />
-            ))}
+          <div className="py-12 flex flex-col items-center justify-center space-y-3 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="loader" />
+            <p className="text-xs font-semibold text-slate-400">Loading order history...</p>
           </div>
         ) : orders.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
