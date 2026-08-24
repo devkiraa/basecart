@@ -11760,16 +11760,16 @@ export default function MerchantDashboard() {
                       </div>
                     )}
 
-                    {/* BILLING SETTINGS (Matching Screenshot) */}
+                    {/* BILLING SETTINGS (Matching Screenshot & ₹0 Free Monthly Invoices) */}
                     {settingsSubTab === "billing" && (
                       <div className="w-full max-w-none space-y-6 animate-fade-in">
                         <div>
                           <h2 className="text-2xl font-bold tracking-tight text-slate-900">Billing Settings</h2>
-                          <p className="text-xs text-slate-500 font-medium mt-1">Configure your store settings and automated preferences for billing.</p>
+                          <p className="text-xs text-slate-500 font-medium mt-1">Configure your store settings, zero-fee preferences, and monthly GST invoices.</p>
                         </div>
 
                         {/* Center Store Configurations Card matching screenshot */}
-                        <div className="bg-white border border-slate-200/90 rounded-3xl p-10 md:p-14 shadow-2xs flex flex-col items-center justify-center text-center space-y-4 max-w-3xl min-h-[280px] mx-auto my-4">
+                        <div className="bg-white border border-slate-200/90 rounded-3xl p-10 md:p-14 shadow-2xs flex flex-col items-center justify-center text-center space-y-4 max-w-3xl min-h-[260px] mx-auto my-2">
                           <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center p-3 shadow-2xs">
                             <SettingsIcon className="h-7 w-7 text-indigo-600" />
                           </div>
@@ -11781,34 +11781,88 @@ export default function MerchantDashboard() {
                           </div>
                         </div>
 
-                        {/* Payment Method & Invoicing details */}
+                        {/* Payment Method & Free Tier Invoicing Overview */}
                         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4 max-w-3xl mx-auto">
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="text-sm font-bold text-slate-900">Payment Method & Invoicing</h3>
-                              <p className="text-xs text-slate-500 font-medium">Automatic monthly billing for Basecart platform usage & add-ons</p>
+                              <h3 className="text-sm font-bold text-slate-900">Store Payment & Monthly Invoice</h3>
+                              <p className="text-xs text-slate-500 font-medium">Automatic monthly billing for Basecart platform usage & store hosting</p>
                             </div>
                             <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full uppercase">
-                              Active Subscription
+                              100% Free Forever Tier
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
-                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Current Payment Method</div>
-                              <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                                <CreditCard className="h-4 w-4 text-indigo-600" />
-                                <span>Razorpay Auto-Debit (UPI / Card)</span>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Monthly Base Fee</div>
+                              <div className="text-sm font-black text-emerald-600 flex items-center gap-1.5">
+                                <span>₹0 / month</span>
+                                <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.2 rounded">FREE</span>
                               </div>
                             </div>
 
-                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
-                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Next Billing Date</div>
-                              <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
-                                <DollarSign className="h-4 w-4 text-indigo-600" />
-                                <span>September 1, 2026 (₹0 Platform Fees)</span>
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Per-Order Commission</div>
+                              <div className="text-sm font-black text-slate-900 flex items-center gap-1.5">
+                                <span>0% Platform Fee</span>
                               </div>
                             </div>
+
+                            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Next Billing Cycle</div>
+                              <div className="text-xs font-bold text-slate-900 flex items-center gap-1 mt-1">
+                                <Clock className="h-3.5 w-3.5 text-indigo-600 shrink-0" />
+                                <span>Sep 1, 2026 (₹0.00)</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Monthly Invoices & Receipts History Table */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4 max-w-3xl mx-auto">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-bold text-slate-900">Monthly Store Invoices & Receipts</h3>
+                              <p className="text-xs text-slate-500 font-medium">Download tax invoices and zero-fee monthly receipts for your records</p>
+                            </div>
+                            <button
+                              onClick={() => alert("Downloading all zero-fee monthly tax invoices (ZIP format)...")}
+                              className="px-3 py-1.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <Download className="h-3.5 w-3.5 text-slate-500" />
+                              <span>Download All</span>
+                            </button>
+                          </div>
+
+                          <div className="space-y-2.5 pt-1">
+                            {[
+                              { inv: "INV-2026-08", date: "August 1, 2026", desc: "Basecart Merchant Hosting & Durable Object SQLite Engine", plan: "Starter Free Plan", total: "₹0.00", status: "PAID" },
+                              { inv: "INV-2026-07", date: "July 1, 2026", desc: "Basecart Merchant Hosting & Durable Object SQLite Engine", plan: "Starter Free Plan", total: "₹0.00", status: "PAID" },
+                              { inv: "INV-2026-06", date: "June 1, 2026", desc: "Basecart Merchant Hosting & Durable Object SQLite Engine", plan: "Starter Free Plan", total: "₹0.00", status: "PAID" },
+                              { inv: "INV-2026-05", date: "May 1, 2026", desc: "Basecart Merchant Hosting & Durable Object SQLite Engine", plan: "Starter Free Plan", total: "₹0.00", status: "PAID" },
+                            ].map((item, idx) => (
+                              <div key={idx} className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between hover:border-slate-300 transition-all">
+                                <div className="space-y-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-900">#{item.inv}</span>
+                                    <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.2 rounded-full uppercase">
+                                      {item.status} ({item.total})
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 font-medium">{item.desc}</p>
+                                  <div className="text-[10px] text-slate-400 font-semibold">{item.date} • {item.plan}</div>
+                                </div>
+
+                                <button
+                                  onClick={() => alert(`Downloading PDF Invoice #${item.inv} (Amount: ₹0.00)`)}
+                                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                                >
+                                  <FileText className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>Invoice PDF</span>
+                                </button>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
