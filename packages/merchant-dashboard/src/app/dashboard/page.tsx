@@ -9083,7 +9083,7 @@ export default function MerchantDashboard() {
           )}
 
           {/* 5. Settings Tab - Shopify-Class Professional Architecture */}
-          {activeTab === "settings" && (
+          {activeTab === "settings" && !isSettingsPortalOpen && (
             <div className="space-y-6">
               {/* Header Bar */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
