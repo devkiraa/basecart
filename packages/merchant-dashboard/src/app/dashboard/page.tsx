@@ -11760,6 +11760,60 @@ export default function MerchantDashboard() {
                       </div>
                     )}
 
+                    {/* BILLING SETTINGS (Matching Screenshot) */}
+                    {settingsSubTab === "billing" && (
+                      <div className="w-full max-w-none space-y-6 animate-fade-in">
+                        <div>
+                          <h2 className="text-2xl font-bold tracking-tight text-slate-900">Billing Settings</h2>
+                          <p className="text-xs text-slate-500 font-medium mt-1">Configure your store settings and automated preferences for billing.</p>
+                        </div>
+
+                        {/* Center Store Configurations Card matching screenshot */}
+                        <div className="bg-white border border-slate-200/90 rounded-3xl p-10 md:p-14 shadow-2xs flex flex-col items-center justify-center text-center space-y-4 max-w-3xl min-h-[280px] mx-auto my-4">
+                          <div className="h-14 w-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center p-3 shadow-2xs">
+                            <SettingsIcon className="h-7 w-7 text-indigo-600" />
+                          </div>
+                          <div className="space-y-1.5 max-w-md">
+                            <h3 className="text-base md:text-lg font-bold text-slate-900">Store Configurations</h3>
+                            <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                              Preferences and operational settings for billing are active and managed via your Basecart Merchant account.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Payment Method & Invoicing details */}
+                        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-2xs space-y-4 max-w-3xl mx-auto">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h3 className="text-sm font-bold text-slate-900">Payment Method & Invoicing</h3>
+                              <p className="text-xs text-slate-500 font-medium">Automatic monthly billing for Basecart platform usage & add-ons</p>
+                            </div>
+                            <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full uppercase">
+                              Active Subscription
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Current Payment Method</div>
+                              <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                                <CreditCard className="h-4 w-4 text-indigo-600" />
+                                <span>Razorpay Auto-Debit (UPI / Card)</span>
+                              </div>
+                            </div>
+
+                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                              <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Next Billing Date</div>
+                              <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                                <DollarSign className="h-4 w-4 text-indigo-600" />
+                                <span>September 1, 2026 (₹0 Platform Fees)</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* 2. PAYMENTS SETTINGS */}
                     {settingsSubTab === "payments" && (
                       <div className="w-full max-w-none space-y-6 animate-fade-in">
