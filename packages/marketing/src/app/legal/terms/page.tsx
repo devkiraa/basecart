@@ -1,11 +1,11 @@
 import React from "react";
 import { Metadata } from "next";
 import Link from "next/link";
-import { ShoppingBag, ArrowLeft } from "lucide-react";
+import { ShoppingBag, ArrowLeft, ShieldCheck, Scale, FileText, Lock } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Basecart",
-  description: "Terms of Service governing the use of Basecart's headless e-commerce SaaS platform, merchant dashboards, and customer storefronts.",
+  title: "Merchant Terms of Service & User Agreement — Basecart",
+  description: "Legally binding Terms of Service and Merchant SaaS User Agreement governing the Basecart e-commerce platform under Indian IT Act 2000 & Consumer Protection Rules 2020.",
   alternates: {
     canonical: "https://basecart.app/legal/terms",
   },
@@ -25,92 +25,117 @@ export default function TermsOfServicePage() {
             <ShoppingBag className="h-4.5 w-4.5" />
           </div>
           <span className="text-lg font-black text-slate-900 tracking-tight">basecart</span>
-          <span className="text-xs bg-slate-100 text-slate-500 font-bold px-2 py-0.5 rounded-full">Legal</span>
+          <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 font-extrabold px-2.5 py-0.5 rounded-full uppercase">
+            Legal & Compliance
+          </span>
         </Link>
         <Link
           href="/"
-          className="flex items-center gap-1 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors select-none"
+          className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 transition-colors select-none"
         >
-          <ArrowLeft className="h-4 w-4" /> Home
+          <ArrowLeft className="h-4 w-4" /> Return to Basecart
         </Link>
       </header>
 
       {/* Main Content Area */}
       <div className="max-w-4xl mx-auto px-6 py-12 lg:py-16">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-8 lg:p-12 shadow-sm space-y-8">
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-8 lg:p-14 shadow-xs space-y-10">
           
-          <div className="border-b border-slate-100 pb-6">
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">Basecart Terms of Service</h1>
-            <p className="text-xs text-slate-400 font-semibold mt-2">Last updated: July 15, 2026</p>
+          <div className="border-b border-slate-100 pb-8 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-extrabold text-blue-600 uppercase tracking-wider">
+              <Scale className="h-4 w-4" /> Indian Law & Global SaaS Compliance
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight">Merchant Terms of Service & User Agreement</h1>
+            <p className="text-xs text-slate-500 font-semibold pt-1">
+              Effective Date: August 24, 2026 • Governed by Information Technology Act, 2000 & Consumer Protection (E-Commerce) Rules, 2020 (India)
+            </p>
           </div>
 
-          <div className="prose prose-sm text-slate-650 max-w-none space-y-6 leading-relaxed text-sm font-medium">
+          <div className="prose prose-sm text-slate-650 max-w-none space-y-8 leading-relaxed text-sm font-medium">
             
-            <p>
-              Welcome to Basecart. By signing up for a Basecart Account (as defined below) or by using any Basecart Services (as defined below), you are agreeing to be bound by the following terms and conditions (the <strong>"Terms of Service"</strong>).
-            </p>
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-700 font-medium leading-relaxed">
+              <strong>IMPORTANT NOTICE:</strong> Please read this User Agreement carefully before creating a Basecart account or launching a storefront. By registering for or using Basecart&apos;s software-as-a-service (SaaS) platform, merchant dashboard, Durable Object SQLite storage, or storefront services, you agree to be bound by these Terms of Service. If you do not agree, you must not access or use the platform.
+            </div>
 
-            <p>
-              As used in these Terms of Service, <strong>"we"</strong>, <strong>"us"</strong>, <strong>"our"</strong> and <strong>"Basecart"</strong> means Basecart Inc. and the applicable local affiliate, and <strong>"you"</strong> means the Basecart User (if registering for a Service as an individual) or the entity on whose behalf the Basecart User is acting (if registering for a Service as a business).
-            </p>
-
-            <hr className="border-slate-100 my-6" />
-
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">1. Account Activation & Registration</h2>
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <FileText className="h-4.5 w-4.5 text-blue-600" /> 1. Platform Identity & Relationship
+              </h2>
               <p>
-                To access and use the Services, you must register for a Basecart account (<strong>"Account"</strong>) by providing your full legal name, current address, phone number, a valid email address, and any other information indicated as required.
+                Basecart (&quot;<strong>Basecart</strong>&quot;, &quot;<strong>Platform</strong>&quot;, &quot;<strong>We</strong>&quot;, &quot;<strong>Us</strong>&quot;, or &quot;<strong>Our</strong>&quot;) is a Cloudflare-native headless e-commerce software-as-a-service platform designed for merchants (&quot;<strong>Merchant</strong>&quot;, &quot;<strong>User</strong>&quot;, or &quot;<strong>You</strong>&quot;). Basecart acts strictly as a technology service provider facilitating storefront hosting, catalog management, inventory control, and payment gateway integration.
               </p>
               <p>
-                You acknowledge that Basecart will use the email address you provide as the primary method for communication. You are responsible for keeping your password secure. Basecart cannot and will not be liable for any loss or damage from your failure to maintain the security of your Account and password.
+                Basecart is not an e-commerce retailer, marketplace operator, auctioneer, or seller of record for any products, services, or physical goods offered by Merchants on their individual subdomains or custom domains.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">2. Subdomain Usage & Account Ownership</h2>
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <ShieldCheck className="h-4.5 w-4.5 text-blue-600" /> 2. Merchant Obligations & Legal Compliance
+              </h2>
               <p>
-                Upon registration, you will be allocated a subdomain under the Basecart primary domain (e.g. <code>[your-subdomain].basecart.io</code> or your local configured equivalent). This subdomain is a licensed service asset provided by Basecart and remains the property of Basecart.
+                As a Merchant operating a storefront powered by Basecart in India or globally, you warrant and agree that:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-slate-600">
+                <li><strong>Tax Registration:</strong> You hold a valid Goods and Services Tax Identification Number (GSTIN), Permanent Account Number (PAN), or legal business registration required by your jurisdiction.</li>
+                <li><strong>E-Commerce Consumer Protection:</strong> You comply with the Consumer Protection (E-Commerce) Rules, 2020, including mandatory display of business details, contact email, country of origin, return policies, and grievance officer on your storefront footer.</li>
+                <li><strong>Prohibited Goods & Activities:</strong> You shall not list, sell, or advertise any illegal, counterfeit, stolen, hazardous, or restricted items under the Indian Penal Code (IPC), Narcotic Drugs and Psychotropic Substances Act (NDPS), Drugs and Cosmetics Act, or applicable laws.</li>
+                <li><strong>Price Accuracy:</strong> All listed product prices must represent the actual selling price, and cart totals will be verified server-side at checkout.</li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="h-4.5 w-4.5 text-blue-600" /> 3. Payment Gateway Credentials & Direct Settlement
+              </h2>
+              <p>
+                Basecart integrates directly with merchant Razorpay accounts and direct UPI/card payment gateways. You acknowledge that:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-slate-600">
+                <li><strong>Direct Payouts:</strong> Customer payments flow directly into your connected Razorpay merchant bank account. Basecart does not hold customer funds in escrow.</li>
+                <li><strong>AES-256-GCM Web Crypto Encryption:</strong> Your Razorpay API Key ID and Key Secret are encrypted at rest using the Web Crypto API (AES-256-GCM) before database storage. Basecart employees never have plaintext access to your API keys.</li>
+                <li><strong>0% Platform Commission:</strong> Basecart charges zero transaction fee or commission on your storefront orders. Standard gateway processing fees charged by Razorpay apply separately.</li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900">4. Per-Tenant Isolation & Data Ownership</h2>
+              <p>
+                Basecart provisions physical per-tenant Durable Objects with embedded SQLite databases (`idFromName(tenantId)`). You retain full ownership of all product catalog data, customer order records, and business assets uploaded to your tenant database.
               </p>
               <p>
-                Basecart reserves the right to reclaim, suspend, rename, or transfer subdomains at any time if we determine that you have violated these terms, committed trademark infringement, or engaged in fraudulent activities.
+                Basecart shall not sell, license, or mine your tenant database records for third-party advertising or cross-tenant analytics.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">3. Subscription Fees & Payments</h2>
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900">5. Limitation of Liability & Merchant Indemnification</h2>
               <p>
-                You agree to pay the subscription fees applicable to your selected plan (<strong>"Subscription Fees"</strong>) as described in the Pricing Matrix. Fees are non-refundable unless specified otherwise.
+                To the maximum extent permitted under applicable law, Basecart shall not be liable for any indirect, incidental, punitive, or consequential damages arising from merchant product defects, shipping delays, non-delivery, order disputes, or gateway downtime.
               </p>
               <p>
-                Your subscription will automatically renew at the end of each billing cycle (monthly or annually) unless you terminate your subscription before the renewal date. All fees are exclusive of applicable federal, state, local, or other governmental taxes.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">4. Intellectual Property & Customer Content</h2>
-              <p>
-                We do not claim any intellectual property rights over the materials, products, images, or documentation you upload or configure on your Basecart storefront. All content you upload remains yours.
-              </p>
-              <p>
-                By uploading storefront assets, you grant Basecart a non-exclusive, worldwide, royalty-free, transferable license to store, cache, display, and process your content solely for the purpose of serving your online storefront.
+                Merchant agrees to defend, indemnify, and hold harmless Basecart, its founders, and affiliates from any third-party claims, consumer court disputes, GST audits, or legal notices resulting from Merchant&apos;s products, listings, or customer fulfillment.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">5. Limitation of Liability & Indemnification</h2>
+            <div className="space-y-3">
+              <h2 className="text-base lg:text-lg font-bold text-slate-900">6. Governing Law & Dispute Resolution</h2>
               <p>
-                You expressly understand and agree that, to the extent permitted by applicable laws, Basecart shall not be liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to, damages for loss of profits, goodwill, data or other intangible losses resulting from the use of or inability to use the service.
-              </p>
-              <p>
-                Your use of the Services is at your sole risk. The Services are provided on an "as is" and "as available" basis without any warranty or condition, express, implied, or statutory.
+                These Terms of Service are governed by and construed in accordance with the laws of the Republic of India. Any legal action, dispute, or proceeding arising out of or relating to this Agreement shall be subject to the exclusive jurisdiction of the Courts at Ernakulam / High Court of Kerala, India.
               </p>
             </div>
 
-            <div className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">6. Governing Law</h2>
-              <p>
-                These Terms of Service shall be governed by and interpreted in accordance with the laws of the jurisdiction in which our business is incorporated, without regard to principles of conflicts of laws. You and Basecart consent to the exclusive jurisdiction and venue of the local courts located in Karnataka, India.
+            <div className="space-y-3 p-5 bg-blue-50/50 border border-blue-200/80 rounded-2xl">
+              <h2 className="text-sm font-bold text-blue-950 uppercase tracking-wider">Nodal Grievance Redressal Officer</h2>
+              <p className="text-xs text-blue-900 font-medium">
+                Under the Information Technology Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020:
               </p>
+              <div className="text-xs text-slate-800 font-bold space-y-0.5 pt-1">
+                <div>Grievance Officer: Legal Compliance Desk</div>
+                <div>Basecart SaaS Platform • Kochi, Kerala, India</div>
+                <div>Email: <a href="mailto:grievance@basecart.app" className="text-blue-600 underline">grievance@basecart.app</a></div>
+                <div className="text-[10px] text-slate-500 font-semibold">Acknowledgment SLA: 48 hours • Resolution SLA: 30 days</div>
+              </div>
             </div>
 
           </div>
@@ -118,11 +143,11 @@ export default function TermsOfServicePage() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200/80 bg-white py-8 text-center text-xs text-slate-400 select-none">
+      <footer className="border-t border-slate-200/80 bg-white py-8 text-center text-xs text-slate-500 select-none">
         <p>© {new Date().getFullYear()} Basecart Inc. All rights reserved.</p>
-        <div className="flex justify-center gap-4 mt-2 font-bold text-slate-400">
-          <a href="/legal/terms" className="hover:text-slate-650 hover:underline">Terms of Service</a>
-          <a href="/legal/privacy" className="hover:text-slate-650 hover:underline">Privacy Policy</a>
+        <div className="flex justify-center gap-4 mt-2 font-bold text-slate-600">
+          <Link href="/legal/terms" className="hover:text-blue-600 underline">Terms of Service</Link>
+          <Link href="/legal/privacy" className="hover:text-blue-600 underline">Privacy Policy</Link>
         </div>
       </footer>
 
