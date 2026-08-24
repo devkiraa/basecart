@@ -18,6 +18,7 @@ import themeManagerRouter from "./routes/theme_manager";
 import razorpayRouter from "./routes/razorpay";
 import { csrfProtectionMiddleware } from "./middleware/csrf";
 import { sanitizeLogPII } from "./lib/audit";
+import { logger, requestLoggerMiddleware } from "./lib/logger";
 
 function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
   return allowedOrigins.some((pattern) => {
@@ -33,6 +34,9 @@ function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
 
 export function buildApp() {
   const app = new Hono<{ Bindings: any; Variables: any }>();
+
+  // Register Advanced Structured HTTP Logger & X-Request-ID tracing middleware
+  app.use("*", requestLoggerMiddleware);
 
   // Register CORS
   app.use(
@@ -114,8 +118,7 @@ export function buildApp() {
 
   // Global Error Handler
   app.onError((err, c) => {
-    const rawMsg = err.stack || err.message || String(err);
-    console.error("Hono error handler caught error:", sanitizeLogPII(rawMsg));
+    logger.error("Hono error handler caught error", err, c);
     
     const statusCode = (err as any).statusCode || (err as any).status || 500;
     const isProduction = c.env && c.env.NODE_ENV === "production";
