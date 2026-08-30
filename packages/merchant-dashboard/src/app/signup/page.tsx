@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, ShoppingBag, ArrowRight, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { captureUtmParams, getStoredUtmParams } from "@basecart/shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -29,6 +30,7 @@ export default function SignupPage() {
       const saved = localStorage.getItem("basecart_signup_email");
       if (saved) setEmail(saved);
     } catch (_) { }
+    captureUtmParams();
   }, []);
 
   // Persist email as user types (never store password)
@@ -51,6 +53,8 @@ export default function SignupPage() {
       const tempStoreName = emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1) + " Store";
       const tempSubdomain = emailPrefix + Math.floor(Math.random() * 900 + 100);
 
+      const utmParams = getStoredUtmParams() || {};
+
       const res = await fetch(`${API_URL}/auth/merchant/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,6 +64,12 @@ export default function SignupPage() {
           storeName: tempStoreName,
           subdomain: tempSubdomain,
           selectedPlan: "free",
+          utmSource: utmParams.utmSource,
+          utmMedium: utmParams.utmMedium,
+          utmCampaign: utmParams.utmCampaign,
+          utmTerm: utmParams.utmTerm,
+          utmContent: utmParams.utmContent,
+          referrer: utmParams.referrer,
         }),
         credentials: "include",
       });

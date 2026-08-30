@@ -27,6 +27,10 @@ interface Merchant {
   plan: "starter" | "growth" | "pro";
   status: "active" | "suspended";
   createdAt: string;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  referrer?: string | null;
 }
 
 export default function MerchantsListPage() {
@@ -254,6 +258,7 @@ export default function MerchantsListPage() {
                 <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   <th className="px-6 py-4">Store details</th>
                   <th className="px-6 py-4">Subdomain</th>
+                  <th className="px-6 py-4">Traffic Source (`utm_source`)</th>
                   <th className="px-6 py-4">Subscription Plan</th>
                   <th className="px-6 py-4">Status</th>
                   <th className="px-6 py-4">Created Date</th>
@@ -319,6 +324,15 @@ export default function MerchantsListPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 font-mono text-xs">{m.subdomain}.{STOREFRONT_DOMAIN.replace(/:[0-9]+$/, "")}</td>
+                      <td className="px-6 py-4">
+                        {m.utmSource ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider" title={`Medium: ${m.utmMedium || 'none'}, Campaign: ${m.utmCampaign || 'none'}`}>
+                            {m.utmSource}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 font-semibold font-mono">Direct</span>
+                        )}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
                           m.plan === "pro"

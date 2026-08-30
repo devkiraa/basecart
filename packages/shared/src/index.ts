@@ -48,6 +48,12 @@ export const MerchantSignupSchema = z.object({
   hearAboutUs: z.string().optional(),
   selectedPlan: z.string().optional(),
   receiveUpdates: z.boolean().optional(),
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  utmTerm: z.string().optional(),
+  utmContent: z.string().optional(),
+  referrer: z.string().optional(),
 }).strict();
 
 export type MerchantSignupInput = z.infer<typeof MerchantSignupSchema>;
@@ -256,3 +262,4 @@ export type OrderStatusUpdateInput = z.infer<typeof OrderStatusUpdateSchema>;
 
 export * from "./reservedSubdomains";
 export * from "./platformRoutes";
+export * from "./utm";

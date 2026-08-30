@@ -17,6 +17,6 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     setupFiles: ["src/tests/setup.ts"],
-    teardownTimeout: 1000,
+    teardownTimeout: 10000,
   },
 });

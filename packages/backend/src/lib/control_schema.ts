@@ -39,7 +39,13 @@ CREATE TABLE IF NOT EXISTS tenants (
   monthlyOrders TEXT,
   currentPlatform TEXT,
   hearAboutUs TEXT,
-  receiveUpdates INTEGER DEFAULT 0
+  receiveUpdates INTEGER DEFAULT 0,
+  utmSource TEXT,
+  utmMedium TEXT,
+  utmCampaign TEXT,
+  utmTerm TEXT,
+  utmContent TEXT,
+  referrer TEXT
 );
 
 CREATE TABLE IF NOT EXISTS merchant_users (

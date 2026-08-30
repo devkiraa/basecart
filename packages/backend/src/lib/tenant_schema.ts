@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS orders (
   idempotencyKey TEXT UNIQUE,
   invoiceNumber TEXT,
   invoiceUrl TEXT,
+  utmSource TEXT,
+  utmMedium TEXT,
+  utmCampaign TEXT,
+  utmTerm TEXT,
+  utmContent TEXT,
+  referrer TEXT,
   createdAt TEXT NOT NULL,
   updatedAt TEXT NOT NULL
 );

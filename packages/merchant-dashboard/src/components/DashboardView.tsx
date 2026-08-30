@@ -88,6 +88,7 @@ import { THEME_LIBRARY, THEME_SETTINGS_SCHEMA } from "@/themes/registry";
 import EmailsTab from "@/components/EmailsTab";
 import BrandIdentityTab from "@/components/BrandIdentityTab";
 import { UsersTeamTab } from "@/components/UsersTeamTab";
+import { captureUtmParams, getStoredUtmParams } from "@basecart/shared";
 import {
   AreaChart,
   Area,
@@ -580,6 +581,7 @@ export default function DashboardView() {
 
   useEffect(() => {
     setIsHydrated(true);
+    captureUtmParams();
     const parseUrlRoute = () => {
       if (typeof window === "undefined") return;
 
@@ -2125,6 +2127,8 @@ export default function DashboardView() {
       }
       cleanedSubdomain = cleanedSubdomain.replace(/[^a-z0-9-]/g, "");
 
+      const utmParams = getStoredUtmParams() || {};
+
       const res = await fetch(`${API_URL}/auth/merchant/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -2145,6 +2149,12 @@ export default function DashboardView() {
           hearAboutUs: onboardingData.hearAboutUs,
           selectedPlan: onboardingData.selectedPlan,
           receiveUpdates: onboardingData.receiveUpdates,
+          utmSource: utmParams.utmSource,
+          utmMedium: utmParams.utmMedium,
+          utmCampaign: utmParams.utmCampaign,
+          utmTerm: utmParams.utmTerm,
+          utmContent: utmParams.utmContent,
+          referrer: utmParams.referrer,
         }),
         credentials: "include",
       });

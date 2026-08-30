@@ -5,8 +5,6 @@ import {
   Link2,
   Search,
   Filter,
-  ChevronLeft,
-  ChevronRight,
   TrendingUp,
   Layers,
   Sparkles,
@@ -14,471 +12,503 @@ import {
   Check,
   Globe,
   Tag,
-  BookOpen,
-  Compass,
   ArrowRight,
-  ShoppingCart,
+  ExternalLink,
+  Users,
+  Compass,
+  BarChart3,
+  CheckCircle2,
 } from "lucide-react";
+import { buildCampaignUrl } from "@basecart/shared";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8787";
 
-interface OrderAttribution {
-  id: string;
-  merchant: string;
-  subdomain?: string;
-  date: string;
-  customer: string;
-  amount: number;
+interface MerchantAttribution {
+  tenantId: string;
+  storeName: string;
+  subdomain: string;
+  plan: string;
   status: string;
-  originContext?: {
-    originUrl?: string;
-    sectionId?: string;
-    unitId?: string;
-    lessonId?: string;
-    adaptiveId?: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    referrer?: string;
-  };
+  createdAt: string;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  utmTerm?: string | null;
+  utmContent?: string | null;
+  referrer?: string | null;
+}
+
+interface UtmAnalyticsData {
+  totalMerchants: number;
+  totalTracked: number;
+  sourcesList: Array<{ source: string; count: number }>;
+  campaignsList: Array<{ campaign: string; source: string; medium: string; signups: number }>;
+  merchantsList: MerchantAttribution[];
 }
 
 export default function AttributionPage() {
-  const [orders, setOrders] = useState<OrderAttribution[]>([]);
+  const [data, setData] = useState<UtmAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   // Filters & Pagination
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterSection, setFilterSection] = useState("ALL");
-  const [filterUnit, setFilterUnit] = useState("ALL");
+  const [sourceFilter, setSourceFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(15);
 
-  // Link Generator State
-  const [baseUrl, setBaseUrl] = useState("https://store.basecart.app/products/item-101");
-  const [genSectionId, setGenSectionId] = useState("1");
-  const [genUnitId, setGenUnitId] = useState("20");
-  const [genUtmSource, setGenUtmSource] = useState("partner_campaign");
+  // Campaign Link Builder State
+  const [builderBaseUrl, setBuilderBaseUrl] = useState("https://basecart.app/signup");
+  const [builderSource, setBuilderSource] = useState("bangalorestartupmap");
+  const [builderMedium, setBuilderMedium] = useState("text");
+  const [builderCampaign, setBuilderCampaign] = useState("bangalorestartupmap");
+  const [builderTerm, setBuilderTerm] = useState("");
+  const [builderContent, setBuilderContent] = useState("");
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    async function loadAttributionData() {
-      try {
-        setLoading(true);
-        const res = await fetch(`${API_URL}/admin/orders`, { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to load platform orders feed.");
-        const data = await res.json();
-        setOrders(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error(err);
-        setError("Unable to retrieve URL origin attribution details.");
-      } finally {
-        setLoading(false);
-      }
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const storedToken = typeof window !== "undefined" ? localStorage.getItem("basecart_admin_token") : null;
+      const headers: Record<string, string> = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+
+      const res = await fetch(`${API_URL}/admin/analytics/utm`, { headers, credentials: "include" });
+      if (!res.ok) throw new Error("Failed to load UTM campaign analytics data.");
+      const json = await res.json();
+      setData(json);
+    } catch (err: any) {
+      console.error(err);
+      setError("Unable to retrieve UTM campaign attribution details.");
+    } finally {
+      setLoading(false);
     }
-    loadAttributionData();
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
-  // Filter orders that have originContext or match search query
-  const trackedOrders = useMemo(() => {
-    return orders.filter((o) => {
-      const ctx = o.originContext;
-      const query = searchQuery.toLowerCase().trim();
-
-      const matchesQuery =
-        !query ||
-        o.id.toLowerCase().includes(query) ||
-        o.merchant.toLowerCase().includes(query) ||
-        (ctx?.originUrl && ctx.originUrl.toLowerCase().includes(query)) ||
-        (ctx?.sectionId && ctx.sectionId.toLowerCase().includes(query)) ||
-        (ctx?.unitId && ctx.unitId.toLowerCase().includes(query));
-
-      const matchesSection = filterSection === "ALL" || ctx?.sectionId === filterSection;
-      const matchesUnit = filterUnit === "ALL" || ctx?.unitId === filterUnit;
-
-      return matchesQuery && matchesSection && matchesUnit;
+  const generatedUrl = useMemo(() => {
+    return buildCampaignUrl(builderBaseUrl, {
+      utmSource: builderSource,
+      utmMedium: builderMedium,
+      utmCampaign: builderCampaign,
+      utmTerm: builderTerm,
+      utmContent: builderContent,
     });
-  }, [orders, searchQuery, filterSection, filterUnit]);
-
-  // Pagination calculation
-  const totalEntries = trackedOrders.length;
-  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = Math.min(startIndex + pageSize, totalEntries);
-  const paginatedOrders = trackedOrders.slice(startIndex, endIndex);
-
-  // Computed metrics
-  const totalTrackedOrders = orders.filter((o) => o.originContext?.originUrl || o.originContext?.sectionId).length;
-  const uniqueSections = Array.from(new Set(orders.map((o) => o.originContext?.sectionId).filter(Boolean)));
-  const uniqueUnits = Array.from(new Set(orders.map((o) => o.originContext?.unitId).filter(Boolean)));
-
-  // Generated Link calculation
-  const generatedLink = useMemo(() => {
-    let url = baseUrl.trim();
-    if (!url) return "";
-    const params = new URLSearchParams();
-    if (genSectionId) params.append("sectionId", genSectionId);
-    if (genUnitId) params.append("unitId", genUnitId);
-    if (genUtmSource) params.append("utm_source", genUtmSource);
-    const queryString = params.toString();
-    if (!queryString) return url;
-    return url.includes("?") ? `${url}&${queryString}` : `${url}?${queryString}`;
-  }, [baseUrl, genSectionId, genUnitId, genUtmSource]);
+  }, [builderBaseUrl, builderSource, builderMedium, builderCampaign, builderTerm, builderContent]);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(generatedLink);
+    if (!generatedUrl) return;
+    navigator.clipboard.writeText(generatedUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Filtered merchants list
+  const merchants = data?.merchantsList || [];
+  const filteredMerchants = useMemo(() => {
+    return merchants.filter((m) => {
+      const q = searchQuery.toLowerCase().trim();
+      const matchesQuery =
+        !q ||
+        m.storeName.toLowerCase().includes(q) ||
+        m.subdomain.toLowerCase().includes(q) ||
+        (m.utmSource && m.utmSource.toLowerCase().includes(q)) ||
+        (m.utmCampaign && m.utmCampaign.toLowerCase().includes(q)) ||
+        (m.referrer && m.referrer.toLowerCase().includes(q));
+
+      const src = m.utmSource || (m.referrer ? "referral" : "direct");
+      const matchesSource = sourceFilter === "ALL" || src.toLowerCase() === sourceFilter.toLowerCase();
+
+      return matchesQuery && matchesSource;
+    });
+  }, [merchants, searchQuery, sourceFilter]);
+
+  // Pagination calculation
+  const totalEntries = filteredMerchants.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = Math.min(startIndex + pageSize, totalEntries);
+  const paginatedMerchants = filteredMerchants.slice(startIndex, endIndex);
+
+  // Quick Preset Presets helper
+  const applyPreset = (src: string, med: string, camp: string) => {
+    setBuilderSource(src);
+    setBuilderMedium(med);
+    setBuilderCampaign(camp);
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">URL Origin & Attribution Tracing</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Trace deep-link referral origins, section/unit campaign IDs, and conversion attribution across all store subdomains.
-        </p>
+    <div className="space-y-8 animate-fade-in pb-12">
+      {/* Page Title & Context */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-black text-indigo-600 uppercase tracking-wider mb-1">
+            <Compass className="h-4 w-4" /> Marketing & Attribution Analytics
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">UTM Campaign & Traffic Attribution</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Track merchant signup origins (`utm_source`, `utm_medium`, `utm_campaign`), referral traffic, and build campaign URLs.
+          </p>
+        </div>
+
+        <button
+          onClick={loadData}
+          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-all self-start md:self-auto cursor-pointer"
+        >
+          Refresh Data
+        </button>
       </div>
 
       {error && (
-        <div className="p-4 bg-red-50 border border-red-100 text-sm text-red-650 rounded-xl">
+        <div className="p-4 bg-rose-50 border border-rose-200 text-xs font-bold text-rose-700 rounded-xl">
           {error}
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Tracked Conversions</span>
-            <div className="p-2 rounded-lg bg-indigo-50 text-indigo-600">
-              <Link2 className="w-4 h-4" />
-            </div>
+      {/* KPI Overview Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Total Merchants</span>
+            <Users className="h-4 w-4 text-indigo-600" />
           </div>
-          <div className="text-2xl font-extrabold text-slate-800">{totalTrackedOrders}</div>
+          <div className="text-2xl font-black text-slate-900">{data?.totalMerchants || 0}</div>
+          <div className="text-[11px] text-slate-500 font-medium">Registered merchant stores</div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Section IDs</span>
-            <div className="p-2 rounded-lg bg-blue-50 text-blue-600">
-              <Layers className="w-4 h-4" />
-            </div>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Tracked via UTM / Referrer</span>
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
           </div>
-          <div className="text-2xl font-extrabold text-slate-800">{uniqueSections.length || 1}</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Active Unit IDs</span>
-            <div className="p-2 rounded-lg bg-emerald-50 text-emerald-600">
-              <BookOpen className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-800">{uniqueUnits.length || 1}</div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Attribution Rate</span>
-            <div className="p-2 rounded-lg bg-purple-50 text-purple-600">
-              <TrendingUp className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-2xl font-extrabold text-slate-800">
-            {orders.length > 0 ? `${((totalTrackedOrders / orders.length) * 100).toFixed(0)}%` : "100%"}
-          </div>
-        </div>
-      </div>
-
-      {/* URL Attribution Generator Tool */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-6 shadow-lg space-y-5">
-        <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-          <Sparkles className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100">
-            Deep Link & Origin Attribution Builder
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-          <div className="sm:col-span-3">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-              Base Landing Page URL
-            </label>
-            <input
-              type="text"
-              value={baseUrl}
-              onChange={(e) => setBaseUrl(e.target.value)}
-              placeholder="https://store.basecart.app/products/item-101"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2.5 text-xs text-indigo-200 focus:outline-none focus:border-indigo-400 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">sectionId</label>
-            <input
-              type="text"
-              value={genSectionId}
-              onChange={(e) => setGenSectionId(e.target.value)}
-              placeholder="e.g. 1"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">unitId</label>
-            <input
-              type="text"
-              value={genUnitId}
-              onChange={(e) => setGenUnitId(e.target.value)}
-              placeholder="e.g. 20"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-mono"
-            />
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">utm_source / Campaign</label>
-            <input
-              type="text"
-              value={genUtmSource}
-              onChange={(e) => setGenUtmSource(e.target.value)}
-              placeholder="partner_campaign"
-              className="w-full bg-slate-800/80 border border-slate-700 rounded-xl p-2 text-xs text-white focus:outline-none focus:border-indigo-400 font-mono"
-            />
+          <div className="text-2xl font-black text-emerald-600">{data?.totalTracked || 0}</div>
+          <div className="text-[11px] text-slate-500 font-medium">
+            {data?.totalMerchants ? `${Math.round(((data.totalTracked || 0) / data.totalMerchants) * 100)}% campaign attribution rate` : "0% attributed"}
           </div>
         </div>
 
-        {/* Generated output box */}
-        <div className="bg-slate-950/80 border border-slate-800 p-4 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-          <div className="space-y-1 font-mono text-[11px] text-indigo-300 break-all">
-            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider block font-sans">
-              Generated Attribution Link:
-            </span>
-            <span>{generatedLink}</span>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Top Traffic Source</span>
+            <Globe className="h-4 w-4 text-blue-600" />
           </div>
+          <div className="text-lg font-black text-slate-900 truncate">
+            {data?.sourcesList && data.sourcesList.length > 0 ? data.sourcesList[0].source : "Direct"}
+          </div>
+          <div className="text-[11px] text-slate-500 font-medium">
+            {data?.sourcesList && data.sourcesList.length > 0 ? `${data.sourcesList[0].count} merchant signups` : "No campaign traffic yet"}
+          </div>
+        </div>
 
-          <button
-            onClick={handleCopyLink}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 shrink-0 self-end sm:self-auto cursor-pointer"
-          >
-            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-            {copied ? "Copied Link!" : "Copy Attribution URL"}
-          </button>
+        <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-2">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-wider">Active Campaigns</span>
+            <Layers className="h-4 w-4 text-violet-600" />
+          </div>
+          <div className="text-2xl font-black text-violet-600">{data?.campaignsList?.length || 0}</div>
+          <div className="text-[11px] text-slate-500 font-medium">Unique marketing campaigns</div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-slate-800 font-bold text-xs uppercase tracking-wide">
-            <Filter className="w-4 h-4 text-indigo-600" />
-            <span>Search & Filter Origin Registry</span>
+      {/* ── CAMPAIGN LINK BUILDER TOOL ── */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 lg:p-8 shadow-xs space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-indigo-600" />
+              <h2 className="text-base font-bold text-slate-900">UTM Campaign Link Builder</h2>
+            </div>
+            <p className="text-xs text-slate-500 font-medium">
+              Generate tracked URLs to accurately measure where merchant signups come from (e.g. `utm_source=bangalorestartupmap`).
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
+
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase">Quick Presets:</span>
+            <button
+              onClick={() => applyPreset("bangalorestartupmap", "text", "bangalorestartupmap")}
+              className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
             >
-              <option value={5}>5 per page</option>
-              <option value={10}>10 per page</option>
-              <option value={20}>20 per page</option>
-              <option value={50}>50 per page</option>
-            </select>
+              BangaloreStartupMap
+            </button>
+            <button
+              onClick={() => applyPreset("google", "cpc", "search_ads_2026")}
+              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+            >
+              Google Ads
+            </button>
+            <button
+              onClick={() => applyPreset("instagram", "social", "bio_link")}
+              className="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
+            >
+              Instagram Bio
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-1.5 md:col-span-3">
+            <label className="block text-xs font-bold text-slate-700">Target Page URL</label>
+            <input
+              type="text"
+              value={builderBaseUrl}
+              onChange={(e) => setBuilderBaseUrl(e.target.value)}
+              placeholder="https://basecart.app/signup or https://reticket.in"
+              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">Campaign Source (`utm_source`)</label>
+            <input
+              type="text"
+              value={builderSource}
+              onChange={(e) => setBuilderSource(e.target.value)}
+              placeholder="e.g. bangalorestartupmap, google, newsletter"
+              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">Campaign Medium (`utm_medium`)</label>
+            <input
+              type="text"
+              value={builderMedium}
+              onChange={(e) => setBuilderMedium(e.target.value)}
+              placeholder="e.g. text, cpc, banner, social, email"
+              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700">Campaign Name (`utm_campaign`)</label>
+            <input
+              type="text"
+              value={builderCampaign}
+              onChange={(e) => setBuilderCampaign(e.target.value)}
+              placeholder="e.g. bangalorestartupmap, launch_promo"
+              className="w-full px-3.5 py-2.5 border border-slate-300 rounded-xl text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+            />
+          </div>
+        </div>
+
+        {/* Generated URL Display & Copy Box */}
+        <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase tracking-wider">
+            <span className="flex items-center gap-1.5 text-indigo-400">
+              <Link2 className="h-4 w-4" /> Generated Campaign Tracking URL
+            </span>
+            <span className="text-[10px] text-slate-500 font-medium">Copy & paste into ads, listings, or directory links</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              readOnly
+              value={generatedUrl}
+              className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl font-mono text-xs text-indigo-300 focus:outline-none select-all"
+            />
+            <button
+              onClick={handleCopyLink}
+              className={`px-4 py-2.5 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                copied
+                  ? "bg-emerald-600 text-white"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 shadow-sm"
+              }`}
+            >
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              <span>{copied ? "Copied!" : "Copy Campaign Link"}</span>
+            </button>
+            {generatedUrl && (
+              <a
+                href={generatedUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors shrink-0"
+                title="Test Open URL in New Tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── TRAFFIC SOURCES & CAMPAIGNS BREAKDOWN ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Top Traffic Channels Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-indigo-600" /> Top Traffic Sources (`utm_source`)
+            </h3>
+            <span className="text-[10px] font-extrabold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full">
+              {data?.sourcesList?.length || 0} Sources
+            </span>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {(!data?.sourcesList || data.sourcesList.length === 0) ? (
+              <div className="text-xs text-slate-400 text-center py-6">No traffic source data available yet.</div>
+            ) : (
+              data.sourcesList.map((item, idx) => {
+                const total = data.totalMerchants || 1;
+                const pct = Math.round((item.count / total) * 100);
+                return (
+                  <div key={idx} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs font-bold text-slate-800">
+                      <span className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-indigo-600" />
+                        {item.source}
+                      </span>
+                      <span className="text-slate-500 font-semibold">{item.count} stores ({pct}%)</span>
+                    </div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-600 rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Campaign Breakdown Card */}
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <Tag className="h-4 w-4 text-violet-600" /> Active Marketing Campaigns (`utm_campaign`)
+            </h3>
+            <span className="text-[10px] font-extrabold bg-violet-50 text-violet-700 px-2 py-0.5 rounded-full">
+              {data?.campaignsList?.length || 0} Campaigns
+            </span>
+          </div>
+
+          <div className="space-y-2.5 pt-1">
+            {(!data?.campaignsList || data.campaignsList.length === 0) ? (
+              <div className="text-xs text-slate-400 text-center py-6">No marketing campaign data recorded.</div>
+            ) : (
+              data.campaignsList.map((c, idx) => (
+                <div key={idx} className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <div className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                      <span>{c.campaign}</span>
+                      <span className="text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.2 rounded uppercase">
+                        {c.source} / {c.medium}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-xs font-black text-slate-900 shrink-0">
+                    {c.signups} signups
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── MERCHANT SIGNUPS ATTRIBUTION TABLE ── */}
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Search</label>
+            <h3 className="text-base font-bold text-slate-900">Merchant Signup Attribution Feed</h3>
+            <p className="text-xs text-slate-500 font-medium">Detailed UTM tracking breakdown for every merchant account in the registry.</p>
+          </div>
+
+          <div className="flex items-center gap-2">
             <div className="relative">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="h-3.5 w-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search URL, order, sectionId..."
+                placeholder="Search merchant or source..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 w-full bg-white border border-slate-200 rounded-lg py-1.5 text-xs font-medium text-slate-800 focus:outline-none"
+                className="pl-8 pr-3 py-1.5 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-50"
               />
             </div>
           </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Section ID</label>
-            <select
-              value={filterSection}
-              onChange={(e) => setFilterSection(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Sections</option>
-              {uniqueSections.map((sec) => (
-                <option key={sec} value={sec}>
-                  Section #{sec}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Unit ID</label>
-            <select
-              value={filterUnit}
-              onChange={(e) => setFilterUnit(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-lg py-1.5 px-3 text-xs font-semibold text-slate-700 focus:outline-none cursor-pointer"
-            >
-              <option value="ALL">All Units</option>
-              {uniqueUnits.map((u) => (
-                <option key={u} value={u}>
-                  Unit #{u}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Orders Table Container */}
-      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-800">Attributed Store Orders Feed</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Orders originating from deep links, sectionId, and unitId query paths.</p>
-          </div>
         </div>
 
+        {/* Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-200">
-                <th className="py-3.5 px-6">Order & Origin Context</th>
-                <th className="py-3.5 px-6">Merchant Store</th>
-                <th className="py-3.5 px-6">Date</th>
-                <th className="py-3.5 px-6">Customer</th>
-                <th className="py-3.5 px-6">Amount</th>
-                <th className="py-3.5 px-6">Attribution Parameters</th>
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-extrabold uppercase text-slate-400 tracking-wider">
+              <tr>
+                <th className="py-3 px-4">Merchant / Store</th>
+                <th className="py-3 px-4">UTM Source</th>
+                <th className="py-3 px-4">UTM Medium</th>
+                <th className="py-3 px-4">UTM Campaign</th>
+                <th className="py-3 px-4">Referrer URL</th>
+                <th className="py-3 px-4 text-right">Signup Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700 text-xs font-medium">
+            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {loading ? (
-                Array.from({ length: 4 }).map((_, idx) => (
-                  <tr key={idx} className="animate-pulse">
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-28" /></td>
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-20" /></td>
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-16" /></td>
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-24" /></td>
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-12" /></td>
-                    <td className="py-4 px-6"><div className="h-4 bg-slate-200 rounded w-32" /></td>
-                  </tr>
-                ))
-              ) : paginatedOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 px-6 text-center text-slate-400 font-medium">
-                    No attributed order records match the selected filters.
+                  <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                    Loading attribution records...
+                  </td>
+                </tr>
+              ) : paginatedMerchants.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                    No merchants match the selected filters.
                   </td>
                 </tr>
               ) : (
-                paginatedOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-indigo-600">
-                      <div>{order.id}</div>
-                      <div className="text-[10px] text-slate-500 font-sans mt-0.5 truncate max-w-xs" title={order.originContext?.originUrl}>
-                        {order.originContext?.originUrl || "Direct Link"}
-                      </div>
+                paginatedMerchants.map((m) => (
+                  <tr key={m.tenantId} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-bold text-slate-900">{m.storeName}</div>
+                      <div className="text-[10px] text-slate-400">{m.subdomain}.basecart.app</div>
                     </td>
-                    <td className="py-4 px-6 font-semibold text-slate-800">
-                      <div>{order.merchant}</div>
-                      {order.subdomain && (
-                        <div className="text-[10px] text-slate-400 font-mono mt-0.5">{order.subdomain}.basecart.app</div>
+                    <td className="py-3 px-4">
+                      {m.utmSource ? (
+                        <span className="text-[10px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full uppercase">
+                          {m.utmSource}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-semibold">Direct</span>
                       )}
                     </td>
-                    <td className="py-4 px-6 text-slate-500 font-mono">{order.date}</td>
-                    <td className="py-4 px-6">
-                      <div className="text-slate-800 font-semibold">{order.customer}</div>
+                    <td className="py-3 px-4">
+                      {m.utmMedium ? (
+                        <span className="text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded-full uppercase">
+                          {m.utmMedium}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-semibold">—</span>
+                      )}
                     </td>
-                    <td className="py-4 px-6 font-bold text-slate-900">₹{order.amount}</td>
-                    <td className="py-4 px-6">
-                      <div className="flex flex-wrap gap-1 font-mono text-[9px]">
-                        {order.originContext?.sectionId && (
-                          <span className="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded font-bold">
-                            sectionId: {order.originContext.sectionId}
-                          </span>
-                        )}
-                        {order.originContext?.unitId && (
-                          <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
-                            unitId: {order.originContext.unitId}
-                          </span>
-                        )}
-                        {order.originContext?.lessonId && (
-                          <span className="bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
-                            lessonId: {order.originContext.lessonId}
-                          </span>
-                        )}
-                        {order.originContext?.adaptiveId && (
-                          <span className="bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold">
-                            adaptiveId: {order.originContext.adaptiveId}
-                          </span>
-                        )}
-                        {!order.originContext?.sectionId && !order.originContext?.unitId && (
-                          <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">Default Direct</span>
-                        )}
-                      </div>
+                    <td className="py-3 px-4">
+                      {m.utmCampaign ? (
+                        <span className="text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
+                          {m.utmCampaign}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-semibold">—</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 max-w-[200px] truncate text-[11px] text-slate-500">
+                      {m.referrer ? (
+                        <a href={m.referrer} target="_blank" rel="noreferrer" className="hover:text-indigo-600 underline">
+                          {m.referrer}
+                        </a>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right text-[11px] text-slate-500 font-medium">
+                      {new Date(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                     </td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Footer Pagination Controls & Entry Counter */}
-        <div className="p-4 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
-          <div>
-            {totalEntries > 0 ? (
-              <span>
-                Showing <strong className="text-slate-800 font-bold">{startIndex + 1}</strong> to{" "}
-                <strong className="text-slate-800 font-bold">{endIndex}</strong> of{" "}
-                <strong className="text-slate-800 font-bold">{totalEntries}</strong> attributed orders
-              </span>
-            ) : (
-              <span>No attributed orders to display</span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 select-none">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              title="Previous page"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-
-            {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => setCurrentPage(pageNum)}
-                className={`px-3 py-1.5 rounded-lg font-semibold text-xs transition-all ${
-                  currentPage === pageNum
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                {pageNum}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              title="Next page"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
         </div>
       </div>
     </div>

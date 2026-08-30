@@ -702,6 +702,12 @@ app.get("/admin/merchants", authenticateAdmin, async (c) => {
     plan: item.plan || "starter",
     status: item.status || "active",
     createdAt: item.createdAt,
+    utmSource: item.utmSource || null,
+    utmMedium: item.utmMedium || null,
+    utmCampaign: item.utmCampaign || null,
+    utmTerm: item.utmTerm || null,
+    utmContent: item.utmContent || null,
+    referrer: item.referrer || null,
   }));
 
   return c.json(merchants);
@@ -848,6 +854,12 @@ app.get("/admin/merchants/:tenantId/details", authenticateAdmin, async (c) => {
       monthlyOrders: store.monthlyOrders || "",
       currentPlatform: store.currentPlatform || "",
       hearAboutUs: store.hearAboutUs || "",
+      utmSource: store.utmSource || null,
+      utmMedium: store.utmMedium || null,
+      utmCampaign: store.utmCampaign || null,
+      utmTerm: store.utmTerm || null,
+      utmContent: store.utmContent || null,
+      referrer: store.referrer || null,
       addOns,
     },
     products: productsRes.results || [],
@@ -1127,6 +1139,67 @@ app.get("/admin/metrics", authenticateAdmin, async (c) => {
     d1ReadOps: `${(totalProductsCount * 12 + totalOrdersCount * 8 + totalMerchants * 24).toLocaleString()}/min`,
   });
 
+});
+
+/**
+ * UTM Traffic & Campaign Attribution Analytics Endpoint
+ */
+app.get("/admin/analytics/utm", authenticateAdmin, async (c) => {
+  const controlDb = getControlDb(c.env);
+
+  const result = await controlDb.prepare("SELECT tenantId, storeName, subdomain, plan, status, createdAt, utmSource, utmMedium, utmCampaign, utmTerm, utmContent, referrer FROM tenants ORDER BY createdAt DESC").all<any>();
+  const tenants = result.results || [];
+
+  const sourceMap: Record<string, number> = {};
+  const campaignMap: Record<string, { campaign: string; source: string; medium: string; signups: number }> = {};
+  let totalTracked = 0;
+
+  const merchantsList = tenants.map((item) => {
+    const src = item.utmSource || (item.referrer ? "referral" : "direct");
+    const medium = item.utmMedium || (item.referrer ? "link" : "none");
+    const campaign = item.utmCampaign || "none";
+
+    if (item.utmSource || item.referrer) {
+      totalTracked++;
+    }
+
+    sourceMap[src] = (sourceMap[src] || 0) + 1;
+
+    const campaignKey = `${campaign}:${src}:${medium}`;
+    if (!campaignMap[campaignKey]) {
+      campaignMap[campaignKey] = { campaign, source: src, medium, signups: 0 };
+    }
+    campaignMap[campaignKey].signups += 1;
+
+    return {
+      tenantId: item.tenantId,
+      storeName: item.storeName,
+      subdomain: item.subdomain,
+      plan: item.plan || "starter",
+      status: item.status || "active",
+      createdAt: item.createdAt,
+      utmSource: item.utmSource || null,
+      utmMedium: item.utmMedium || null,
+      utmCampaign: item.utmCampaign || null,
+      utmTerm: item.utmTerm || null,
+      utmContent: item.utmContent || null,
+      referrer: item.referrer || null,
+    };
+  });
+
+  const sourcesList = Object.entries(sourceMap)
+    .map(([source, count]) => ({ source, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const campaignsList = Object.values(campaignMap).sort((a, b) => b.signups - a.signups);
+
+  return c.json({
+    totalMerchants: tenants.length,
+    totalTracked,
+    sourcesList,
+    campaignsList,
+    merchantsList,
+  });
 });
 
 app.get("/admin/infrastructure/status", authenticateAdmin, async (c) => {

@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS tenants (
   subdomain TEXT NOT NULL UNIQUE,
   plan TEXT NOT NULL DEFAULT 'starter',
   status TEXT NOT NULL DEFAULT 'active',
+  accountType TEXT NOT NULL DEFAULT 'live',
   createdAt TEXT NOT NULL,
   customDomain TEXT,
   addOns TEXT,
@@ -37,7 +38,13 @@ CREATE TABLE IF NOT EXISTS tenants (
   monthlyOrders TEXT,
   currentPlatform TEXT,
   hearAboutUs TEXT,
-  receiveUpdates INTEGER DEFAULT 0
+  receiveUpdates INTEGER DEFAULT 0,
+  utmSource TEXT,
+  utmMedium TEXT,
+  utmCampaign TEXT,
+  utmTerm TEXT,
+  utmContent TEXT,
+  referrer TEXT
 );
 
 CREATE TABLE IF NOT EXISTS merchant_users (

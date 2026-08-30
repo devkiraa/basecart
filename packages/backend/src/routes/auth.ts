@@ -251,6 +251,12 @@ app.post("/auth/merchant/signup", async (c) => {
     hearAboutUs = null,
     selectedPlan = "starter",
     receiveUpdates = false,
+    utmSource = null,
+    utmMedium = null,
+    utmCampaign = null,
+    utmTerm = null,
+    utmContent = null,
+    referrer = null,
   } = parseResult.data;
   const lowerEmail = email.toLowerCase();
   const lowerSubdomain = subdomain.toLowerCase();
@@ -292,10 +298,10 @@ app.post("/auth/merchant/signup", async (c) => {
   const hashedPassword = await authService.hashPassword(password);
   const createdAt = new Date().toISOString();
 
-  // 4. Save registry details in the control database
+  // 4. Save registry details in the control database (including UTM campaign attribution)
   const tStmt = controlDb
     .prepare(
-      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding, businessCategory, businessType, country, state, ownerName, phone, teamSize, monthlyOrders, currentPlatform, hearAboutUs, receiveUpdates) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+      "INSERT INTO tenants (tenantId, storeName, subdomain, plan, status, createdAt, razorpayKeyId, razorpaySecret, customDomain, addOns, branding, businessCategory, businessType, country, state, ownerName, phone, teamSize, monthlyOrders, currentPlatform, hearAboutUs, receiveUpdates, utmSource, utmMedium, utmCampaign, utmTerm, utmContent, referrer) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
     )
     .bind(
       tenantId,
@@ -319,7 +325,13 @@ app.post("/auth/merchant/signup", async (c) => {
       monthlyOrders,
       currentPlatform,
       hearAboutUs,
-      receiveUpdates ? 1 : 0
+      receiveUpdates ? 1 : 0,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      utmTerm,
+      utmContent,
+      referrer
     );
 
   const uStmt = controlDb
