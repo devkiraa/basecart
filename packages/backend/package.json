@@ -34,7 +34,7 @@
     "dotenv": "^16.4.5",
     "hono": "^4.4.0",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.0.3",
+    "nodemailer": "^10.2.1",
     "pdfkit": "^0.19.1",
     "razorpay": "^2.9.8",
     "zod": "^3.22.4"
